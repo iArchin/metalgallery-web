@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Vazirmatn } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
+const vazirmatn = Vazirmatn({
+  subsets: ["arabic", "latin"],
   weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-vazirmatn",
 });
 
 export const metadata: Metadata = {
-  title: "Babymart - Children's Toys and Clothes",
-  description: "Buy Children's Toys And Clothes - Up to 10% OFF",
+  title: "بیبی‌مارت - اسباب‌بازی و لباس کودکان",
+  description: "خرید اسباب‌بازی و لباس کودکان - تا ۱۰% تخفیف",
 };
 
 export default function RootLayout({
@@ -18,8 +19,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr" className={inter.className}>
-      <body className={`${inter.className} antialiased`}>{children}</body>
+    <html lang="fa" dir="rtl" className={vazirmatn.variable}>
+      <body className={`${vazirmatn.className} antialiased font-sans`}>
+        {children}
+      </body>
     </html>
   );
 }

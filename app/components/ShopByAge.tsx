@@ -1,11 +1,48 @@
+import { toPersianNumber } from "../utils/numbers";
+
 const ageGroups = [
-  { id: 1, age: "0-1 Years", image: "👶", gender: "girl" },
-  { id: 2, age: "1-2 Years", image: "👧", gender: "girl" },
-  { id: 3, age: "3-4 Years", image: "👧", gender: "girl" },
-  { id: 4, age: "0-2 Years", image: "👶", gender: "boy" },
-  { id: 5, age: "4-7 Years", image: "👧", gender: "girl" },
-  { id: 6, age: "7-10 Years", image: "👦", gender: "boy" },
-  { id: 7, age: "12+ Years", image: "🧑", gender: "boy" },
+  {
+    id: 1,
+    age: `${toPersianNumber("0")}-${toPersianNumber("1")} سال`,
+    image: "👶",
+    gender: "girl",
+  },
+  {
+    id: 2,
+    age: `${toPersianNumber("1")}-${toPersianNumber("2")} سال`,
+    image: "👧",
+    gender: "girl",
+  },
+  {
+    id: 3,
+    age: `${toPersianNumber("3")}-${toPersianNumber("4")} سال`,
+    image: "👧",
+    gender: "girl",
+  },
+  {
+    id: 4,
+    age: `${toPersianNumber("0")}-${toPersianNumber("2")} سال`,
+    image: "👶",
+    gender: "boy",
+  },
+  {
+    id: 5,
+    age: `${toPersianNumber("4")}-${toPersianNumber("7")} سال`,
+    image: "👧",
+    gender: "girl",
+  },
+  {
+    id: 6,
+    age: `${toPersianNumber("7")}-${toPersianNumber("10")} سال`,
+    image: "👦",
+    gender: "boy",
+  },
+  {
+    id: 7,
+    age: `${toPersianNumber("12") + "+"} سال`,
+    image: "🧑",
+    gender: "boy",
+  },
 ];
 
 export default function ShopByAge() {
@@ -13,7 +50,7 @@ export default function ShopByAge() {
     <section className="py-12 px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-          Shop by Age
+          بر اساس سن خرید کنید
         </h2>
         <div className="flex gap-6 overflow-x-auto pb-4">
           {ageGroups.map((group) => (

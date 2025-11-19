@@ -1,23 +1,25 @@
+import { toPersianNumber } from "../utils/numbers";
+
 const articles = [
   {
     id: 1,
-    title: "Montes Suspendisse Massa Curae Malesuada",
-    date: "Feb 15, 2024",
-    author: "By Admin",
+    title: "آموزش بازی‌های آموزشی برای کودکان",
+    date: `۱۵ ${toPersianNumber("بهمن")} ${toPersianNumber("1402")}`,
+    author: "توسط مدیر",
     image: "🧶",
   },
   {
     id: 2,
-    title: "Montes Suspendisse Massa Curae Malesuada",
-    date: "Feb 15, 2024",
-    author: "By Admin",
+    title: "نکاتی برای انتخاب اسباب‌بازی مناسب",
+    date: `۱۵ ${toPersianNumber("بهمن")} ${toPersianNumber("1402")}`,
+    author: "توسط مدیر",
     image: "👶",
   },
   {
     id: 3,
-    title: "Montes Suspendisse Massa Curae Malesuada",
-    date: "Feb 15, 2024",
-    author: "By Admin",
+    title: "تأثیر بازی بر رشد کودک",
+    date: `۱۵ ${toPersianNumber("بهمن")} ${toPersianNumber("1402")}`,
+    author: "توسط مدیر",
     image: "🧱",
   },
 ];
@@ -27,7 +29,7 @@ export default function LatestNews() {
     <section className="py-12 px-4 bg-white">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-          Our Latest News & Articles
+          آخرین اخبار و مقالات ما
         </h2>
         <div className="grid md:grid-cols-3 gap-6">
           {articles.map((article) => (
@@ -46,7 +48,7 @@ export default function LatestNews() {
                   {article.title}
                 </h3>
                 <a href="#" className="text-teal-600 hover:text-teal-700 font-medium">
-                  Read More →
+                  بیشتر بخوانید ←
                 </a>
               </div>
             </div>

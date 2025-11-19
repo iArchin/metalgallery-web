@@ -1,18 +1,19 @@
 import Button from "./Button";
+import { toPersianNumber, formatPersianNumber } from "../utils/numbers";
 
 const products = [
-  { id: 1, name: "Blue Rocking Horse", price: 25.00, image: "🐴", rating: 5 },
-  { id: 2, name: "Pink Pool Toy", price: 18.00, image: "🏊", rating: 5 },
-  { id: 3, name: "Building Blocks", price: 22.00, image: "🧱", rating: 5 },
-  { id: 4, name: "Musical Toy", price: 20.00, image: "🎵", rating: 5 },
-  { id: 5, name: "Round Rattle", price: 12.00, image: "🔔", rating: 5 },
+  { id: 1, name: "اسب تک‌نوازی آبی", price: 25.00, image: "🐴", rating: 5 },
+  { id: 2, name: "اسباب‌بازی استخر صورتی", price: 18.00, image: "🏊", rating: 5 },
+  { id: 3, name: "بلوک‌های ساختمانی", price: 22.00, image: "🧱", rating: 5 },
+  { id: 4, name: "اسباب‌بازی موسیقی", price: 20.00, image: "🎵", rating: 5 },
+  { id: 5, name: "بلور گرد", price: 12.00, image: "🔔", rating: 5 },
 ];
 
 export default function FlashSale() {
   return (
     <section className="py-12 px-4 bg-white">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold mb-8 text-gray-900">Flash Sale!</h2>
+        <h2 className="text-3xl font-bold mb-8 text-gray-900">فروش ویژه!</h2>
         
         <div className="overflow-x-auto">
           <div className="flex gap-6 pb-4">
@@ -31,10 +32,10 @@ export default function FlashSale() {
                   ))}
                 </div>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-lg font-bold text-gray-900">${product.price.toFixed(2)}</span>
+                  <span className="text-lg font-bold text-gray-900">{formatPersianNumber(product.price)} تومان</span>
                 </div>
                 <Button variant="primary" size="sm" className="w-full">
-                  Add to Cart
+                  افزودن به سبد خرید
                 </Button>
               </div>
             ))}

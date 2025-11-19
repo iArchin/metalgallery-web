@@ -6,17 +6,18 @@
   --teal-light: #5EEAD4;
   --background: #ffffff;
   --foreground: #1F2937;
+  --font-vazirmatn: 'Vazirmatn', sans-serif;
 }
 
 body {
   color: var(--foreground);
-  font-family: inherit;
-  direction: ltr;
-  text-align: left;
+  font-family: var(--font-vazirmatn);
+  direction: rtl;
+  text-align: right;
 }
 
 html {
-  direction: ltr;
+  direction: rtl;
   scroll-behavior: smooth;
 }
 

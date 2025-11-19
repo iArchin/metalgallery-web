@@ -1,9 +1,9 @@
 const categories = [
-  { id: 1, name: "Toy & Game", image: "🧸" },
-  { id: 2, name: "Smart Toys", image: "🧱" },
-  { id: 3, name: "Outdoor Toy", image: "🧩" },
-  { id: 4, name: "Movement Toy", image: "🐴" },
-  { id: 5, name: "Control Toy", image: "🦕" },
+  { id: 1, name: "اسباب‌بازی و بازی", image: "🧸" },
+  { id: 2, name: "اسباب‌بازی هوشمند", image: "🧱" },
+  { id: 3, name: "اسباب‌بازی فضای باز", image: "🧩" },
+  { id: 4, name: "اسباب‌بازی حرکتی", image: "🐴" },
+  { id: 5, name: "اسباب‌بازی کنترلی", image: "🦕" },
 ];
 
 export default function Categories() {
@@ -11,7 +11,7 @@ export default function Categories() {
     <section className="py-12 px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-          Popular Categories
+          دسته‌بندی‌های محبوب
         </h2>
         <div className="flex gap-6 overflow-x-auto pb-4">
           {categories.map((category) => (

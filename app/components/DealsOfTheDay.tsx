@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Button from "./Button";
+import { toPersianNumber, formatPersianNumber } from "../utils/numbers";
 
 const products = [
-  { id: 1, name: "Utricles At Torquent Qui", price: 12.00, originalPrice: 15.00, image: "🚛", rating: 5 },
-  { id: 2, name: "Tinci Dunt Pharetra Sada", price: 10.00, originalPrice: 12.00, image: "🧱", rating: 5 },
-  { id: 3, name: "Blue Dinosaur Plush", price: 18.00, originalPrice: 22.00, image: "🦕", rating: 5 },
-  { id: 4, name: "Teddy Bear", price: 15.00, originalPrice: 20.00, image: "🧸", rating: 5 },
-  { id: 5, name: "Panda Plush", price: 16.00, originalPrice: 19.00, image: "🐼", rating: 5 },
+  { id: 1, name: "اسباب‌بازی کامیون", price: 12.00, originalPrice: 15.00, image: "🚛", rating: 5 },
+  { id: 2, name: "بلوک‌های ساختمانی", price: 10.00, originalPrice: 12.00, image: "🧱", rating: 5 },
+  { id: 3, name: "دایناسور پلوش آبی", price: 18.00, originalPrice: 22.00, image: "🦕", rating: 5 },
+  { id: 4, name: "خرسی پلوش", price: 15.00, originalPrice: 20.00, image: "🧸", rating: 5 },
+  { id: 5, name: "پاندای پلوش", price: 16.00, originalPrice: 19.00, image: "🐼", rating: 5 },
 ];
 
 export default function DealsOfTheDay() {
@@ -51,27 +52,27 @@ export default function DealsOfTheDay() {
     <section className="py-12 px-4 bg-white">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4 md:mb-0">Deals of the day</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4 md:mb-0">پیشنهادات روز</h2>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="bg-gray-900 text-white px-4 py-2 rounded-lg text-center min-w-[60px]">
-                <div className="text-2xl font-bold">{String(timeLeft.days).padStart(2, '0')}</div>
-                <div className="text-xs">Days</div>
+                <div className="text-2xl font-bold">{toPersianNumber(String(timeLeft.days).padStart(2, '0'))}</div>
+                <div className="text-xs">روز</div>
               </div>
               <span className="text-2xl font-bold">:</span>
               <div className="bg-gray-900 text-white px-4 py-2 rounded-lg text-center min-w-[60px]">
-                <div className="text-2xl font-bold">{String(timeLeft.hours).padStart(2, '0')}</div>
-                <div className="text-xs">Hours</div>
+                <div className="text-2xl font-bold">{toPersianNumber(String(timeLeft.hours).padStart(2, '0'))}</div>
+                <div className="text-xs">ساعت</div>
               </div>
               <span className="text-2xl font-bold">:</span>
               <div className="bg-gray-900 text-white px-4 py-2 rounded-lg text-center min-w-[60px]">
-                <div className="text-2xl font-bold">{String(timeLeft.minutes).padStart(2, '0')}</div>
-                <div className="text-xs">Minutes</div>
+                <div className="text-2xl font-bold">{toPersianNumber(String(timeLeft.minutes).padStart(2, '0'))}</div>
+                <div className="text-xs">دقیقه</div>
               </div>
               <span className="text-2xl font-bold">:</span>
               <div className="bg-gray-900 text-white px-4 py-2 rounded-lg text-center min-w-[60px]">
-                <div className="text-2xl font-bold">{String(timeLeft.seconds).padStart(2, '0')}</div>
-                <div className="text-xs">Seconds</div>
+                <div className="text-2xl font-bold">{toPersianNumber(String(timeLeft.seconds).padStart(2, '0'))}</div>
+                <div className="text-xs">ثانیه</div>
               </div>
             </div>
           </div>
@@ -94,13 +95,13 @@ export default function DealsOfTheDay() {
                   ))}
                 </div>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-lg font-bold text-gray-900">${product.price.toFixed(2)}</span>
+                  <span className="text-lg font-bold text-gray-900">{formatPersianNumber(product.price)} تومان</span>
                   {product.originalPrice && (
-                    <span className="text-sm text-gray-500 line-through">${product.originalPrice.toFixed(2)}</span>
+                    <span className="text-sm text-gray-500 line-through">{formatPersianNumber(product.originalPrice)} تومان</span>
                   )}
                 </div>
                 <Button variant="primary" size="sm" className="w-full">
-                  Add to Cart
+                  افزودن به سبد خرید
                 </Button>
               </div>
             ))}

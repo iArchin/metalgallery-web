@@ -1,4 +1,5 @@
 import Button from "./Button";
+import { toPersianNumber } from "../utils/numbers";
 
 export default function DiscountBanner() {
   return (
@@ -11,17 +12,17 @@ export default function DiscountBanner() {
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between">
             <div className="text-white mb-6 md:mb-0">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                Get 45% discount in all of Our super Toys
+                {toPersianNumber("45%")} تخفیف روی تمام اسباب‌بازی‌های فوق‌العاده ما
               </h2>
               <Button variant="secondary" size="lg">
-                Shop Now
+                همین حالا خرید کنید
               </Button>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-6xl">🧸</div>
               <div className="text-6xl">🧱</div>
               <div className="bg-white rounded-full px-4 py-2 text-teal-600 font-bold text-lg">
-                25% OFF
+                {toPersianNumber("25%")} تخفیف
               </div>
             </div>
           </div>

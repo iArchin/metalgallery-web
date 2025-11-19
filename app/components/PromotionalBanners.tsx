@@ -1,27 +1,28 @@
 import Button from "./Button";
+import { toPersianNumber } from "../utils/numbers";
 
 const banners = [
   {
     id: 1,
-    title: "Learning Toys For kids",
-    discount: "15% OFF on kids' toys and gifts!",
-    buttonText: "Shop Now",
+    title: "اسباب‌بازی آموزشی برای کودکان",
+    discount: `${toPersianNumber("15%")} تخفیف روی اسباب‌بازی و هدایای کودکان!`,
+    buttonText: "همین حالا خرید کنید",
     bgColor: "bg-green-500",
     image: "🦕",
   },
   {
     id: 2,
-    title: "Brown Lather Carriage",
-    discount: "And get your 20% discount now!",
-    buttonText: "Shop Now",
+    title: "واگن چرمی قهوه‌ای",
+    discount: `و همین حالا ${toPersianNumber("20%")} تخفیف خود را دریافت کنید!`,
+    buttonText: "همین حالا خرید کنید",
     bgColor: "bg-orange-500",
     image: "🚗",
   },
   {
     id: 3,
-    title: "Utricles Torqueing For Kids",
-    discount: "And get your 10% discount now!",
-    buttonText: "Shop Now",
+    title: "اسباب‌بازی حرکتی برای کودکان",
+    discount: `و همین حالا ${toPersianNumber("10%")} تخفیف خود را دریافت کنید!`,
+    buttonText: "همین حالا خرید کنید",
     bgColor: "bg-purple-500",
     image: "🐕",
   },

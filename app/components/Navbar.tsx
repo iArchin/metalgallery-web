@@ -14,7 +14,7 @@ export default function Navbar() {
                   <span className="text-white text-xl">👶</span>
                 </div>
                 <span className="text-2xl font-bold text-teal-600">
-                  Babymart
+                  بیبی‌مارت
                 </span>
               </div>
             </div>
@@ -24,8 +24,8 @@ export default function Navbar() {
               <div className="relative w-full">
                 <input
                   type="text"
-                  placeholder="Type your products"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="محصولات خود را جستجو کنید"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-right"
                 />
                 <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-600">
                   <svg

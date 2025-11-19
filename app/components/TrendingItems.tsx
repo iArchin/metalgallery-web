@@ -1,12 +1,13 @@
 import Button from "./Button";
+import { formatPersianNumber, toPersianNumber } from "../utils/numbers";
 
 const products = [
-  { id: 1, name: "Green Toy Truck", price: 28.00, image: "🚛", rating: 5 },
-  { id: 2, name: "Stacking Ring Toy", price: 15.00, image: "🎯", rating: 5 },
-  { id: 3, name: "Blue Crane Truck", price: 30.00, image: "🚛", rating: 5 },
-  { id: 4, name: "Building Blocks", price: 22.00, image: "🧱", rating: 5 },
-  { id: 5, name: "Teddy Bear", price: 18.00, image: "🧸", rating: 5 },
-  { id: 6, name: "Panda Plush", price: 20.00, image: "🐼", rating: 5 },
+  { id: 1, name: "کامیون اسباب‌بازی سبز", price: 28.00, image: "🚛", rating: 5 },
+  { id: 2, name: "اسباب‌بازی حلقه چوبی", price: 15.00, image: "🎯", rating: 5 },
+  { id: 3, name: "کامیون جرثقیل آبی", price: 30.00, image: "🚛", rating: 5 },
+  { id: 4, name: "بلوک‌های ساختمانی", price: 22.00, image: "🧱", rating: 5 },
+  { id: 5, name: "خرسی پلوش", price: 18.00, image: "🧸", rating: 5 },
+  { id: 6, name: "پاندای پلوش", price: 20.00, image: "🐼", rating: 5 },
 ];
 
 export default function TrendingItems() {
@@ -17,9 +18,9 @@ export default function TrendingItems() {
           {/* Promotional Banner */}
           <div className="md:col-span-1 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg p-8 text-white relative overflow-hidden">
             <div className="relative z-10">
-              <div className="text-6xl font-bold mb-4 text-white drop-shadow-lg">SALE</div>
-              <div className="absolute top-4 right-4 text-4xl opacity-50">🎁</div>
-              <div className="absolute bottom-4 left-4 text-3xl opacity-50">✈️</div>
+              <div className="text-6xl font-bold mb-4 text-white drop-shadow-lg">فروش</div>
+              <div className="absolute top-4 left-4 text-4xl opacity-50">🎁</div>
+              <div className="absolute bottom-4 right-4 text-3xl opacity-50">✈️</div>
             </div>
           </div>
 
@@ -42,10 +43,10 @@ export default function TrendingItems() {
                       ))}
                     </div>
                     <div className="flex items-center gap-2 mb-4">
-                      <span className="text-lg font-bold text-gray-900">${product.price.toFixed(2)}</span>
+                      <span className="text-lg font-bold text-gray-900">{formatPersianNumber(product.price)} تومان</span>
                     </div>
                     <Button variant="primary" size="sm" className="w-full">
-                      Add to Cart
+                      افزودن به سبد خرید
                     </Button>
                   </div>
                 ))}
