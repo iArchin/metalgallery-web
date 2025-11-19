@@ -5,7 +5,9 @@ import { useState, useRef, useEffect } from "react";
 export default function Navbar() {
   const [selectedCategory, setSelectedCategory] = useState("همه دسته‌بندی‌ها");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const megaMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -14,6 +16,12 @@ export default function Navbar() {
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsDropdownOpen(false);
+      }
+      if (
+        megaMenuRef.current &&
+        !megaMenuRef.current.contains(event.target as Node)
+      ) {
+        setActiveMegaMenu(null);
       }
     };
 
@@ -30,6 +38,101 @@ export default function Navbar() {
     "لوازم ایمنی",
     "کتاب‌های کودکانه",
   ];
+
+  const megaMenuData = {
+    خودروها: {
+      types: {
+        title: "نوع خودرو",
+        items: [
+          "سدان",
+          "شاسی بلند (SUV)",
+          "کامیونت",
+          "وانت",
+          "اسپرت",
+          "کوپه",
+          "هچ بک",
+          "کراس اوور",
+        ],
+      },
+      brands: {
+        title: "برندها",
+        items: [
+          "پژو",
+          "سمند",
+          "پراید",
+          "تیبا",
+          "شاهین",
+          "دنا",
+          "رانا",
+          "کوییک",
+          "بی‌ام‌و",
+          "بنز",
+          "آئودی",
+          "تویوتا",
+        ],
+      },
+      priceRanges: {
+        title: "محدوده قیمت",
+        items: [
+          "زیر ۱۰۰ میلیون",
+          "۱۰۰-۳۰۰ میلیون",
+          "۳۰۰-۵۰۰ میلیون",
+          "۵۰۰-۸۰۰ میلیون",
+          "بالای ۸۰۰ میلیون",
+        ],
+      },
+      features: {
+        title: "امکانات",
+        items: [
+          "دنده اتوماتیک",
+          "دو دیفرانسیل",
+          "شتاب بالا",
+          "مصرف کم",
+          "ایمنی بالا",
+          "کیسه هوا",
+        ],
+      },
+    },
+    قطعات: {
+      engine: {
+        title: "قطعات موتور",
+        items: ["پیستون", "شاتون", "یاتاقان", "واشر", "سوپاپ", "میل لنگ"],
+      },
+      body: {
+        title: "بدنه و شاسی",
+        items: ["درب", "کاپوت", "بامپر", "گلگیر", "فنر", "آمورته"],
+      },
+      electrical: {
+        title: "برق و الکترونیک",
+        items: ["باتری", "استارت", "دینام", "سیم کشی", "سنسور", "ECU"],
+      },
+      interior: {
+        title: "داخلی خودرو",
+        items: ["صندلی", "فرش", "پنل", "مانیتور", "صوتی", "تهویه"],
+      },
+    },
+    لوازم: {
+      accessories: {
+        title: "اکسسوری",
+        items: ["چراغ LED", "فیلم", "آنتن", "دزدگیر", "GPS", "دوربین"],
+      },
+      maintenance: {
+        title: "نگهداری",
+        items: [
+          "روغن موتور",
+          "فیلتر هوا",
+          "باد لاستیک",
+          "مایع خنک",
+          "واکس",
+          "شوینده",
+        ],
+      },
+      tools: {
+        title: "ابزار",
+        items: ["جک", "چرخ", "آچار", "پیچ گوشتی", "موتور سیکلت", "کمپرسور"],
+      },
+    },
+  };
   return (
     <>
       {/* Top Header */}
@@ -211,42 +314,355 @@ export default function Navbar() {
       </header>
 
       {/* Navigation Bar */}
-      <nav className="bg-teal-600 text-white">
+      <nav className="bg-teal-600 text-white relative">
         <div className="max-w-7xl mx-auto ">
-          <div className="flex items-center h-12">
-            <button className="py-2 font-medium hover:bg-teal-700 flex items-center gap-2">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-              دسته‌بندی‌ها
-            </button>
-            <div className="flex items-center gap-6 ml-8">
-              <a href="#" className="hover:text-teal-200 transition-colors">
-                خانه
-              </a>
-              <a href="#" className="hover:text-teal-200 transition-colors">
-                فروشگاه
-              </a>
-              <a href="#" className="hover:text-teal-200 transition-colors">
-                صفحات
-              </a>
-              <a href="#" className="hover:text-teal-200 transition-colors">
-                بلاگ
-              </a>
-              <a href="#" className="hover:text-teal-200 transition-colors">
-                تماس با ما
-              </a>
+          <div className="flex items-center justify-between h-14">
+            <div className="flex items-center gap-8">
+              {/* Mega Menu Categories */}
+              <div ref={megaMenuRef} className="relative">
+                <button
+                  onMouseEnter={() => setActiveMegaMenu("categories")}
+                  className="px-4 py-3 font-medium hover:bg-teal-700 flex items-center gap-2 rounded-lg transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                  دسته‌بندی‌ها
+                  <svg
+                    className={`w-4 h-4 transition-transform ${
+                      activeMegaMenu === "categories" ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {/* Mega Menu Dropdown */}
+                {activeMegaMenu === "categories" && (
+                  <div
+                    className="absolute top-full right-0 mt-2 w-screen max-w-7xl bg-white shadow-2xl rounded-lg border border-gray-200 z-50"
+                    onMouseEnter={() => setActiveMegaMenu("categories")}
+                    onMouseLeave={() => setActiveMegaMenu(null)}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+                      {/* خودروها Section */}
+                      <div className="p-6 border-l border-gray-100">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                          <svg
+                            className="w-5 h-5 text-teal-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                          خودروها
+                        </h3>
+                        <div className="space-y-4">
+                          {Object.entries(megaMenuData.خودروها).map(
+                            ([key, section]) => (
+                              <div key={key}>
+                                <h4 className="font-semibold text-gray-800 mb-2">
+                                  {section.title}
+                                </h4>
+                                <div className="grid grid-cols-2 gap-1">
+                                  {section.items.map((item, index) => (
+                                    <a
+                                      key={index}
+                                      href="#"
+                                      className="text-sm text-gray-600 hover:text-teal-600 hover:bg-teal-50 px-2 py-1 rounded transition-colors"
+                                    >
+                                      {item}
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      {/* قطعات Section */}
+                      <div className="p-6 border-l border-gray-100">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                          <svg
+                            className="w-5 h-5 text-teal-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                          </svg>
+                          قطعات
+                        </h3>
+                        <div className="space-y-4">
+                          {Object.entries(megaMenuData.قطعات).map(
+                            ([key, section]) => (
+                              <div key={key}>
+                                <h4 className="font-semibold text-gray-800 mb-2">
+                                  {section.title}
+                                </h4>
+                                <div className="grid grid-cols-2 gap-1">
+                                  {section.items.map((item, index) => (
+                                    <a
+                                      key={index}
+                                      href="#"
+                                      className="text-sm text-gray-600 hover:text-teal-600 hover:bg-teal-50 px-2 py-1 rounded transition-colors"
+                                    >
+                                      {item}
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      {/* لوازم Section */}
+                      <div className="p-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                          <svg
+                            className="w-5 h-5 text-teal-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                            />
+                          </svg>
+                          لوازم
+                        </h3>
+                        <div className="space-y-4">
+                          {Object.entries(megaMenuData.لوازم).map(
+                            ([key, section]) => (
+                              <div key={key}>
+                                <h4 className="font-semibold text-gray-800 mb-2">
+                                  {section.title}
+                                </h4>
+                                <div className="grid grid-cols-2 gap-1">
+                                  {section.items.map((item, index) => (
+                                    <a
+                                      key={index}
+                                      href="#"
+                                      className="text-sm text-gray-600 hover:text-teal-600 hover:bg-teal-50 px-2 py-1 rounded transition-colors"
+                                    >
+                                      {item}
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Navigation Links */}
+              <div className="flex items-center gap-6">
+                <a
+                  href="#"
+                  className="hover:text-teal-200 transition-colors font-medium"
+                >
+                  خانه
+                </a>
+                <a
+                  href="#"
+                  className="hover:text-teal-200 transition-colors font-medium"
+                >
+                  فروشگاه
+                </a>
+                <button
+                  onMouseEnter={() => setActiveMegaMenu("services")}
+                  className="hover:text-teal-200 transition-colors font-medium flex items-center gap-1"
+                >
+                  خدمات
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+                <a
+                  href="#"
+                  className="hover:text-teal-200 transition-colors font-medium"
+                >
+                  بلاگ
+                </a>
+                <a
+                  href="#"
+                  className="hover:text-teal-200 transition-colors font-medium"
+                >
+                  درباره ما
+                </a>
+                <a
+                  href="#"
+                  className="hover:text-teal-200 transition-colors font-medium"
+                >
+                  تماس با ما
+                </a>
+                <a
+                  href="#"
+                  className="hover:text-teal-200 transition-colors font-medium"
+                >
+                  گالری
+                </a>
+                <a
+                  href="#"
+                  className="hover:text-teal-200 transition-colors font-medium"
+                >
+                  اخبار
+                </a>
+              </div>
             </div>
+
+            {/* Services Mega Menu */}
+            {activeMegaMenu === "services" && (
+              <div
+                className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-96 bg-white shadow-2xl rounded-lg border border-gray-200 z-50"
+                onMouseEnter={() => setActiveMegaMenu("services")}
+                onMouseLeave={() => setActiveMegaMenu(null)}
+              >
+                <div className="p-4">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    خدمات ما
+                  </h3>
+                  <div className="grid grid-cols-1 gap-2">
+                    <a
+                      href="#"
+                      className="flex items-center gap-3 p-3 hover:bg-teal-50 rounded-lg transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5 text-teal-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      تعمیر و نگهداری
+                    </a>
+                    <a
+                      href="#"
+                      className="flex items-center gap-3 p-3 hover:bg-teal-50 rounded-lg transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5 text-teal-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      مشاوره خرید
+                    </a>
+                    <a
+                      href="#"
+                      className="flex items-center gap-3 p-3 hover:bg-teal-50 rounded-lg transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5 text-teal-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                        />
+                      </svg>
+                      فروش اقساطی
+                    </a>
+                    <a
+                      href="#"
+                      className="flex items-center gap-3 p-3 hover:bg-teal-50 rounded-lg transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5 text-teal-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                        />
+                      </svg>
+                      بیمه خودرو
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </nav>
