@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 
 export default function Navbar() {
   const [selectedCategory, setSelectedCategory] = useState("همه دسته‌بندی‌ها");
@@ -145,23 +146,24 @@ export default function Navbar() {
             {/* Logo */}
             <div className="flex items-center">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xl">👶</span>
-                </div>
-                <span className="text-2xl font-bold text-teal-600">
-                  بیبی‌مارت
-                </span>
+                <Image
+                  src="/images/logo.png"
+                  alt="متال گالری"
+                  width={100}
+                  height={100}
+                  className="object-contain"
+                />
               </div>
             </div>
 
             {/* Search Bar */}
-            <div className="hidden md:flex flex-1 max-w-lg mx-8">
+            <div className="hidden md:flex flex-1 max-w-lg mx-8 border border-gray-300 rounded-full">
               <div className="relative w-full flex">
                 {/* Category Dropdown */}
                 <div ref={dropdownRef} className="relative">
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center gap-2 h-10 px-4 py-2 border border-gray-300 border-r-0 bg-gray-50 hover:bg-gray-100 rounded-r-full text-gray-700 text-sm min-w-[140px]"
+                    className="flex items-center gap-2 h-10 px-4 py-2   border-l border-gray-300  bg-gray-50 hover:bg-gray-100 rounded-r-full text-gray-700 text-sm min-w-[140px]"
                   >
                     {selectedCategory}
                     <svg
@@ -205,7 +207,7 @@ export default function Navbar() {
                   <input
                     type="text"
                     placeholder="محصولات خود را جستجو کنید"
-                    className="w-full h-10 px-4 py-2 border border-gray-300 rounded-l-full focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-right pr-12"
+                    className="w-full h-10 px-4 py-2 rounded-l-full focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-right pr-12"
                   />
                   <button className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-600">
                     <svg
