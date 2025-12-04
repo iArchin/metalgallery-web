@@ -7,9 +7,14 @@ export default function Navbar() {
   const [selectedCategory, setSelectedCategory] = useState("همه دسته‌بندی‌ها");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const servicesMenuRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const basketDropdownRef = useRef<HTMLDivElement>(null);
+  const favoritesDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -27,11 +32,37 @@ export default function Navbar() {
       ) {
         setActiveMegaMenu(null);
       }
+      const target = event.target as Node;
+      if (
+        openDropdown === "profile" &&
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(target)
+      ) {
+        setOpenDropdown(null);
+      } else if (
+        openDropdown === "basket" &&
+        basketDropdownRef.current &&
+        !basketDropdownRef.current.contains(target)
+      ) {
+        setOpenDropdown(null);
+      } else if (
+        openDropdown === "favorites" &&
+        favoritesDropdownRef.current &&
+        !favoritesDropdownRef.current.contains(target)
+      ) {
+        setOpenDropdown(null);
+      } else if (
+        openDropdown === "notifications" &&
+        notificationsDropdownRef.current &&
+        !notificationsDropdownRef.current.contains(target)
+      ) {
+        setOpenDropdown(null);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [openDropdown]);
 
   const categories = [
     "همه دسته‌بندی‌ها",
@@ -247,72 +278,363 @@ export default function Navbar() {
                 <span className="text-sm">۰۲۱-۱۲۳۴۵۶۷۸</span>
               </div>
 
-              <button className="p-2 text-gray-700 hover:text-teal-600 relative">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Notifications Dropdown */}
+              <div ref={notificationsDropdownRef} className="relative">
+                <button
+                  onClick={() =>
+                    setOpenDropdown(
+                      openDropdown === "notifications" ? null : "notifications"
+                    )
+                  }
+                  className="p-2 text-gray-700 hover:text-teal-600 relative"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                    />
+                  </svg>
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    3
+                  </span>
+                </button>
+                {openDropdown === "notifications" && (
+                  <div className="absolute left-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+                    <div className="p-4 border-b border-gray-200">
+                      <h3 className="font-semibold text-gray-900 text-right">
+                        اعلان‌ها
+                      </h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                        <p className="text-sm text-gray-900 text-right">
+                          سفارش شما تحویل داده شد
+                        </p>
+                        <p className="text-xs text-gray-500 text-right mt-1">
+                          ۲ ساعت پیش
+                        </p>
+                      </div>
+                      <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                        <p className="text-sm text-gray-900 text-right">
+                          محصول جدید به فروشگاه اضافه شد
+                        </p>
+                        <p className="text-xs text-gray-500 text-right mt-1">
+                          ۵ ساعت پیش
+                        </p>
+                      </div>
+                      <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                        <p className="text-sm text-gray-900 text-right">
+                          تخفیف ویژه برای شما
+                        </p>
+                        <p className="text-xs text-gray-500 text-right mt-1">
+                          دیروز
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-3 border-t border-gray-200">
+                      <button className="w-full text-sm text-teal-600 hover:text-teal-700 text-center">
+                        مشاهده همه اعلان‌ها
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              <button className="p-2 text-gray-700 hover:text-teal-600">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Favorites Dropdown */}
+              <div ref={favoritesDropdownRef} className="relative">
+                <button
+                  onClick={() =>
+                    setOpenDropdown(
+                      openDropdown === "favorites" ? null : "favorites"
+                    )
+                  }
+                  className="p-2 text-gray-700 hover:text-teal-600 relative"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    2
+                  </span>
+                </button>
+                {openDropdown === "favorites" && (
+                  <div className="absolute left-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+                    <div className="p-4 border-b border-gray-200">
+                      <h3 className="font-semibold text-gray-900 text-right">
+                        علاقه‌مندی‌ها
+                      </h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex items-center gap-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                        <div className="flex-1 text-right">
+                          <p className="text-sm font-medium text-gray-900">
+                            محصول نمونه ۱
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            ۲,۵۰۰,۰۰۰ تومان
+                          </p>
+                        </div>
+                        <button className="text-red-500 hover:text-red-600">
+                          <svg
+                            className="w-5 h-5"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex items-center gap-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                        <div className="flex-1 text-right">
+                          <p className="text-sm font-medium text-gray-900">
+                            محصول نمونه ۲
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            ۱,۸۰۰,۰۰۰ تومان
+                          </p>
+                        </div>
+                        <button className="text-red-500 hover:text-red-600">
+                          <svg
+                            className="w-5 h-5"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-3 border-t border-gray-200">
+                      <button className="w-full text-sm text-teal-600 hover:text-teal-700 text-center">
+                        مشاهده همه علاقه‌مندی‌ها
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              <button className="p-2 text-gray-700 hover:text-teal-600 relative">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Basket Dropdown */}
+              <div ref={basketDropdownRef} className="relative">
+                <button
+                  onClick={() =>
+                    setOpenDropdown(
+                      openDropdown === "basket" ? null : "basket"
+                    )
+                  }
+                  className="p-2 text-gray-700 hover:text-teal-600 relative"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  0
-                </span>
-              </button>
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    3
+                  </span>
+                </button>
+                {openDropdown === "basket" && (
+                  <div className="absolute left-0 top-full mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+                    <div className="p-4 border-b border-gray-200">
+                      <h3 className="font-semibold text-gray-900 text-right">
+                        سبد خرید
+                      </h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-4 border-b border-gray-100 hover:bg-gray-50 flex items-center gap-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                        <div className="flex-1 text-right">
+                          <p className="text-sm font-medium text-gray-900">
+                            محصول نمونه ۱
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            ۲ × ۲,۵۰۰,۰۰۰ تومان
+                          </p>
+                        </div>
+                        <button className="text-gray-400 hover:text-red-500">
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="p-4 border-b border-gray-100 hover:bg-gray-50 flex items-center gap-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                        <div className="flex-1 text-right">
+                          <p className="text-sm font-medium text-gray-900">
+                            محصول نمونه ۲
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            ۱ × ۱,۸۰۰,۰۰۰ تومان
+                          </p>
+                        </div>
+                        <button className="text-gray-400 hover:text-red-500">
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-4 border-t border-gray-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm text-gray-600">جمع کل:</span>
+                        <span className="text-lg font-bold text-gray-900">
+                          ۶,۸۰۰,۰۰۰ تومان
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
+                          مشاهده سبد خرید
+                        </button>
+                        <button className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm">
+                          تسویه حساب
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              <button className="p-2 text-gray-700 hover:text-teal-600">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Profile Dropdown */}
+              <div ref={profileDropdownRef} className="relative">
+                <button
+                  onClick={() =>
+                    setOpenDropdown(
+                      openDropdown === "profile" ? null : "profile"
+                    )
+                  }
+                  className="p-2 text-gray-700 hover:text-teal-600"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                </button>
+                {openDropdown === "profile" && (
+                  <div className="absolute left-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-6 h-6 text-teal-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
+                          </svg>
+                        </div>
+                        <div className="text-right flex-1">
+                          <p className="text-sm font-semibold text-gray-900">
+                            کاربر مهمان
+                          </p>
+                          <p className="text-xs text-gray-500">user@example.com</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="py-2">
+                      <a
+                        href="#"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-right"
+                      >
+                        پروفایل من
+                      </a>
+                      <a
+                        href="#"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-right"
+                      >
+                        سفارش‌های من
+                      </a>
+                      <a
+                        href="#"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-right"
+                      >
+                        آدرس‌ها
+                      </a>
+                      <a
+                        href="#"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-right"
+                      >
+                        تنظیمات
+                      </a>
+                      <div className="border-t border-gray-200 my-2"></div>
+                      <a
+                        href="#"
+                        className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-right"
+                      >
+                        خروج از حساب کاربری
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
