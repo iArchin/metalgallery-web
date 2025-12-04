@@ -52,7 +52,7 @@ export default function ShopByAge() {
         <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
           بر اساس سن خرید کنید
         </h2>
-        <div className="flex gap-6 overflow-x-auto pb-4">
+        <div className="flex gap-6 overflow-x-auto pb-4 justify-center">
           {ageGroups.map((group) => (
             <div
               key={group.id}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import Button from "./Button";
 import { toPersianNumber, formatPersianNumber } from "../utils/numbers";
 
@@ -126,9 +127,10 @@ export default function DealsOfTheDay() {
         <div className="overflow-x-auto">
           <div className="flex gap-6 pb-4">
             {products.map((product) => (
-              <div
+              <Link
                 key={product.id}
-                className="shrink-0 w-64 bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                href={`/product/${product.id}`}
+                className="shrink-0 w-64 bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow block"
               >
                 <div className="bg-gray-100 rounded-lg p-8 mb-4 flex items-center justify-center h-48">
                   <div className="text-6xl">{product.image}</div>
@@ -153,10 +155,19 @@ export default function DealsOfTheDay() {
                     </span>
                   )}
                 </div>
-                <Button variant="primary" size="sm" className="w-full">
-                  افزودن به سبد خرید
-                </Button>
-              </div>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => {
+                      // Add to cart logic
+                    }}
+                  >
+                    افزودن به سبد خرید
+                  </Button>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
