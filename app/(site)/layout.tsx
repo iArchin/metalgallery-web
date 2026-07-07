@@ -19,7 +19,7 @@ export default async function SiteLayout({
         <div className="flex-1">{children}</div>
         <Footer settings={s} />
       </div>
-      <FloatingActions />
+      <FloatingActions phone={s.phone} email={s.email} />
     </CartProvider>
   );
 }

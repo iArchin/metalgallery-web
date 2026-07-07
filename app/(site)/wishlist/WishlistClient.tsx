@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Product } from "@/lib/types";
 import Button from "@/app/components/Button";
 import { useCart } from "@/app/components/CartContext";
-import { toyImage } from "@/app/utils/images";
+import { productImage } from "@/app/utils/images";
 import { toPersianNumber, formatPersianNumber } from "@/app/utils/numbers";
 
 const STORAGE_KEY = "mg_wishlist_v1";
@@ -59,10 +59,12 @@ export default function WishlistClient({ products }: { products: Product[] }) {
   };
 
   const handleAdd = (product: Product) => {
+    if (product.stock <= 0) return;
     add({
       id: product.id,
       name: product.name,
       price: product.price,
+      image: product.image,
       imageKeyword: product.imageKeyword,
       imageLock: product.imageLock,
       stock: product.stock,
@@ -137,7 +139,7 @@ export default function WishlistClient({ products }: { products: Product[] }) {
                   className="block h-36 sm:h-48 rounded-xl overflow-hidden bg-surface-2 mb-3"
                 >
                   <img
-                    src={toyImage(item.imageKeyword, item.imageLock)}
+                    src={productImage(item)}
                     alt={item.name}
                     loading="lazy"
                     className="w-full h-full object-cover"
@@ -167,9 +169,14 @@ export default function WishlistClient({ products }: { products: Product[] }) {
                     variant="primary"
                     size="sm"
                     className="flex-1"
+                    disabled={item.stock <= 0}
                     onClick={() => handleAdd(item)}
                   >
-                    {isAdded ? "افزوده شد ✓" : "افزودن به سبد"}
+                    {item.stock <= 0
+                      ? "ناموجود"
+                      : isAdded
+                        ? "افزوده شد ✓"
+                        : "افزودن به سبد"}
                   </Button>
                   <button
                     type="button"

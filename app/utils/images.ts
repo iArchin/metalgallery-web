@@ -62,3 +62,27 @@ export function presetImage(
   const p = TOY_PHOTOS[key];
   return toyImage(p.kw, p.lock, width, height);
 }
+
+/* -------------------------------------------------------- product images */
+
+/** The shop's own product photos, served from /public. */
+export const PRODUCT_IMAGES = [
+  "/images/products/p1.jpg",
+  "/images/products/p2.jpg",
+  "/images/products/p3.jpg",
+  "/images/products/p4.jpg",
+  "/images/products/p5.jpg",
+] as const;
+
+/**
+ * Resolve the display image for anything product-shaped (products, cart
+ * items, order lines). A local `image` path wins; otherwise fall back to the
+ * pinned internet photo.
+ */
+export function productImage(
+  p: { image?: string; imageKeyword: string; imageLock: number },
+  width = 600,
+  height = 600
+): string {
+  return p.image || toyImage(p.imageKeyword, p.imageLock, width, height);
+}

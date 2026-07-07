@@ -1,9 +1,13 @@
 import { galleryRepo } from "@/lib/server/repos";
 import { requireAdminApi } from "@/lib/server/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const items = await galleryRepo.list();
+    let items = await galleryRepo.list();
+    // Hidden items are admin-only: ?all=1 with a valid session includes them.
+    const wantsAll = new URL(req.url).searchParams.get("all") === "1";
+    const isAdmin = wantsAll && !(await requireAdminApi());
+    if (!isAdmin) items = items.filter((g) => g.active);
     return Response.json({ ok: true, data: items });
   } catch {
     return Response.json(

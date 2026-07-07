@@ -3,8 +3,22 @@
     "id": 1,
     "code": "MG-1001",
     "items": [
-      { "productId": 4, "name": "خرسی پلوش", "unitPrice": 890000, "quantity": 1, "imageKeyword": "teddy bear", "imageLock": 21 },
-      { "productId": 2, "name": "بلوک‌های ساختمانی", "unitPrice": 2400000, "quantity": 1, "imageKeyword": "lego blocks", "imageLock": 31 }
+      {
+        "productId": 4,
+        "name": "خرسی پلوش",
+        "unitPrice": 890000,
+        "quantity": 1,
+        "imageKeyword": "teddy bear",
+        "imageLock": 21
+      },
+      {
+        "productId": 2,
+        "name": "بلوک‌های ساختمانی",
+        "unitPrice": 2400000,
+        "quantity": 1,
+        "imageKeyword": "lego blocks",
+        "imageLock": 31
+      }
     ],
     "customer": {
       "name": "علی احمدی",
@@ -22,7 +36,14 @@
     "id": 2,
     "code": "MG-1002",
     "items": [
-      { "productId": 13, "name": "اکشن فیگور سوپرقهرمان", "unitPrice": 2850000, "quantity": 1, "imageKeyword": "superhero action figure", "imageLock": 12 }
+      {
+        "productId": 13,
+        "name": "اکشن فیگور سوپرقهرمان",
+        "unitPrice": 2850000,
+        "quantity": 1,
+        "imageKeyword": "superhero action figure",
+        "imageLock": 12
+      }
     ],
     "customer": {
       "name": "سارا محمدی",

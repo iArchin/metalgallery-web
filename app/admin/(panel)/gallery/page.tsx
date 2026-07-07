@@ -47,7 +47,7 @@ export default function AdminGalleryPage() {
   async function load() {
     try {
       setError(null);
-      const data = await apiGet<GalleryItem[]>("/api/gallery");
+      const data = await apiGet<GalleryItem[]>("/api/gallery?all=1");
       setItems(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطا در دریافت اطلاعات");

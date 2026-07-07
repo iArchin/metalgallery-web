@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
-import { toyImage } from "../utils/images";
+import { toyImage, productImage } from "../utils/images";
 import { toPersianNumber, formatPersianNumber } from "../utils/numbers";
 import { useCart } from "@/app/components/CartContext";
 
@@ -20,6 +21,32 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const pathname = usePathname();
+
+  // Live wishlist badge: the wishlist lives in localStorage (mg_wishlist_v1,
+  // owned by WishlistClient). Re-read on every route change (the navbar stays
+  // mounted across SPA navigations) and on cross-tab storage events.
+  useEffect(() => {
+    const readCount = () => {
+      try {
+        const raw = localStorage.getItem("mg_wishlist_v1");
+        const parsed = raw ? JSON.parse(raw) : [];
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setWishlistCount(Array.isArray(parsed) ? parsed.length : 0);
+      } catch {
+        setWishlistCount(0);
+      }
+    };
+    readCount();
+    window.addEventListener("storage", readCount);
+    window.addEventListener("focus", readCount);
+    return () => {
+      window.removeEventListener("storage", readCount);
+      window.removeEventListener("focus", readCount);
+    };
+  }, [pathname]);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const servicesMenuRef = useRef<HTMLDivElement>(null);
@@ -378,80 +405,25 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                     />
                   </svg>
-                  <span className="absolute top-0 right-0 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
-                    {toPersianNumber(2)}
-                  </span>
+                  {wishlistCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
+                      {toPersianNumber(wishlistCount)}
+                    </span>
+                  )}
                 </button>
                 {openDropdown === "favorites" && (
-                  <div className="absolute left-0 top-full mt-2 w-80 bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                  <div className="absolute left-0 top-full mt-2 w-72 bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
                     <div className="p-4 border-b border-border">
                       <h3 className="font-semibold text-content text-right">
                         علاقه‌مندی‌ها
                       </h3>
                     </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      <div className="p-4 border-b border-border hover:bg-surface-2 cursor-pointer flex items-center gap-3 transition-colors">
-                        <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-surface-2 flex-shrink-0">
-                          <img
-                            src={toyImage("teddy bear", 21)}
-                            alt="خرس عروسکی مخملی"
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 text-right">
-                          <p className="text-sm font-medium text-content">
-                            خرس عروسکی مخملی
-                          </p>
-                          <p className="text-sm text-content-muted mt-1">
-                            ۲,۵۰۰,۰۰۰ تومان
-                          </p>
-                        </div>
-                        <button className="text-primary hover:text-primary-hover transition-colors">
-                          <svg
-                            className="w-5 h-5"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="p-4 border-b border-border hover:bg-surface-2 cursor-pointer flex items-center gap-3 transition-colors">
-                        <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-surface-2 flex-shrink-0">
-                          <img
-                            src={toyImage("action figure", 12)}
-                            alt="اکشن فیگور قهرمان"
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 text-right">
-                          <p className="text-sm font-medium text-content">
-                            اکشن فیگور قهرمان
-                          </p>
-                          <p className="text-sm text-content-muted mt-1">
-                            ۱,۸۰۰,۰۰۰ تومان
-                          </p>
-                        </div>
-                        <button className="text-primary hover:text-primary-hover transition-colors">
-                          <svg
-                            className="w-5 h-5"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      </div>
+                    <div className="p-5 text-center">
+                      <p className="text-sm text-content-muted">
+                        {wishlistCount > 0
+                          ? `${toPersianNumber(wishlistCount)} محصول در لیست شما ذخیره شده است`
+                          : "لیست علاقه‌مندی‌های شما خالی است"}
+                      </p>
                     </div>
                     <div className="p-3 border-t border-border">
                       <Link
@@ -515,7 +487,7 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                           >
                             <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-surface-2 flex-shrink-0">
                               <img
-                                src={toyImage(item.imageKeyword, item.imageLock)}
+                                src={productImage(item)}
                                 alt={item.name}
                                 loading="lazy"
                                 className="h-full w-full object-cover"

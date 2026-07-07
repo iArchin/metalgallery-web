@@ -47,7 +47,7 @@ export default function NewsAdminPage() {
 
   const load = useCallback(async () => {
     try {
-      setNews(await apiGet<NewsItem[]>("/api/news"));
+      setNews(await apiGet<NewsItem[]>("/api/news?all=1"));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "خطای سرور");

@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import Button from "@/app/components/Button";
 import { useCart } from "@/app/components/CartContext";
-import { toyImage } from "@/app/utils/images";
+import { productImage } from "@/app/utils/images";
 import { toPersianNumber, formatPersianNumber } from "@/app/utils/numbers";
 
 interface SuccessInfo {
@@ -197,7 +197,7 @@ export default function CartClient() {
                 className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden bg-surface-2"
               >
                 <img
-                  src={toyImage(item.imageKeyword, item.imageLock, 300, 300)}
+                  src={productImage(item)}
                   alt={item.name}
                   loading="lazy"
                   className="w-full h-full object-cover"

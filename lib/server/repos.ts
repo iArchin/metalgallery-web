@@ -152,6 +152,7 @@ export async function placeOrder(input: {
         name: product.name,
         unitPrice: product.price,
         quantity: qty,
+        image: product.image,
         imageKeyword: product.imageKeyword,
         imageLock: product.imageLock,
       });

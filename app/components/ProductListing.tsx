@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/app/components/Button";
 import { useCart } from "@/app/components/CartContext";
-import { toyImage } from "@/app/utils/images";
+import { productImage } from "@/app/utils/images";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
 import { discountPercent, type Category, type Product } from "@/lib/types";
 
@@ -145,6 +145,7 @@ export default function ProductListing({
       id: product.id,
       name: product.name,
       price: product.price,
+      image: product.image,
       imageKeyword: product.imageKeyword,
       imageLock: product.imageLock,
     });
@@ -408,7 +409,7 @@ export default function ProductListing({
                       >
                         <div className="relative h-36 sm:h-48 w-full overflow-hidden rounded-xl sm:rounded-2xl bg-surface-2 mb-3 sm:mb-4">
                           <img
-                            src={toyImage(product.imageKeyword, product.imageLock)}
+                            src={productImage(product)}
                             alt={product.name}
                             loading="lazy"
                             className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${

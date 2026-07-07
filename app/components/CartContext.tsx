@@ -15,6 +15,7 @@ export interface CartProductInfo {
   id: number;
   name: string;
   price: number;
+  image?: string;
   imageKeyword: string;
   imageLock: number;
   stock?: number;
@@ -24,9 +25,12 @@ export interface CartItem {
   productId: number;
   name: string;
   price: number;
+  image?: string;
   imageKeyword: string;
   imageLock: number;
   quantity: number;
+  /** Stock snapshot at add-time — client-side courtesy cap; the server re-validates. */
+  stock?: number;
 }
 
 interface CartContextValue {
@@ -68,11 +72,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const add = useCallback((product: CartProductInfo, quantity = 1) => {
     setItems((prev) => {
+      const cap = (q: number, stock?: number) =>
+        stock !== undefined && stock >= 0 ? Math.min(q, Math.max(1, stock)) : q;
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) {
+        const stock = product.stock ?? existing.stock;
         return prev.map((i) =>
           i.productId === product.id
-            ? { ...i, quantity: i.quantity + quantity }
+            ? { ...i, stock, quantity: cap(i.quantity + quantity, stock) }
             : i
         );
       }
@@ -82,9 +89,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           productId: product.id,
           name: product.name,
           price: product.price,
+          image: product.image,
           imageKeyword: product.imageKeyword,
           imageLock: product.imageLock,
-          quantity,
+          quantity: cap(quantity, product.stock),
+          stock: product.stock,
         },
       ];
     });
@@ -98,7 +107,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) =>
       quantity <= 0
         ? prev.filter((i) => i.productId !== productId)
-        : prev.map((i) => (i.productId === productId ? { ...i, quantity } : i))
+        : prev.map((i) =>
+            i.productId === productId
+              ? {
+                  ...i,
+                  quantity:
+                    i.stock !== undefined
+                      ? Math.min(quantity, Math.max(1, i.stock))
+                      : quantity,
+                }
+              : i
+          )
     );
   }, []);
 

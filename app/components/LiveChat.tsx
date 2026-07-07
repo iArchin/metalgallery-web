@@ -1,8 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { toPersianNumber } from '../utils/numbers';
 
-export default function LiveChat() {
+export default function LiveChat({
+  phone = "021-555-0112",
+  email = "info@metalgallery.ir",
+}: {
+  phone?: string;
+  email?: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleChatClick = () => {
@@ -54,7 +61,7 @@ export default function LiveChat() {
           </div>
           <div className="p-4 border-t border-border">
             <p className="text-sm text-content-muted text-center">
-              📞 ۰۲۱-۱۲۳۴۵۶۷۸ | ✉️ info@metalgallery.ir
+              📞 {toPersianNumber(phone)} | ✉️ {email}
             </p>
           </div>
         </div>

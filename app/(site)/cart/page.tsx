@@ -7,6 +7,10 @@ export const metadata: Metadata = {
     "سبد خرید شما در فروشگاه اسباب‌بازی متال گالری؛ مدیریت تعداد، حذف کالا، ثبت سفارش و دریافت کد پیگیری.",
 };
 
+// The (site) layout reads live settings; without this the route (and its
+// chrome) would be frozen at build time.
+export const dynamic = "force-dynamic";
+
 export default function CartPage() {
   return <CartClient />;
 }

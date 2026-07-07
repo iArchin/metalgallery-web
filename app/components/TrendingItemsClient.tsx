@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Button from "@/app/components/Button";
 import { useCart } from "@/app/components/CartContext";
-import { toyImage } from "@/app/utils/images";
+import { productImage, toyImage } from "@/app/utils/images";
 import { toPersianNumber, formatPersianNumber } from "@/app/utils/numbers";
 import { discountPercent, type Product } from "@/lib/types";
 
@@ -21,6 +21,7 @@ export default function TrendingItemsClient({
       id: p.id,
       name: p.name,
       price: p.price,
+      image: p.image,
       imageKeyword: p.imageKeyword,
       imageLock: p.imageLock,
     });
@@ -74,10 +75,7 @@ export default function TrendingItemsClient({
                     >
                       <div className="relative h-40 sm:h-48 w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
                         <img
-                          src={toyImage(
-                            product.imageKeyword,
-                            product.imageLock
-                          )}
+                          src={productImage(product)}
                           alt={product.name}
                           loading="lazy"
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"

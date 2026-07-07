@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { discountPercent, type Category, type Product } from "@/lib/types";
-import { toyImage } from "@/app/utils/images";
+import { productImage, toyImage, PRODUCT_IMAGES } from "@/app/utils/images";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
 import Button from "@/app/components/Button";
 import {
@@ -34,6 +34,7 @@ interface ProductForm {
   categoryId: string;
   ageGroup: string;
   stock: string;
+  image: string;
   imageKeyword: string;
   imageLock: string;
   rating: string;
@@ -53,6 +54,7 @@ const EMPTY_FORM: ProductForm = {
   categoryId: "",
   ageGroup: "",
   stock: "",
+  image: "",
   imageKeyword: "",
   imageLock: "",
   rating: "4",
@@ -93,6 +95,7 @@ function toForm(p: Product): ProductForm {
     categoryId: String(p.categoryId),
     ageGroup: p.ageGroup,
     stock: String(p.stock),
+    image: p.image ?? "",
     imageKeyword: p.imageKeyword,
     imageLock: String(p.imageLock),
     rating: String(p.rating),
@@ -188,7 +191,8 @@ export default function AdminProductsPage() {
     originalPrice: form.originalPrice.trim() ? Number(form.originalPrice) : undefined,
   });
 
-  const previewSrc = toyImage(form.imageKeyword.trim() || "toys", Number(form.imageLock) || 1, 200, 200);
+  const previewSrc =
+    form.image || toyImage(form.imageKeyword.trim() || "toys", Number(form.imageLock) || 1, 200, 200);
 
   const submit = async () => {
     if (!form.name.trim()) return show("نام محصول را وارد کنید", "error");
@@ -205,6 +209,7 @@ export default function AdminProductsPage() {
       stock: Number(form.stock) || 0,
       rating: Math.min(5, Math.max(0, Number(form.rating) || 0)),
       reviewCount: Number(form.reviewCount) || 0,
+      image: form.image,
       imageKeyword: form.imageKeyword.trim() || "toys",
       imageLock: Number(form.imageLock) || 1,
       isDeal: form.isDeal,
@@ -308,7 +313,7 @@ export default function AdminProductsPage() {
                 <td className="px-4 py-3">
                   <div className="h-12 w-12 rounded-lg bg-surface-2 overflow-hidden shrink-0">
                     <img
-                      src={toyImage(p.imageKeyword, p.imageLock, 96, 96)}
+                      src={productImage(p, 96, 96)}
                       alt={p.name}
                       loading="lazy"
                       className="h-full w-full object-cover"
@@ -457,8 +462,40 @@ export default function AdminProductsPage() {
             </Field>
           </div>
 
+          <div className="sm:col-span-2">
+            <span className="block text-sm font-bold text-content mb-1.5">تصویر محصول</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {PRODUCT_IMAGES.map((src) => (
+                <button
+                  key={src}
+                  type="button"
+                  onClick={() => set("image", src)}
+                  aria-pressed={form.image === src}
+                  className={`shrink-0 rounded-xl overflow-hidden bg-surface-2 border border-border transition-shadow ${
+                    form.image === src ? "ring-2 ring-primary" : ""
+                  }`}
+                >
+                  <img src={src} alt="تصویر محلی محصول" loading="lazy" className="w-16 h-16 rounded-xl object-cover" />
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => set("image", "")}
+                aria-pressed={form.image === ""}
+                className={`shrink-0 w-16 h-16 rounded-xl bg-surface-2 border border-border text-xs font-bold text-content-muted transition-shadow ${
+                  form.image === "" ? "ring-2 ring-primary" : ""
+                }`}
+              >
+                اینترنتی
+              </button>
+            </div>
+          </div>
+
           <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-start">
             <div className="grid gap-4">
+              <span className="block text-sm font-bold text-content -mb-2">
+                تصویر جایگزین اینترنتی (وقتی تصویر محلی انتخاب نشده)
+              </span>
               <Field label="کلیدواژه تصویر" hint="کلمات انگلیسی جدا شده با فاصله، مثلاً teddy bear">
                 <Input
                   value={form.imageKeyword}

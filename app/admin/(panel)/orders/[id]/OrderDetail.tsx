@@ -17,7 +17,7 @@ import {
   useToast,
 } from "@/app/admin/_components/ui";
 import Button from "@/app/components/Button";
-import { toyImage } from "@/app/utils/images";
+import { productImage } from "@/app/utils/images";
 import { toPersianNumber, formatPersianNumber } from "@/app/utils/numbers";
 
 const STATUSES = Object.keys(ORDER_STATUS_LABELS) as OrderStatus[];
@@ -160,7 +160,7 @@ export default function OrderDetail({ orderId }: { orderId: number }) {
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 shrink-0 rounded-xl bg-surface-2 overflow-hidden">
                     <img
-                      src={toyImage(it.imageKeyword, it.imageLock, 96, 96)}
+                      src={productImage(it)}
                       alt={it.name}
                       loading="lazy"
                       className="h-full w-full object-cover"

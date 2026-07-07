@@ -16,7 +16,9 @@ export interface Product {
   stock: number;
   rating: number; // 0..5
   reviewCount: number;
-  imageKeyword: string; // real-photo search keywords for toyImage()
+  /** Local image path (e.g. "/images/products/p1.jpg"). Takes precedence. */
+  image?: string;
+  imageKeyword: string; // fallback: real-photo search keywords for toyImage()
   imageLock: number; // pinned photo id
   isDeal: boolean; // shown in "پیشنهادات روز"
   isFlashSale: boolean; // shown in "فروش ویژه"
@@ -63,6 +65,7 @@ export interface OrderItem {
   name: string; // snapshot at purchase time
   unitPrice: number; // snapshot
   quantity: number;
+  image?: string; // local path snapshot, when the product had one
   imageKeyword: string;
   imageLock: number;
 }

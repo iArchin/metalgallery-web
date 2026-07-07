@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Button from "@/app/components/Button";
-import { toyImage } from "@/app/utils/images";
+import { productImage, toyImage } from "@/app/utils/images";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
 import { useCart } from "@/app/components/CartContext";
 import { discountPercent, type Product } from "@/lib/types";
@@ -60,10 +60,14 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
   const inStock = product.stock > 0;
   const discount = discountPercent(product);
 
-  // Four gallery angles derived from the product's pinned image lock.
-  const galleryImages = [0, 1, 2, 3].map((i) =>
-    toyImage(product.imageKeyword, product.imageLock * 100 + i)
-  );
+  // With a local product photo there is exactly one real image — showing it
+  // four times as fake "angles" would be dead UI. The multi-angle switcher
+  // only exists for the internet-photo fallback.
+  const galleryImages = product.image
+    ? [product.image]
+    : [0, 1, 2, 3].map((i) =>
+        toyImage(product.imageKeyword, product.imageLock * 100 + i)
+      );
 
   const clampQuantity = (q: number) =>
     Math.min(Math.max(1, q), Math.max(1, product.stock));
@@ -75,6 +79,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
         id: product.id,
         name: product.name,
         price: product.price,
+        image: product.image,
         imageKeyword: product.imageKeyword,
         imageLock: product.imageLock,
         stock: product.stock,
@@ -126,6 +131,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
                   </span>
                 )}
               </div>
+              {galleryImages.length > 1 && (
               <div className="flex gap-2 sm:gap-3 overflow-x-auto no-scrollbar pb-1">
                 {galleryImages.map((image, index) => (
                   <button
@@ -148,6 +154,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
                   </button>
                 ))}
               </div>
+              )}
             </div>
           </div>
 
@@ -448,10 +455,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
               >
                 <div className="relative h-28 sm:h-32 w-full overflow-hidden rounded-xl bg-surface-2 mb-3">
                   <img
-                    src={toyImage(
-                      relatedProduct.imageKeyword,
-                      relatedProduct.imageLock
-                    )}
+                    src={productImage(relatedProduct)}
                     alt={relatedProduct.name}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"

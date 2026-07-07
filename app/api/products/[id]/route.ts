@@ -61,6 +61,19 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     patch.imageKeyword = kw;
   }
 
+  // image: local path under /images/; explicit empty clears it (falls back
+  // to the internet keyword photo)
+  if ("image" in body) {
+    const raw = body.image;
+    if (raw === null || raw === undefined || raw === "") {
+      patch.image = undefined;
+    } else if (typeof raw === "string" && raw.startsWith("/images/")) {
+      patch.image = raw;
+    } else {
+      return Response.json({ ok: false, error: "آدرس تصویر نامعتبر است" }, { status: 400 });
+    }
+  }
+
   // ---- numbers
   const numberFields: {
     key: "price" | "categoryId" | "stock" | "rating" | "reviewCount" | "imageLock";

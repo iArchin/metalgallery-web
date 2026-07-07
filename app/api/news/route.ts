@@ -2,9 +2,13 @@ import { newsRepo } from "@/lib/server/repos";
 import { requireAdminApi } from "@/lib/server/auth";
 import type { NewsItem } from "@/lib/types";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const news = await newsRepo.list();
+    let news = await newsRepo.list();
+    // Drafts are admin-only: ?all=1 with a valid session includes them.
+    const wantsAll = new URL(req.url).searchParams.get("all") === "1";
+    const isAdmin = wantsAll && !(await requireAdminApi());
+    if (!isAdmin) news = news.filter((n) => n.published);
     return Response.json({ ok: true, data: news });
   } catch {
     return Response.json(

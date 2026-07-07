@@ -19,9 +19,13 @@ function normalizeContent(raw: unknown): string[] {
   return [];
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const articles = await articlesRepo.list();
+    let articles = await articlesRepo.list();
+    // Drafts are admin-only: ?all=1 with a valid session includes them.
+    const wantsAll = new URL(req.url).searchParams.get("all") === "1";
+    const isAdmin = wantsAll && !(await requireAdminApi());
+    if (!isAdmin) articles = articles.filter((a) => a.published);
     return Response.json({ ok: true, data: articles });
   } catch {
     return Response.json(

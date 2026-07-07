@@ -74,6 +74,32 @@ export async function POST(req: Request) {
     }
   }
 
+  let image: string | undefined;
+  if (typeof body.image === "string" && body.image) {
+    if (!body.image.startsWith("/images/")) {
+      return Response.json({ ok: false, error: "آدرس تصویر نامعتبر است" }, { status: 400 });
+    }
+    image = body.image;
+  }
+
+  // rating / reviewCount come from the create form; default 5 / 0 when absent
+  let rating = 5;
+  if (body.rating !== undefined) {
+    const n = Number(body.rating);
+    if (!Number.isFinite(n) || n < 0) {
+      return Response.json({ ok: false, error: "امتیاز محصول نامعتبر است" }, { status: 400 });
+    }
+    rating = Math.min(5, Math.floor(n));
+  }
+  let reviewCount = 0;
+  if (body.reviewCount !== undefined) {
+    const n = Number(body.reviewCount);
+    if (!Number.isFinite(n) || n < 0) {
+      return Response.json({ ok: false, error: "تعداد نظرات نامعتبر است" }, { status: 400 });
+    }
+    reviewCount = Math.floor(n);
+  }
+
   const input: ProductInput = {
     name,
     description: typeof body.description === "string" ? body.description : "",
@@ -82,8 +108,9 @@ export async function POST(req: Request) {
     categoryId: Math.floor(categoryId),
     ageGroup: typeof body.ageGroup === "string" ? body.ageGroup : "",
     stock: Math.floor(stock),
-    rating: 5,
-    reviewCount: 0,
+    rating,
+    reviewCount,
+    image,
     imageKeyword,
     imageLock: Math.floor(imageLock),
     isDeal: body.isDeal === true,

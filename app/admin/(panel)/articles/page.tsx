@@ -58,7 +58,7 @@ export default function ArticlesAdminPage() {
 
   const load = useCallback(async () => {
     try {
-      setArticles(await apiGet<Article[]>("/api/articles"));
+      setArticles(await apiGet<Article[]>("/api/articles?all=1"));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "خطای سرور");
