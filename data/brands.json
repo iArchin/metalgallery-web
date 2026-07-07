@@ -1,0 +1,8 @@
+[
+  { "id": 1, "name": "لگو", "items": 175, "active": true },
+  { "id": 2, "name": "متل", "items": 109, "active": true },
+  { "id": 3, "name": "هاسبرو", "items": 100, "active": true },
+  { "id": 4, "name": "فیشر پرایس", "items": 104, "active": true },
+  { "id": 5, "name": "پلی‌موبیل", "items": 112, "active": true },
+  { "id": 6, "name": "بندای", "items": 140, "active": true }
+]

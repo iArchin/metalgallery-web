@@ -1,0 +1,32 @@
+{
+  "siteName": "متال گالری",
+  "tagline": "فروشگاه اسباب‌بازی و اکشن فیگور",
+  "phone": "021-555-0112",
+  "email": "info@metalgallery.ir",
+  "address": "خیابان ولیعصر، پلاک 4517",
+  "workingHours": "شنبه تا پنجشنبه 9 صبح تا 9 شب",
+  "hero": {
+    "badgeText": "تا 10% تخفیف",
+    "title": "خرید اسباب‌بازی و لباس کودکان",
+    "ctaText": "همین حالا خرید کنید",
+    "sideTitle": "اکشن فیگورهای اورجینال",
+    "sideText": "15% تخفیف روی اکشن فیگورها و هدایای کودکان!",
+    "sideCtaText": "مشاهده فیگورها"
+  },
+  "saleCampaign": {
+    "enabled": true,
+    "percent": 45,
+    "title": "تخفیف روی تمام اسباب‌بازی‌های فوق‌العاده ما",
+    "pillPercent": 25,
+    "ctaText": "همین حالا خرید کنید"
+  },
+  "footerAbout": "مقصد مورد اعتماد شما برای اسباب‌بازی و اکشن فیگور. محصولات اورجینال با ضمانت اصالت و قیمت‌های عالی.",
+  "socials": {
+    "facebook": "#",
+    "twitter": "#",
+    "linkedin": "#",
+    "instagram": "#"
+  },
+  "freeShippingThreshold": 2000000,
+  "shippingCost": 85000
+}

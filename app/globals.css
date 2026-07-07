@@ -1,17 +1,130 @@
 @import "tailwindcss";
 
-:root {
-  --teal-primary: #14B8A6;
-  --teal-dark: #0D9488;
-  --teal-light: #5EEAD4;
-  --background: #ffffff;
-  --foreground: #1F2937;
-  --font-vazirmatn: 'Vazirmatn', sans-serif;
+/* ===========================================================================
+   Toy shop design system — restrained modern
+   One brand accent (coral), neutral surfaces, amber reserved for star ratings
+   and mint for positive/status states. Semantic tokens are CSS variables
+   swapped by [data-theme] and mapped into Tailwind via `@theme inline`, so
+   utilities like bg-surface / text-content / bg-primary update live when the
+   theme attribute changes on <html>.
+   =========================================================================== */
+
+/* Make `dark:` utilities respond to our attribute strategy (not OS default). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Brand + functional hues */
+  --color-coral: #ff5a5f;
+  --color-star: #f59e0b; /* ratings only */
+  --color-mint: #22c55e; /* positive/status only (in stock, verified) */
+  --color-sun: #f59e0b; /* legacy alias — do not use decoratively */
+  --color-sky: #64748b; /* legacy alias — neutralized */
+  --color-grape: #64748b; /* legacy alias — neutralized */
+
+  /* Surfaces & text — clean neutrals */
+  --background: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --surface-3: #e9e9ec;
+  --content: #17181c;
+  --content-muted: #5f6470;
+  --content-subtle: #9a9ea8;
+  --border: #e6e7ea;
+  --border-strong: #d4d6db;
+
+  /* Primary action — the one accent */
+  --primary: #ff5a5f;
+  --primary-hover: #f2464b;
+  --primary-soft: #ffecec;
+  --primary-content: #ffffff;
+
+  /* Status tints */
+  --accent-mint-soft: #e8f9ef;
+  /* Legacy soft tints — neutralized to keep old classes harmless */
+  --accent-sky-soft: #f2f2f4;
+  --accent-sun-soft: #f2f2f4;
+  --accent-grape-soft: #f2f2f4;
+
+  --ring: #ff5a5f;
+  --shadow-color: 20 30 40;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-coral: #ff6b6f;
+  --color-star: #fbbf24;
+  --color-mint: #34d399;
+  --color-sun: #fbbf24;
+  --color-sky: #8b93a3;
+  --color-grape: #8b93a3;
+
+  --background: #101114;
+  --surface: #17181d;
+  --surface-2: #1f2026;
+  --surface-3: #282a31;
+  --content: #f2f3f5;
+  --content-muted: #a3a7b0;
+  --content-subtle: #6f7380;
+  --border: #2a2c33;
+  --border-strong: #3a3d46;
+
+  --primary: #ff6b6f;
+  --primary-hover: #ff8388;
+  --primary-soft: #33222a;
+  --primary-content: #ffffff;
+
+  --accent-mint-soft: #14301f;
+  --accent-sky-soft: #1f2026;
+  --accent-sun-soft: #1f2026;
+  --accent-grape-soft: #1f2026;
+
+  --ring: #ff8388;
+  --shadow-color: 0 0 0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-content: var(--content);
+  --color-content-muted: var(--content-muted);
+  --color-content-subtle: var(--content-subtle);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-content: var(--primary-content);
+
+  --color-coral: var(--color-coral);
+  --color-sun: var(--color-sun);
+  --color-sky: var(--color-sky);
+  --color-mint: var(--color-mint);
+  --color-grape: var(--color-grape);
+  --color-star: var(--color-star);
+
+  --color-sky-soft: var(--accent-sky-soft);
+  --color-mint-soft: var(--accent-mint-soft);
+  --color-sun-soft: var(--accent-sun-soft);
+  --color-grape-soft: var(--accent-grape-soft);
+
+  --font-sans: var(--font-vazirmatn), sans-serif;
+
+  --radius-4xl: 2rem;
 }
 
 body {
-  color: var(--foreground);
-  font-family: var(--font-vazirmatn);
+  background-color: var(--background);
+  color: var(--content);
+  font-family: var(--font-vazirmatn), sans-serif;
   direction: rtl;
   text-align: right;
 }
@@ -21,25 +134,68 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+/* Smooth, opt-in theme cross-fade (class toggled briefly during switch) */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease,
+    color 0.3s ease, fill 0.3s ease, stroke 0.3s ease !important;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — quiet neutrals */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--surface-2);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--teal-primary);
-  border-radius: 4px;
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 2px solid var(--surface-2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--teal-dark);
+  background: var(--content-subtle);
+}
+
+* {
+  scrollbar-color: var(--border-strong) var(--surface-2);
+}
+
+/* ---- Reusable helpers ----------------------------------------------------- */
+@layer utilities {
+  /* Subtle warm brand gradient for the occasional hero headline */
+  .text-gradient-brand {
+    background-image: linear-gradient(
+      90deg,
+      var(--primary),
+      #ff8a65
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Soft dotted pattern for image-led banner backdrops (use sparingly) */
+  .bg-play-dots {
+    background-image: radial-gradient(
+      currentColor 1.5px,
+      transparent 1.5px
+    );
+    background-size: 22px 22px;
+  }
+
+  /* Hide scrollbars on horizontal product rails while keeping scroll */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }

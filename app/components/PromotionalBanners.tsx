@@ -1,5 +1,7 @@
+import Link from "next/link";
 import Button from "./Button";
 import { toPersianNumber } from "../utils/numbers";
+import { toyImage } from "../utils/images";
 
 const banners = [
   {
@@ -7,46 +9,59 @@ const banners = [
     title: "اسباب‌بازی آموزشی برای کودکان",
     discount: `${toPersianNumber("15%")} تخفیف روی اسباب‌بازی و هدایای کودکان!`,
     buttonText: "همین حالا خرید کنید",
-    bgColor: "bg-green-500",
-    image: "🦕",
+    image: toyImage("lego building blocks educational toy", 31),
+    alt: "اسباب‌بازی آموزشی بلوک‌های ساختنی",
   },
   {
     id: 2,
-    title: "واگن چرمی قهوه‌ای",
+    title: "واگن و ماشین سواری کودکان",
     discount: `و همین حالا ${toPersianNumber("20%")} تخفیف خود را دریافت کنید!`,
     buttonText: "همین حالا خرید کنید",
-    bgColor: "bg-orange-500",
-    image: "🚗",
+    image: toyImage("ride on toy car kids", 43),
+    alt: "ماشین سواری کودکان",
   },
   {
     id: 3,
     title: "اسباب‌بازی حرکتی برای کودکان",
     discount: `و همین حالا ${toPersianNumber("10%")} تخفیف خود را دریافت کنید!`,
     buttonText: "همین حالا خرید کنید",
-    bgColor: "bg-purple-500",
-    image: "🐕",
+    image: toyImage("plush toy puppy dog", 21),
+    alt: "عروسک پولیشی سگ",
   },
 ];
 
 export default function PromotionalBanners() {
   return (
-    <section className="py-8 px-4 bg-gray-50">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-6">
+    <section className="bg-background px-4 py-12 sm:px-6 md:py-16">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {banners.map((banner) => (
             <div
               key={banner.id}
-              className={`${banner.bgColor} rounded-lg p-8 text-white relative overflow-hidden`}
+              className="group relative min-h-[220px] overflow-hidden rounded-2xl bg-surface-2 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
             >
-              <div className="relative z-10">
-                <h3 className="text-2xl font-bold mb-2">{banner.title}</h3>
-                <p className="text-lg mb-4 opacity-90">{banner.discount}</p>
-                <Button variant="secondary" size="md">
-                  {banner.buttonText}
-                </Button>
-              </div>
-              <div className="absolute bottom-0 right-0 w-32 h-32 opacity-30">
-                <div className="text-8xl">{banner.image}</div>
+              {/* real toy photo */}
+              <img
+                src={banner.image}
+                alt={banner.alt}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+
+              {/* neutral readability overlay */}
+              <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/75 via-black/35 to-black/10" />
+
+              {/* content anchored to the bottom */}
+              <div className="relative z-10 flex min-h-[220px] flex-col justify-end p-5 sm:p-6">
+                <h3 className="mb-1.5 text-lg font-bold leading-snug text-white sm:text-xl">
+                  {banner.title}
+                </h3>
+                <p className="mb-4 text-sm text-white/85">{banner.discount}</p>
+                <Link href="/products" className="self-start">
+                  <Button variant="secondary" size="sm">
+                    {banner.buttonText}
+                  </Button>
+                </Link>
               </div>
             </div>
           ))}
@@ -55,4 +70,3 @@ export default function PromotionalBanners() {
     </section>
   );
 }
-

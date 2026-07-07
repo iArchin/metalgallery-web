@@ -1,27 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import Button from "./Button";
-import { formatPersianNumber, toPersianNumber } from "../utils/numbers";
+import Link from "next/link";
+import Button from "@/app/components/Button";
+import { toyImage } from "@/app/utils/images";
+import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
+import { useCart } from "@/app/components/CartContext";
+import { discountPercent, type Product } from "@/lib/types";
 
 interface ProductDetailProps {
-  productId: string;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  images: string[];
-  rating: number;
-  reviewCount: number;
-  description: string;
-  specifications: {
-    [key: string]: string;
-  };
-  inStock: boolean;
-  stockCount: number;
+  product: Product;
+  related: Product[];
 }
 
 interface Comment {
@@ -33,76 +22,7 @@ interface Comment {
   verified: boolean;
 }
 
-// Mock product data - In a real app, this would come from an API
-const getProductData = (id: string): Product => {
-  const products: { [key: string]: Product } = {
-    "1": {
-      id: 1,
-      name: "اسباب‌بازی کامیون",
-      price: 12.0,
-      originalPrice: 15.0,
-      images: ["🚛", "🚚", "🚜", "🚗"],
-      rating: 5,
-      reviewCount: 24,
-      description:
-        "این اسباب‌بازی کامیون با طراحی زیبا و رنگ‌های جذاب، مناسب برای کودکان بالای ۳ سال است. این محصول از مواد باکیفیت و غیرسمی ساخته شده و برای بازی‌های خلاقانه و سرگرم‌کننده مناسب است.",
-      specifications: {
-        "رده سنی": "۳ تا ۸ سال",
-        "جنس": "پلاستیک باکیفیت",
-        "ابعاد": "۲۰ × ۱۵ × ۱۰ سانتی‌متر",
-        "وزن": "۳۰۰ گرم",
-        "رنگ": "آبی و قرمز",
-        "کشور سازنده": "ایران",
-        "گارانتی": "۶ ماه",
-      },
-      inStock: true,
-      stockCount: 15,
-    },
-    "2": {
-      id: 2,
-      name: "بلوک‌های ساختمانی",
-      price: 10.0,
-      originalPrice: 12.0,
-      images: ["🧱", "🏗️", "🏛️", "🏠"],
-      rating: 5,
-      reviewCount: 18,
-      description:
-        "مجموعه بلوک‌های ساختمانی شامل قطعات مختلف برای ساخت سازه‌های خلاقانه. این محصول به تقویت مهارت‌های حرکتی و خلاقیت کودکان کمک می‌کند.",
-      specifications: {
-        "رده سنی": "۴ تا ۱۰ سال",
-        "جنس": "پلاستیک ABS",
-        "تعداد قطعات": "۵۰ قطعه",
-        "ابعاد بسته‌بندی": "۳۰ × ۲۰ × ۱۵ سانتی‌متر",
-        "وزن": "۵۰۰ گرم",
-        "رنگ": "چند رنگ",
-        "کشور سازنده": "ایران",
-        "گارانتی": "۱۲ ماه",
-      },
-      inStock: true,
-      stockCount: 8,
-    },
-  };
-
-  return (
-    products[id] || {
-      id: parseInt(id),
-      name: "محصول نمونه",
-      price: 20.0,
-      images: ["🧸", "🎁", "🎯", "🎨"],
-      rating: 4,
-      reviewCount: 12,
-      description: "توضیحات محصول",
-      specifications: {
-        "رده سنی": "۳ تا ۶ سال",
-        "جنس": "پلاستیک",
-        "ابعاد": "۱۵ × ۱۵ × ۱۵ سانتی‌متر",
-      },
-      inStock: true,
-      stockCount: 10,
-    }
-  );
-};
-
+// Static display comments (no reviews backend yet).
 const mockComments: Comment[] = [
   {
     id: 1,
@@ -130,352 +50,424 @@ const mockComments: Comment[] = [
   },
 ];
 
-export default function ProductDetail({ productId }: ProductDetailProps) {
-  const product = getProductData(productId);
+export default function ProductDetail({ product, related }: ProductDetailProps) {
+  const { add } = useCart();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"specs" | "comments">("specs");
+  const [addedMessage, setAddedMessage] = useState(false);
 
-  const discountPercentage = product.originalPrice
-    ? Math.round(
-        ((product.originalPrice - product.price) / product.originalPrice) * 100
-      )
-    : 0;
+  const inStock = product.stock > 0;
+  const discount = discountPercent(product);
+
+  // Four gallery angles derived from the product's pinned image lock.
+  const galleryImages = [0, 1, 2, 3].map((i) =>
+    toyImage(product.imageKeyword, product.imageLock * 100 + i)
+  );
+
+  const clampQuantity = (q: number) =>
+    Math.min(Math.max(1, q), Math.max(1, product.stock));
 
   const handleAddToCart = () => {
-    // Add to cart logic here
-    alert(`${quantity} عدد ${product.name} به سبد خرید اضافه شد`);
+    if (!inStock) return;
+    add(
+      {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        imageKeyword: product.imageKeyword,
+        imageLock: product.imageLock,
+        stock: product.stock,
+      },
+      quantity
+    );
+    setAddedMessage(true);
+    window.setTimeout(() => setAddedMessage(false), 2500);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <nav className="mb-6 text-sm text-gray-600">
-          <span>خانه</span>
-          <span className="mx-2">/</span>
-          <span>اسباب‌بازی</span>
-          <span className="mx-2">/</span>
-          <span className="text-gray-900">{product.name}</span>
-        </nav>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      {/* Breadcrumb */}
+      <nav className="mb-6 flex items-center text-xs sm:text-sm text-content-muted">
+        <Link href="/" className="shrink-0 transition-colors hover:text-primary">
+          خانه
+        </Link>
+        <span className="mx-2 shrink-0 text-content-subtle">/</span>
+        <Link
+          href="/products"
+          className="shrink-0 transition-colors hover:text-primary"
+        >
+          اسباب‌بازی
+        </Link>
+        <span className="mx-2 shrink-0 text-content-subtle">/</span>
+        <span className="truncate font-semibold text-content">
+          {product.name}
+        </span>
+      </nav>
 
-        {/* Product Main Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Image Gallery */}
-            <div>
-              <div className="mb-4">
-                <div className="bg-gray-100 rounded-lg p-12 flex items-center justify-center h-96 mb-4">
-                  <div className="text-9xl">{product.images[selectedImage]}</div>
-                </div>
-                <div className="flex gap-4 overflow-x-auto">
-                  {product.images.map((image, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      className={`shrink-0 w-20 h-20 rounded-lg p-4 flex items-center justify-center text-3xl border-2 transition-colors ${
-                        selectedImage === index
-                          ? "border-teal-500 bg-teal-50"
-                          : "border-gray-200 bg-gray-50 hover:border-gray-300"
-                      }`}
-                    >
-                      {image}
-                    </button>
-                  ))}
-                </div>
+      {/* Product Main Section */}
+      <div className="bg-surface border border-border rounded-2xl shadow-sm p-4 sm:p-6 mb-8">
+        <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+          {/* Image Gallery */}
+          <div>
+            <div className="mb-4">
+              <div className="relative h-64 sm:h-80 md:h-96 w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
+                <img
+                  src={galleryImages[selectedImage]}
+                  alt={`${product.name} - تصویر ${toPersianNumber(
+                    (selectedImage + 1).toString()
+                  )}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+                {discount > 0 && (
+                  <span className="absolute top-4 left-4 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-content shadow-md">
+                    {toPersianNumber(discount.toString())}٪ تخفیف
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2 sm:gap-3 overflow-x-auto no-scrollbar pb-1">
+                {galleryImages.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`shrink-0 h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-xl border-2 bg-surface-2 transition-all hover:-translate-y-0.5 active:scale-95 ${
+                      selectedImage === index
+                        ? "border-primary ring-2 ring-primary"
+                        : "border-border hover:border-border-strong"
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`${product.name} - نمای ${toPersianNumber(
+                        (index + 1).toString()
+                      )}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Product Info */}
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-content mb-4">
+              {product.name}
+            </h1>
+
+            {/* Rating */}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <span
+                    key={i}
+                    className={`text-xl ${
+                      i < Math.round(product.rating)
+                        ? "text-star"
+                        : "text-content-subtle"
+                    }`}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+              <span className="text-sm sm:text-base text-content-muted">
+                ({toPersianNumber(product.reviewCount.toString())} نظر)
+              </span>
+            </div>
+
+            {/* Price */}
+            <div className="mb-6">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-2">
+                <span className="text-2xl sm:text-3xl font-extrabold text-content">
+                  {formatPersianNumber(product.price)} تومان
+                </span>
+                {discount > 0 && product.originalPrice && (
+                  <>
+                    <span className="text-lg sm:text-xl text-content-subtle line-through">
+                      {formatPersianNumber(product.originalPrice)} تومان
+                    </span>
+                    <span className="bg-primary-soft text-primary px-2.5 py-1 rounded-full text-xs sm:text-sm font-semibold">
+                      {toPersianNumber(discount.toString())}٪ تخفیف
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Product Info */}
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                {product.name}
-              </h1>
-
-              {/* Rating */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <span
-                      key={i}
-                      className={`text-xl ${
-                        i < product.rating ? "text-yellow-400" : "text-gray-300"
-                      }`}
-                    >
-                      ★
-                    </span>
-                  ))}
-                </div>
-                <span className="text-gray-600">
-                  ({toPersianNumber(product.reviewCount.toString())} نظر)
-                </span>
-              </div>
-
-              {/* Price */}
-              <div className="mb-6">
-                <div className="flex items-center gap-4 mb-2">
-                  <span className="text-3xl font-bold text-gray-900">
-                    {formatPersianNumber(product.price)} تومان
+            {/* Stock Status */}
+            <div className="mb-6">
+              {inStock ? (
+                <div className="inline-flex items-center gap-2 rounded-full bg-mint-soft px-3 py-1.5 text-mint">
+                  <span className="w-2.5 h-2.5 bg-mint rounded-full"></span>
+                  <span className="text-sm font-semibold">
+                    موجود در انبار ({toPersianNumber(product.stock.toString())} عدد)
                   </span>
-                  {product.originalPrice && (
-                    <>
-                      <span className="text-xl text-gray-500 line-through">
-                        {formatPersianNumber(product.originalPrice)} تومان
-                      </span>
-                      <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-semibold">
-                        {toPersianNumber(discountPercentage.toString())}% تخفیف
-                      </span>
-                    </>
-                  )}
                 </div>
-              </div>
-
-              {/* Stock Status */}
-              <div className="mb-6">
-                {product.inStock ? (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                    <span>
-                      موجود در انبار ({toPersianNumber(product.stockCount.toString())} عدد)
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-red-600">
-                    <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-                    <span>ناموجود</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Quantity Selector */}
-              <div className="mb-6">
-                <label className="block text-gray-700 mb-2">تعداد:</label>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50"
-                  >
-                    −
-                  </button>
-                  <span className="text-xl font-semibold w-12 text-center">
-                    {toPersianNumber(quantity.toString())}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setQuantity(
-                        Math.min(product.stockCount, quantity + 1)
-                      )
-                    }
-                    className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50"
-                  >
-                    +
-                  </button>
+              ) : (
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1.5 text-primary">
+                  <span className="w-2.5 h-2.5 bg-primary rounded-full"></span>
+                  <span className="text-sm font-semibold">ناموجود</span>
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-4 mb-6">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="flex-1"
-                  onClick={handleAddToCart}
-                  disabled={!product.inStock}
+            {/* Quantity Selector */}
+            <div className="mb-6">
+              <label className="block text-sm sm:text-base text-content-muted mb-2">
+                تعداد:
+              </label>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setQuantity((q) => clampQuantity(q - 1))}
+                  disabled={!inStock || quantity <= 1}
+                  className="w-10 h-10 border border-border rounded-xl flex items-center justify-center text-content text-lg transition-colors hover:bg-surface-2 hover:border-border-strong active:bg-surface-3 disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  افزودن به سبد خرید
-                </Button>
-                <Button variant="outline" size="lg">
-                  ❤️
-                </Button>
+                  −
+                </button>
+                <span className="text-xl font-semibold w-12 text-center text-content">
+                  {toPersianNumber(quantity.toString())}
+                </span>
+                <button
+                  onClick={() => setQuantity((q) => clampQuantity(q + 1))}
+                  disabled={!inStock || quantity >= product.stock}
+                  className="w-10 h-10 border border-border rounded-xl flex items-center justify-center text-content text-lg transition-colors hover:bg-surface-2 hover:border-border-strong active:bg-surface-3 disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  +
+                </button>
               </div>
+            </div>
 
-              {/* Description Preview */}
-              <div className="border-t pt-6">
-                <h3 className="font-semibold text-gray-900 mb-2">توضیحات کوتاه:</h3>
-                <p className="text-gray-600 leading-relaxed">{product.description}</p>
-              </div>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-3">
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full sm:flex-1"
+                onClick={handleAddToCart}
+                disabled={!inStock}
+              >
+                {inStock ? "افزودن به سبد خرید" : "ناموجود"}
+              </Button>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                ❤️
+              </Button>
+            </div>
+
+            {/* Added-to-cart feedback */}
+            <div aria-live="polite" className="mb-6 min-h-6">
+              {addedMessage && (
+                <div className="inline-flex items-center gap-2 rounded-full bg-mint-soft px-3 py-1.5 text-mint text-sm font-semibold">
+                  <span>✓</span>
+                  <span>به سبد اضافه شد</span>
+                </div>
+              )}
+            </div>
+
+            {/* Description Preview */}
+            <div className="border-t border-border pt-6">
+              <h3 className="font-bold text-content mb-2">توضیحات کوتاه:</h3>
+              <p className="text-sm sm:text-base text-content-muted leading-relaxed">
+                {product.description}
+              </p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Tabs Section */}
-        <div className="bg-white rounded-lg shadow-md mb-8">
-          {/* Tab Headers */}
-          <div className="border-b border-gray-200">
-            <div className="flex gap-4 px-6">
-              <button
-                onClick={() => setActiveTab("specs")}
-                className={`py-4 px-6 font-semibold border-b-2 transition-colors ${
-                  activeTab === "specs"
-                    ? "border-teal-500 text-teal-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                مشخصات فنی
-              </button>
-              <button
-                onClick={() => setActiveTab("comments")}
-                className={`py-4 px-6 font-semibold border-b-2 transition-colors ${
-                  activeTab === "comments"
-                    ? "border-teal-500 text-teal-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                نظرات ({toPersianNumber(product.reviewCount.toString())})
-              </button>
-            </div>
+      {/* Tabs Section */}
+      <div className="bg-surface border border-border rounded-2xl shadow-sm mb-8">
+        {/* Tab Headers */}
+        <div className="border-b border-border">
+          <div className="flex gap-2 sm:gap-4 px-4 sm:px-6 overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => setActiveTab("specs")}
+              className={`shrink-0 whitespace-nowrap py-4 px-3 sm:px-6 text-sm sm:text-base font-semibold border-b-2 transition-colors active:text-primary ${
+                activeTab === "specs"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-content-muted hover:text-content"
+              }`}
+            >
+              مشخصات فنی
+            </button>
+            <button
+              onClick={() => setActiveTab("comments")}
+              className={`shrink-0 whitespace-nowrap py-4 px-3 sm:px-6 text-sm sm:text-base font-semibold border-b-2 transition-colors active:text-primary ${
+                activeTab === "comments"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-content-muted hover:text-content"
+              }`}
+            >
+              نظرات ({toPersianNumber(product.reviewCount.toString())})
+            </button>
           </div>
+        </div>
 
-          {/* Tab Content */}
-          <div className="p-6">
-            {activeTab === "specs" && (
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-6">
-                  مشخصات فنی محصول
-                </h3>
+        {/* Tab Content */}
+        <div className="p-4 sm:p-6">
+          {activeTab === "specs" && (
+            <div>
+              <h3 className="text-lg sm:text-xl font-bold text-content mb-6">
+                مشخصات فنی محصول
+              </h3>
+              {Object.keys(product.specifications).length === 0 ? (
+                <p className="text-sm sm:text-base text-content-muted">
+                  مشخصاتی برای این محصول ثبت نشده است.
+                </p>
+              ) : (
                 <div className="space-y-4">
                   {Object.entries(product.specifications).map(([key, value]) => (
                     <div
                       key={key}
-                      className="flex border-b border-gray-100 pb-4 last:border-0"
+                      className="flex flex-col sm:flex-row gap-1 border-b border-border pb-4 last:border-0"
                     >
-                      <div className="w-1/3 font-semibold text-gray-700">{key}:</div>
-                      <div className="w-2/3 text-gray-600">{value}</div>
+                      <div className="sm:w-1/3 text-sm sm:text-base font-semibold text-content">
+                        {key}:
+                      </div>
+                      <div className="sm:w-2/3 text-sm sm:text-base text-content-muted">
+                        {value}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {activeTab === "comments" && (
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-6">
-                  نظرات خریداران
-                </h3>
+          {activeTab === "comments" && (
+            <div>
+              <h3 className="text-lg sm:text-xl font-bold text-content mb-6">
+                نظرات خریداران
+              </h3>
 
-                {/* Add Comment Form */}
-                <div className="bg-gray-50 rounded-lg p-6 mb-8">
-                  <h4 className="font-semibold text-gray-900 mb-4">
-                    نظر خود را ثبت کنید
-                  </h4>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-gray-700 mb-2">امتیاز:</label>
-                      <div className="flex gap-2">
-                        {[...Array(5)].map((_, i) => (
-                          <button
-                            key={i}
-                            className="text-2xl text-gray-300 hover:text-yellow-400 transition-colors"
-                          >
-                            ★
-                          </button>
-                        ))}
-                      </div>
+              {/* Add Comment Form */}
+              <div className="bg-surface-2 border border-border rounded-2xl p-4 sm:p-6 mb-8">
+                <h4 className="font-bold text-content mb-4">
+                  نظر خود را ثبت کنید
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm sm:text-base text-content-muted mb-2">
+                      امتیاز:
+                    </label>
+                    <div className="flex gap-2">
+                      {[...Array(5)].map((_, i) => (
+                        <button
+                          key={i}
+                          className="text-2xl text-content-subtle hover:text-star active:text-star transition-colors"
+                        >
+                          ★
+                        </button>
+                      ))}
                     </div>
-                    <div>
-                      <label className="block text-gray-700 mb-2">نظر شما:</label>
-                      <textarea
-                        className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        rows={4}
-                        placeholder="نظر خود را بنویسید..."
-                      />
-                    </div>
-                    <Button variant="primary">ثبت نظر</Button>
                   </div>
+                  <div>
+                    <label className="block text-sm sm:text-base text-content-muted mb-2">
+                      نظر شما:
+                    </label>
+                    <textarea
+                      className="w-full bg-surface border border-border text-content rounded-xl p-3 text-sm sm:text-base placeholder:text-content-subtle focus:outline-none focus:ring-2 focus:ring-primary"
+                      rows={4}
+                      placeholder="نظر خود را بنویسید..."
+                    />
+                  </div>
+                  <Button variant="primary">ثبت نظر</Button>
                 </div>
+              </div>
 
-                {/* Comments List */}
-                <div className="space-y-6">
-                  {mockComments.map((comment) => (
-                    <div
-                      key={comment.id}
-                      className="border-b border-gray-100 pb-6 last:border-0"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-semibold">
-                            {comment.userName.charAt(0)}
+              {/* Comments List */}
+              <div className="space-y-6">
+                {mockComments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    className="border-b border-border pb-6 last:border-0"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 shrink-0 bg-primary-soft rounded-full flex items-center justify-center text-primary font-bold">
+                          {comment.userName.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-content">
+                              {comment.userName}
+                            </span>
+                            {comment.verified && (
+                              <span className="text-xs bg-mint-soft text-mint px-2 py-1 rounded-full font-semibold">
+                                ✓ تأیید شده
+                              </span>
+                            )}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900">
-                                {comment.userName}
-                              </span>
-                              {comment.verified && (
-                                <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded">
-                                  ✓ تأیید شده
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex gap-1">
+                              {[...Array(5)].map((_, i) => (
+                                <span
+                                  key={i}
+                                  className={`text-sm ${
+                                    i < comment.rating
+                                      ? "text-star"
+                                      : "text-content-subtle"
+                                  }`}
+                                >
+                                  ★
                                 </span>
-                              )}
+                              ))}
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="flex gap-1">
-                                {[...Array(5)].map((_, i) => (
-                                  <span
-                                    key={i}
-                                    className={`text-sm ${
-                                      i < comment.rating
-                                        ? "text-yellow-400"
-                                        : "text-gray-300"
-                                    }`}
-                                  >
-                                    ★
-                                  </span>
-                                ))}
-                              </div>
-                              <span className="text-sm text-gray-500">
-                                {comment.date}
-                              </span>
-                            </div>
+                            <span className="text-sm text-content-subtle">
+                              {comment.date}
+                            </span>
                           </div>
                         </div>
                       </div>
-                      <p className="text-gray-700 leading-relaxed">{comment.comment}</p>
                     </div>
-                  ))}
-                </div>
+                    <p className="text-sm sm:text-base text-content-muted leading-relaxed">
+                      {comment.comment}
+                    </p>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Related Products */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            محصولات مرتبط
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { id: 2, name: "بلوک‌های ساختمانی", price: 10.0, image: "🧱" },
-              { id: 3, name: "دایناسور پلوش", price: 18.0, image: "🦕" },
-              { id: 4, name: "خرسی پلوش", price: 15.0, image: "🧸" },
-              { id: 5, name: "پاندای پلوش", price: 16.0, image: "🐼" },
-            ]
-              .filter((p) => p.id !== product.id)
-              .slice(0, 4)
-              .map((relatedProduct) => (
-                <a
-                  key={relatedProduct.id}
-                  href={`/product/${relatedProduct.id}`}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
-                >
-                  <div className="bg-gray-100 rounded-lg p-6 mb-3 flex items-center justify-center h-32">
-                    <div className="text-5xl">{relatedProduct.image}</div>
-                  </div>
-                  <h3 className="font-semibold text-gray-900 mb-2 text-sm">
-                    {relatedProduct.name}
-                  </h3>
-                  <div className="text-lg font-bold text-gray-900">
-                    {formatPersianNumber(relatedProduct.price)} تومان
-                  </div>
-                </a>
-              ))}
-          </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Related Products */}
+      {related.length > 0 && (
+        <div className="bg-surface border border-border rounded-2xl shadow-sm p-4 sm:p-6">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-content mb-6">
+            محصولات مرتبط
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            {related.map((relatedProduct) => (
+              <Link
+                key={relatedProduct.id}
+                href={`/product/${relatedProduct.id}`}
+                className="group border border-border bg-surface rounded-2xl p-3 sm:p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg active:shadow-md"
+              >
+                <div className="relative h-28 sm:h-32 w-full overflow-hidden rounded-xl bg-surface-2 mb-3">
+                  <img
+                    src={toyImage(
+                      relatedProduct.imageKeyword,
+                      relatedProduct.imageLock
+                    )}
+                    alt={relatedProduct.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <h3 className="font-semibold text-content mb-2 text-sm line-clamp-2">
+                  {relatedProduct.name}
+                </h3>
+                <div className="text-base sm:text-lg font-bold text-primary">
+                  {formatPersianNumber(relatedProduct.price)} تومان
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-
-
-

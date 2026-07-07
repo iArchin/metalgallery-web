@@ -1,17 +1,27 @@
 import { Suspense } from "react";
-import ProductListing from "../components/ProductListing";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import { listProducts, categoriesRepo } from "@/lib/server/repos";
+import ProductListing from "@/app/components/ProductListing";
 
-export default function ProductsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ProductsPage() {
+  const [products, allCategories] = await Promise.all([
+    listProducts(),
+    categoriesRepo.list(),
+  ]);
+  const categories = allCategories.filter((c) => c.active);
+
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
-      <Suspense fallback={<div className="p-8 text-center">در حال بارگذاری...</div>}>
-        <ProductListing />
+    <main>
+      <Suspense
+        fallback={
+          <div className="p-8 text-center text-content-muted">
+            در حال بارگذاری...
+          </div>
+        }
+      >
+        <ProductListing products={products} categories={categories} />
       </Suspense>
-      <Footer />
-    </div>
+    </main>
   );
 }
-

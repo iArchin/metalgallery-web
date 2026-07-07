@@ -1,103 +1,135 @@
-import Button from "./Button";
-import { toPersianNumber } from "../utils/numbers";
+import Button from "@/app/components/Button";
+import { toPersianNumber } from "@/app/utils/numbers";
 import Image from "next/image";
+import Link from "next/link";
+import type { SiteSettings } from "@/lib/types";
 
-export default function Footer() {
+const supportLinks = [
+  { label: "لیست فروشگاه‌ها", href: "/about" },
+  { label: "ساعت کاری", href: "/contact" },
+  { label: "تماس با ما", href: "/contact" },
+  { label: "سیاست بازگشت کالا", href: "/about" },
+];
+
+const accountLinks = [
+  { label: "صفحه سبد خرید", href: "/cart" },
+  { label: "تسویه حساب", href: "/cart" },
+  { label: "مقایسه", href: "/products" },
+  { label: "لیست علاقه‌مندی‌ها", href: "/wishlist" },
+];
+
+const serviceLinks = [
+  { label: "مناطق خدمات", href: "/about" },
+  { label: "اسباب‌بازی، بازی‌ها", href: "/products" },
+  { label: "پیشنهادات خدمات", href: "/news" },
+  { label: "جدول قیمت‌گذاری", href: "/products" },
+];
+
+export default function Footer({ settings }: { settings: SiteSettings }) {
   return (
-    <footer className="bg-teal-800 text-white">
+    <footer className="bg-surface-2 text-content">
       {/* Top Section - Contact Info */}
-      <div className="bg-teal-900 py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-6">
+      <div className="bg-surface-3 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="flex items-center gap-3">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                />
-              </svg>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                  />
+                </svg>
+              </span>
               <div>
-                <div className="text-sm text-gray-300">با ما تماس بگیرید</div>
+                <div className="text-sm text-content-subtle">
+                  با ما تماس بگیرید
+                </div>
                 <div className="font-semibold">
-                  {toPersianNumber("021-555-0112")}
+                  {toPersianNumber(settings.phone)}
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </span>
               <div>
-                <div className="text-sm text-gray-300">ایمیل ما</div>
-                <div className="font-semibold">mamaye@gmail.com</div>
+                <div className="text-sm text-content-subtle">ایمیل ما</div>
+                <div className="font-semibold">{settings.email}</div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </span>
               <div>
-                <div className="text-sm text-gray-300">ساعت کاری</div>
+                <div className="text-sm text-content-subtle">ساعت کاری</div>
                 <div className="font-semibold">
-                  یکشنبه تا جمعه {toPersianNumber("9")} صبح تا{" "}
-                  {toPersianNumber("6")} عصر
+                  {toPersianNumber(settings.workingHours)}
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </span>
               <div>
-                <div className="text-sm text-gray-300">آدرس</div>
+                <div className="text-sm text-content-subtle">آدرس</div>
                 <div className="font-semibold">
-                  خیابان ولیعصر، پلاک {toPersianNumber("4517")}
+                  {toPersianNumber(settings.address)}
                 </div>
               </div>
             </div>
@@ -106,28 +138,28 @@ export default function Footer() {
       </div>
 
       {/* Bottom Section - Links and Newsletter */}
-      <div className="py-12 ">
+      <div className="py-12 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-5 gap-8 mb-8">
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-5 md:gap-8 mb-8">
             {/* About */}
-            <div className="md:col-span-2">
+            <div className="col-span-2">
               <div className="flex items-center gap-2 mb-4">
                 <Image
                   src="/images/logo.png"
                   alt="متال گالری"
                   width={250}
                   height={250}
-                  className="object-contain "
+                  className="w-40 sm:w-48 h-auto object-contain"
                 />
               </div>
-              <p className="text-gray-300 mb-4 text-sm">
-                مقصد مورد اعتماد شما برای اسباب‌بازی و لباس کودکان. محصولات با
-                کیفیت با قیمت‌های عالی.
+              <p className="text-content-muted mb-4 text-sm">
+                {settings.footerAbout}
               </p>
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <a
-                  href="#"
-                  className="w-10 h-10 bg-teal-700 rounded-full flex items-center justify-center hover:bg-teal-600 transition-colors"
+                  href={settings.socials.facebook}
+                  aria-label="فیسبوک"
+                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:bg-primary hover:text-primary-content hover:shadow-lg active:bg-primary active:text-primary-content"
                 >
                   <svg
                     className="w-5 h-5"
@@ -138,8 +170,9 @@ export default function Footer() {
                   </svg>
                 </a>
                 <a
-                  href="#"
-                  className="w-10 h-10 bg-teal-700 rounded-full flex items-center justify-center hover:bg-teal-600 transition-colors"
+                  href={settings.socials.twitter}
+                  aria-label="توییتر"
+                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:bg-primary hover:text-primary-content hover:shadow-lg active:bg-primary active:text-primary-content"
                 >
                   <svg
                     className="w-5 h-5"
@@ -150,8 +183,9 @@ export default function Footer() {
                   </svg>
                 </a>
                 <a
-                  href="#"
-                  className="w-10 h-10 bg-teal-700 rounded-full flex items-center justify-center hover:bg-teal-600 transition-colors"
+                  href={settings.socials.linkedin}
+                  aria-label="لینکدین"
+                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:bg-primary hover:text-primary-content hover:shadow-lg active:bg-primary active:text-primary-content"
                 >
                   <svg
                     className="w-5 h-5"
@@ -162,8 +196,9 @@ export default function Footer() {
                   </svg>
                 </a>
                 <a
-                  href="#"
-                  className="w-10 h-10 bg-teal-700 rounded-full flex items-center justify-center hover:bg-teal-600 transition-colors"
+                  href={settings.socials.instagram}
+                  aria-label="اینستاگرام"
+                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:bg-primary hover:text-primary-content hover:shadow-lg active:bg-primary active:text-primary-content"
                 >
                   <svg
                     className="w-5 h-5"
@@ -179,99 +214,71 @@ export default function Footer() {
             {/* Customer Support */}
             <div>
               <h4 className="text-lg font-semibold mb-4">پشتیبانی مشتری</h4>
-              <ul className="space-y-2 text-gray-300 text-sm">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    لیست فروشگاه‌ها
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    ساعت کاری
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    تماس با ما
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    سیاست بازگشت کالا
-                  </a>
-                </li>
+              <ul className="space-y-2 text-content-muted text-sm">
+                {supportLinks.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="inline-block py-1 transition-colors hover:text-content active:text-primary"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* My Account */}
             <div>
               <h4 className="text-lg font-semibold mb-4">حساب کاربری من</h4>
-              <ul className="space-y-2 text-gray-300 text-sm">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    صفحه سبد خرید
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    تسویه حساب
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    مقایسه
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    لیست علاقه‌مندی‌ها
-                  </a>
-                </li>
+              <ul className="space-y-2 text-content-muted text-sm">
+                {accountLinks.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="inline-block py-1 transition-colors hover:text-content active:text-primary"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* Services */}
             <div>
               <h4 className="text-lg font-semibold mb-4">خدمات</h4>
-              <ul className="space-y-2 text-gray-300 text-sm">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    مناطق خدمات
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    اسباب‌بازی، بازی‌ها
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    پیشنهادات خدمات
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    جدول قیمت‌گذاری
-                  </a>
-                </li>
+              <ul className="space-y-2 text-content-muted text-sm">
+                {serviceLinks.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="inline-block py-1 transition-colors hover:text-content active:text-primary"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
 
           {/* Newsletter */}
-          <div className="border-t border-teal-700 pt-8 mt-8">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div className="border-t border-border pt-8 mt-8">
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
               <div>
-                <h4 className="text-lg font-semibold mb-2">خبرنامه</h4>
-                <p className="text-gray-300 text-sm">
+                <h4 className="text-lg font-semibold mb-2 text-content">
+                  خبرنامه
+                </h4>
+                <p className="text-content-muted text-sm">
                   برای دریافت آخرین به‌روزرسانی‌ها در خبرنامه هفتگی عضو شوید.
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                 <input
                   type="email"
                   placeholder="ایمیل خود را وارد کنید"
-                  className="flex-1 px-4 py-2 rounded-lg bg-teal-700 border border-teal-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 text-right"
+                  className="w-full sm:flex-1 px-4 py-2.5 rounded-full bg-surface border border-border text-content placeholder-content-subtle focus:outline-none focus:ring-2 focus:ring-primary text-right"
                 />
                 <Button variant="secondary" size="md">
                   عضو شدن
@@ -283,13 +290,13 @@ export default function Footer() {
       </div>
 
       {/* Copyright Bar */}
-      <div className="bg-teal-900 py-4">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <p className="text-gray-300 text-sm">
-              © کپی‌رایت {toPersianNumber("۱۴۰۴")} توسط متال گالری.
+      <div className="bg-surface-3 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <p className="text-content-muted text-sm">
+              © کپی‌رایت {toPersianNumber("۱۴۰۴")} توسط {settings.siteName}.
             </p>
-            <p className="text-gray-400 text-xs">
+            <p className="text-content-subtle text-xs">
               developed with love from iArchin
             </p>
           </div>

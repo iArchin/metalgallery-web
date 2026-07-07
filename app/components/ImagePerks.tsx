@@ -4,52 +4,47 @@ const perks = [
   {
     id: 1,
     icon: "📦",
+    heading: "بازگشت و بازپرداخت",
     title: "ضمانت بازگشت وجه",
-    color: "bg-teal-100",
-    iconColor: "text-teal-600",
   },
   {
     id: 2,
     icon: "🔒",
+    heading: "پرداخت امن",
     title: "۱۰۰% ایمن و مطمئن",
-    color: "bg-purple-100",
-    iconColor: "text-purple-600",
   },
   {
     id: 3,
     icon: "🎧",
+    heading: "پشتیبانی با کیفیت",
     title: "همیشه آنلاین ۲۴/۷",
-    color: "bg-green-100",
-    iconColor: "text-green-600",
   },
   {
     id: 4,
     icon: "🎁",
+    heading: "پیشنهادات روزانه",
     title: `${toPersianNumber("20%")} تخفیف با عضویت`,
-    color: "bg-blue-100",
-    iconColor: "text-blue-600",
   },
 ];
 
 export default function ImagePerks() {
   return (
-    <section className="py-8 px-4 bg-white">
+    <section className="py-8 md:py-12 px-4 sm:px-6 bg-background">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {perks.map((perk) => (
             <div
               key={perk.id}
-              className={`${perk.color} rounded-lg p-6 flex items-center gap-4`}
+              className="bg-surface border border-border rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5"
             >
-              <div className={`text-4xl ${perk.iconColor}`}>{perk.icon}</div>
-              <div>
-                <div className="text-sm font-semibold text-gray-700 mb-1">
-                  {perk.id === 1 && "بازگشت و بازپرداخت"}
-                  {perk.id === 2 && "پرداخت امن"}
-                  {perk.id === 3 && "پشتیبانی با کیفیت"}
-                  {perk.id === 4 && "پیشنهادات روزانه"}
+              <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary text-xl sm:text-2xl">
+                {perk.icon}
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-content mb-0.5">
+                  {perk.heading}
                 </div>
-                <div className="text-xs text-gray-600">{perk.title}</div>
+                <div className="text-xs text-content-muted">{perk.title}</div>
               </div>
             </div>
           ))}

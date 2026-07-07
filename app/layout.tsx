@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
 import "./globals.css";
-import FloatingActions from "./components/FloatingActions";
+import ThemeScript from "./components/ThemeScript";
 
 const vazirmatn = Vazirmatn({
   subsets: ["arabic", "latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   variable: "--font-vazirmatn",
 });
 
 export const metadata: Metadata = {
-  title: "متال گالری - اسباب‌بازی و لباس کودکان",
-  description: "خرید اسباب‌بازی و لباس کودکان - تا ۱۰% تخفیف",
+  title: "متال گالری - فروشگاه اسباب‌بازی و اکشن فیگور",
+  description:
+    "خرید آنلاین اسباب‌بازی، اکشن فیگور و لباس کودکان - جدیدترین‌ها با بهترین قیمت و تا ۱۰٪ تخفیف",
 };
 
 export default function RootLayout({
@@ -20,10 +21,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl" className={vazirmatn.variable}>
-      <body className={`${vazirmatn.className} antialiased font-sans`}>
+    <html
+      lang="fa"
+      dir="rtl"
+      data-theme="light"
+      suppressHydrationWarning
+      className={vazirmatn.variable}
+    >
+      <body className={`${vazirmatn.className} antialiased font-sans bg-background text-content`}>
+        <ThemeScript />
         {children}
-        <FloatingActions />
       </body>
     </html>
   );

@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 
 interface ButtonProps {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "outline" | "text";
+  variant?: "primary" | "secondary" | "outline" | "text" | "accent";
   size?: "sm" | "md" | "lg";
   onClick?: () => void;
   type?: "button" | "submit" | "reset";
@@ -19,13 +19,19 @@ export default function Button({
   className = "",
   disabled = false,
 }: ButtonProps) {
-  const baseStyles = "font-semibold transition-colors cursor-pointer rounded-lg";
+  const baseStyles =
+    "inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 cursor-pointer rounded-full active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
   const variantStyles = {
-    primary: "bg-teal-600 text-white hover:bg-teal-700",
-    secondary: "bg-white text-gray-900 hover:bg-gray-100 border border-gray-300",
-    outline: "bg-transparent text-gray-900 border-2 border-gray-300 hover:bg-gray-50",
-    text: "bg-transparent text-gray-900 hover:text-teal-600",
+    primary:
+      "bg-primary text-primary-content shadow-sm shadow-primary/30 hover:bg-primary-hover hover:shadow-md hover:shadow-primary/40 hover:-translate-y-0.5",
+    secondary:
+      "bg-surface text-content border border-border hover:bg-surface-2 hover:border-border-strong",
+    outline:
+      "bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-primary-content",
+    text: "bg-transparent text-content hover:text-primary",
+    accent:
+      "bg-primary-soft text-primary hover:bg-primary hover:text-primary-content",
   };
 
   const sizeStyles = {
@@ -34,20 +40,16 @@ export default function Button({
     lg: "px-8 py-3 text-lg",
   };
 
-  const disabledStyles = disabled ? "opacity-50 cursor-not-allowed" : "";
+  const disabledStyles = disabled
+    ? "opacity-50 cursor-not-allowed pointer-events-none hover:translate-y-0"
+    : "";
 
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`
-        ${baseStyles}
-        ${variantStyles[variant]}
-        ${sizeStyles[size]}
-        ${disabledStyles}
-        ${className}
-      `.trim()}
+      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${disabledStyles} ${className}`.trim()}
     >
       {children}
     </button>

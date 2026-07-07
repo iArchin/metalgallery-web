@@ -7,23 +7,15 @@ export default function ScrollToTop() {
 
   useEffect(() => {
     const toggleVisibility = () => {
-      if (window.pageYOffset > 300) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
-      }
+      setIsVisible(window.pageYOffset > 300);
     };
 
     window.addEventListener("scroll", toggleVisibility);
-
     return () => window.removeEventListener("scroll", toggleVisibility);
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (!isVisible) {
@@ -33,8 +25,8 @@ export default function ScrollToTop() {
   return (
     <button
       onClick={scrollToTop}
-      className="fixed bottom-25 right-6 bg-teal-600 hover:bg-teal-700 text-white p-4 rounded-full shadow-lg transition-all duration-300 z-50 group"
-      aria-label="Scroll to top"
+      className="fixed bottom-25 right-6 bg-primary hover:bg-primary-hover text-primary-content p-4 rounded-full shadow-lg shadow-primary/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 z-50 group"
+      aria-label="بازگشت به بالا"
     >
       <svg
         className="w-6 h-6 transform group-hover:-translate-y-1 transition-transform duration-200"
