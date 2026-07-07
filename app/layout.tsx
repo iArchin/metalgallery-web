@@ -10,7 +10,7 @@ const vazirmatn = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "بیبی‌مارت - اسباب‌بازی و لباس کودکان",
+  title: "متال گالری - اسباب‌بازی و لباس کودکان",
   description: "خرید اسباب‌بازی و لباس کودکان - تا ۱۰% تخفیف",
 };
 

@@ -114,7 +114,7 @@ export default function Footer() {
               <div className="flex items-center gap-2 mb-4">
                 <Image
                   src="/images/logo.png"
-                  alt="بیبی‌مارت"
+                  alt="متال گالری"
                   width={250}
                   height={250}
                   className="object-contain "
