@@ -24,11 +24,11 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
       onClick={toggle}
       aria-label="تغییر حالت روشن و تاریک"
       title="تغییر تم"
-      className={`group relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface-2 text-content transition-all hover:border-primary hover:text-primary hover:scale-105 active:scale-95 ${className}`}
+      className={`group relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:border-primary hover:text-primary transition-colors ${className}`}
     >
       {/* Moon — shown in light mode (click to go dark) */}
       <svg
-        className="w-5 h-5 dark:hidden transition-transform group-hover:-rotate-12"
+        className="w-5 h-5 dark:hidden"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -42,7 +42,7 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
       </svg>
       {/* Sun — shown in dark mode (click to go light) */}
       <svg
-        className="w-5 h-5 hidden dark:block transition-transform group-hover:rotate-45"
+        className="w-5 h-5 hidden dark:block"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"

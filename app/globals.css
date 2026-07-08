@@ -55,7 +55,7 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --color-coral: #ff6b6f;
+  --color-coral: #ff8a65;
   --color-star: #fbbf24;
   --color-mint: #34d399;
   --color-sun: #fbbf24;
@@ -72,9 +72,9 @@
   --border: #2a2c33;
   --border-strong: #3a3d46;
 
-  --primary: #ff6b6f;
-  --primary-hover: #ff8388;
-  --primary-soft: #33222a;
+  --primary: #ff8a65;
+  --primary-hover: #ffab91;
+  --primary-soft: #3d1e18;
   --primary-content: #ffffff;
 
   --accent-mint-soft: #14301f;
@@ -82,7 +82,7 @@
   --accent-sun-soft: #1f2026;
   --accent-grape-soft: #1f2026;
 
-  --ring: #ff8388;
+  --ring: #9f7b58;
   --shadow-color: 0 0 0;
 }
 
@@ -132,6 +132,35 @@ body {
 html {
   direction: rtl;
   scroll-behavior: smooth;
+}
+
+/* Every interactive element shows the hand cursor. Tailwind v4 no longer does
+   this for <button> by default, so restore it here; disabled controls show
+   not-allowed. (React onClick handlers on non-semantic elements aren't
+   selectable in CSS — those carry a cursor-pointer utility class instead.) */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  summary,
+  select,
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]),
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"],
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+  }
 }
 
 /* Smooth, opt-in theme cross-fade (class toggled briefly during switch) */
@@ -188,6 +217,33 @@ html {
       transparent 1.5px
     );
     background-size: 22px 22px;
+  }
+
+  /* Dotted overlay with radial fade — dots visible in center, fade to edges */
+  .bg-dots-fade {
+    position: relative;
+  }
+  .bg-dots-fade::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      currentColor 1.5px,
+      transparent 1.5px
+    );
+    background-size: 22px 22px;
+    mask-image: radial-gradient(
+      ellipse 80% 60% at 50% 50%,
+      black 20%,
+      transparent 70%
+    );
+    -webkit-mask-image: radial-gradient(
+      ellipse 80% 60% at 50% 50%,
+      black 20%,
+      transparent 70%
+    );
+    opacity: 0.06;
+    pointer-events: none;
   }
 
   /* Hide scrollbars on horizontal product rails while keeping scroll */

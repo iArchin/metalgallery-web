@@ -1,4 +1,3 @@
-import Button from "@/app/components/Button";
 import { toPersianNumber } from "@/app/utils/numbers";
 import Image from "next/image";
 import Link from "next/link";
@@ -137,13 +136,17 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
         </div>
       </div>
 
-      {/* Bottom Section - Links and Newsletter */}
-      <div className="py-12 px-4 sm:px-6">
+      {/* Bottom Section - Links */}
+      <div className="py-12 px-4 sm:px-6 bg-dots-fade text-content-subtle">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 gap-6 md:grid-cols-5 md:gap-8 mb-8">
             {/* About */}
             <div className="col-span-2">
-              <div className="flex items-center gap-2 mb-4">
+              <Link
+                href="/"
+                aria-label="متال گالری - صفحه اصلی"
+                className="inline-flex items-center gap-2 mb-4"
+              >
                 <Image
                   src="/images/logo.png"
                   alt="متال گالری"
@@ -151,7 +154,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
                   height={250}
                   className="w-40 sm:w-48 h-auto object-contain"
                 />
-              </div>
+              </Link>
               <p className="text-content-muted mb-4 text-sm">
                 {settings.footerAbout}
               </p>
@@ -263,29 +266,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
             </div>
           </div>
 
-          {/* Newsletter */}
-          <div className="border-t border-border pt-8 mt-8">
-            <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
-              <div>
-                <h4 className="text-lg font-semibold mb-2 text-content">
-                  خبرنامه
-                </h4>
-                <p className="text-content-muted text-sm">
-                  برای دریافت آخرین به‌روزرسانی‌ها در خبرنامه هفتگی عضو شوید.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
-                <input
-                  type="email"
-                  placeholder="ایمیل خود را وارد کنید"
-                  className="w-full sm:flex-1 px-4 py-2.5 rounded-full bg-surface border border-border text-content placeholder-content-subtle focus:outline-none focus:ring-2 focus:ring-primary text-right"
-                />
-                <Button variant="secondary" size="md">
-                  عضو شدن
-                </Button>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
 

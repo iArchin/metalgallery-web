@@ -50,10 +50,14 @@ export default function AdminShell({
 
   const sidebar = (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 px-5 h-16 border-b border-border">
+      <Link
+        href="/admin"
+        onClick={() => setMobileOpen(false)}
+        className="flex items-center gap-2 px-5 h-16 border-b border-border"
+      >
         <Image src="/images/logo.png" alt="متال گالری" width={64} height={64} className="w-12 object-contain" />
         <span className="font-extrabold text-content text-sm">پنل مدیریت</span>
-      </div>
+      </Link>
       <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
         {NAV.map((item) => (
           <Link

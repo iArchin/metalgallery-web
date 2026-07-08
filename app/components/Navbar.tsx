@@ -21,6 +21,7 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [wishlistCount, setWishlistCount] = useState(0);
   const pathname = usePathname();
 
@@ -196,7 +197,11 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <div className="flex items-center gap-2">
+              <Link
+                href="/"
+                aria-label="متال گالری - صفحه اصلی"
+                className="flex items-center gap-2"
+              >
                 <Image
                   src="/images/logo.png"
                   alt="متال گالری"
@@ -204,11 +209,11 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                   height={80}
                   className="w-16 sm:w-20 object-contain"
                 />
-              </div>
+              </Link>
             </div>
 
             {/* Search Bar */}
-            <div className="hidden md:flex flex-1 max-w-lg mx-8 border border-border rounded-full bg-surface overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-primary transition-shadow">
+            <div className="hidden md:flex flex-1 max-w-lg mx-8 border border-border rounded-full bg-surface shadow-sm focus-within:ring-2 focus-within:ring-primary transition-shadow">
               <div className="relative w-full flex">
                 {/* Category Dropdown */}
                 <div ref={dropdownRef} className="relative">
@@ -314,10 +319,10 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       openDropdown === "notifications" ? null : "notifications"
                     )
                   }
-                  className="p-2 text-content hover:text-primary active:text-primary relative transition-colors"
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors relative"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -390,10 +395,10 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       openDropdown === "favorites" ? null : "favorites"
                     )
                   }
-                  className="p-2 text-content hover:text-primary active:text-primary relative transition-colors"
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors relative"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -446,10 +451,10 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       openDropdown === "basket" ? null : "basket"
                     )
                   }
-                  className="p-2 text-content hover:text-primary active:text-primary relative transition-colors"
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors relative"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -561,10 +566,10 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       openDropdown === "profile" ? null : "profile"
                     )
                   }
-                  className="p-2 text-content hover:text-primary active:text-primary transition-colors"
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -644,11 +649,11 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMobileOpen(true)}
-                className="md:hidden p-2 text-content hover:text-primary active:text-primary transition-colors"
+                className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors"
                 aria-label="باز کردن منو"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -699,96 +704,179 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
             className="absolute inset-0 bg-black/40"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute right-0 top-0 w-72 max-w-[85vw] h-full bg-surface border-l border-border overflow-y-auto p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-content">منو</span>
+          <div className="absolute left-0 top-0 w-80 max-w-[85vw] h-full bg-surface border-r border-border overflow-y-auto overscroll-contain pb-16">
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-surface border-b border-border flex items-center justify-between p-4">
+              <span className="font-bold text-content text-lg">منو</span>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="p-2 text-content-muted hover:text-primary active:text-primary transition-colors"
+                className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors"
                 aria-label="بستن منو"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <nav>
+            {/* Nav Links */}
+            <nav className="px-4 pt-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="block py-3 border-b border-border text-content hover:text-primary active:text-primary font-medium transition-colors"
+                  className="flex items-center gap-3 py-3 border-b border-border text-content hover:text-primary transition-colors"
                 >
                   {link.label}
                 </Link>
               ))}
             </nav>
 
-            <div className="mt-6">
-              <h3 className="text-sm font-bold text-content-subtle mb-2">
-                دسته‌بندی‌ها
-              </h3>
-              <div className="space-y-1">
-                {megaMenuData.toys.playType.items.map((item, index) => (
-                  <Link
-                    key={index}
-                    href="/products"
-                    onClick={() => setMobileOpen(false)}
-                    className="block py-2 px-2 rounded-lg text-sm text-content-muted hover:text-primary hover:bg-surface-2 active:bg-surface-2 transition-colors"
-                  >
-                    {item}
-                  </Link>
-                ))}
-              </div>
+            {/* Categories Accordion */}
+            <div className="border-b border-border">
+              <button
+                onClick={() => setMobileExpanded(mobileExpanded === "categories" ? null : "categories")}
+                className="w-full flex items-center justify-between px-4 py-3.5 text-content hover:text-primary transition-colors"
+              >
+                <span className="font-bold text-sm">دسته‌بندی‌ها</span>
+                <svg
+                  className={`w-4 h-4 transition-transform ${mobileExpanded === "categories" ? "rotate-180" : ""}`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {mobileExpanded === "categories" && (
+                <div className="px-4 pb-4 space-y-3">
+                  {/* اسباب‌بازی‌ها */}
+                  <div>
+                    <h4 className="text-xs font-bold text-content-subtle mb-2">نوع بازی</h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {megaMenuData.toys.playType.items.map((item, i) => (
+                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
+                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                  {/* برندها */}
+                  <div>
+                    <h4 className="text-xs font-bold text-content-subtle mb-2">برندها</h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {megaMenuData.toys.brands.items.map((item, i) => (
+                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
+                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                  {/* رده سنی */}
+                  <div>
+                    <h4 className="text-xs font-bold text-content-subtle mb-2">رده سنی</h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {megaMenuData.ageAndPrice.age.items.map((item, i) => (
+                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
+                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                  {/* قیمت */}
+                  <div>
+                    <h4 className="text-xs font-bold text-content-subtle mb-2">قیمت</h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {megaMenuData.ageAndPrice.price.items.map((item, i) => (
+                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
+                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                  {/* شخصیت‌ها */}
+                  <div>
+                    <h4 className="text-xs font-bold text-content-subtle mb-2">شخصیت‌ها و تم</h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {megaMenuData.themes.characters.items.map((item, i) => (
+                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
+                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                  {/* ویژه */}
+                  <div>
+                    <h4 className="text-xs font-bold text-content-subtle mb-2">ویژه</h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {megaMenuData.themes.special.items.map((item, i) => (
+                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
+                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="mt-6">
-              <h3 className="text-sm font-bold text-content-subtle mb-2">
-                خدمات
-              </h3>
-              <div className="space-y-1">
-                <Link
-                  href="/contact"
-                  onClick={() => setMobileOpen(false)}
-                  className="block py-2 px-2 rounded-lg text-sm text-content-muted hover:text-primary hover:bg-surface-2 active:bg-surface-2 transition-colors"
+            {/* Services Accordion */}
+            <div className="border-b border-border">
+              <button
+                onClick={() => setMobileExpanded(mobileExpanded === "services" ? null : "services")}
+                className="w-full flex items-center justify-between px-4 py-3.5 text-content hover:text-primary transition-colors"
+              >
+                <span className="font-bold text-sm">خدمات</span>
+                <svg
+                  className={`w-4 h-4 transition-transform ${mobileExpanded === "services" ? "rotate-180" : ""}`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
                 >
-                  رهگیری سفارش
-                </Link>
-                <Link
-                  href="/contact"
-                  onClick={() => setMobileOpen(false)}
-                  className="block py-2 px-2 rounded-lg text-sm text-content-muted hover:text-primary hover:bg-surface-2 active:bg-surface-2 transition-colors"
-                >
-                  مشاوره خرید
-                </Link>
-                <Link
-                  href="/contact"
-                  onClick={() => setMobileOpen(false)}
-                  className="block py-2 px-2 rounded-lg text-sm text-content-muted hover:text-primary hover:bg-surface-2 active:bg-surface-2 transition-colors"
-                >
-                  پشتیبانی ۲۴/۷
-                </Link>
-                <Link
-                  href="/about"
-                  onClick={() => setMobileOpen(false)}
-                  className="block py-2 px-2 rounded-lg text-sm text-content-muted hover:text-primary hover:bg-surface-2 active:bg-surface-2 transition-colors"
-                >
-                  ضمانت اصالت کالا
-                </Link>
-              </div>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {mobileExpanded === "services" && (
+                <div className="px-4 pb-4 space-y-1">
+                  {[
+                    { label: "ارسال رایگان", href: "/about" },
+                    { label: "تحویل سریع", href: "/about" },
+                    { label: "رهگیری سفارش", href: "/about" },
+                    { label: "تحویل درب منزل", href: "/about" },
+                    { label: "ارسال به سراسر کشور", href: "/about" },
+                    { label: "۷ روز بازگشت", href: "/about" },
+                    { label: "ضمانت اصالت", href: "/about" },
+                    { label: "تعویض کالا", href: "/about" },
+                    { label: "بازگشت وجه", href: "/about" },
+                    { label: "ضمانت ایمنی و استاندارد", href: "/about" },
+                    { label: "بسته‌بندی هدیه", href: "/about" },
+                    { label: "کارت هدیه", href: "/about" },
+                    { label: "باشگاه مشتریان", href: "/about" },
+                    { label: "امتیازات و جوایز", href: "/about" },
+                    { label: "پیشنهاد تولد", href: "/about" },
+                    { label: "مشاوره خرید", href: "/contact" },
+                    { label: "راهنمای سنی", href: "/contact" },
+                    { label: "پشتیبانی ۲۴/۷", href: "/contact" },
+                    { label: "سوالات متداول", href: "/contact" },
+                    { label: "تماس با کارشناسان", href: "/about" },
+                  ].map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors"
+                    >
+                      <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
+
           </div>
         </div>
       )}
@@ -845,13 +933,13 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
               <div className="flex items-center gap-6">
                 <Link
                   href="/"
-                  className="text-content-muted hover:text-primary transition-colors font-medium"
+                  className="text-content-muted hover:text-primary transition-colors"
                 >
                   خانه
                 </Link>
                 <Link
                   href="/products"
-                  className="text-content-muted hover:text-primary transition-colors font-medium"
+                  className="text-content-muted hover:text-primary transition-colors"
                 >
                   فروشگاه
                 </Link>
@@ -862,7 +950,7 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       prev === "services" ? null : "services"
                     )
                   }
-                  className="text-content hover:text-primary transition-colors font-medium flex items-center gap-1"
+                  className="text-content-muted hover:text-primary transition-colors flex items-center gap-1"
                 >
                   خدمات
                   <svg
@@ -883,31 +971,31 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                 </button>
                 <Link
                   href="/blog"
-                  className="text-content-muted hover:text-primary transition-colors font-medium"
+                  className="text-content-muted hover:text-primary transition-colors"
                 >
                   بلاگ
                 </Link>
                 <Link
                   href="/about"
-                  className="text-content-muted hover:text-primary transition-colors font-medium"
+                  className="text-content-muted hover:text-primary transition-colors"
                 >
                   درباره ما
                 </Link>
                 <Link
                   href="/contact"
-                  className="text-content-muted hover:text-primary transition-colors font-medium"
+                  className="text-content-muted hover:text-primary transition-colors"
                 >
                   تماس با ما
                 </Link>
                 <Link
                   href="/gallery"
-                  className="text-content-muted hover:text-primary transition-colors font-medium"
+                  className="text-content-muted hover:text-primary transition-colors"
                 >
                   گالری
                 </Link>
                 <Link
                   href="/news"
-                  className="text-content-muted hover:text-primary transition-colors font-medium"
+                  className="text-content-muted hover:text-primary transition-colors"
                 >
                   اخبار
                 </Link>
@@ -916,7 +1004,7 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
 
             {/* Categories Mega Menu Dropdown */}
             <div
-              className={`absolute top-full left-1/2 transform -translate-x-1/2 mt-2 max-w-7xl w-full bg-surface shadow-2xl rounded-3xl border border-border text-content z-50 transition-all duration-300 ease-out overflow-hidden ${
+              className={`absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-7xl bg-surface shadow-2xl rounded-3xl border border-border text-content z-50 transition-all duration-300 ease-out overflow-hidden ${
                 activeMegaMenu === "categories"
                   ? "opacity-100 translate-y-0 scale-100"
                   : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
@@ -924,136 +1012,95 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
               onMouseEnter={() => setActiveMegaMenu("categories")}
               onMouseLeave={() => setActiveMegaMenu(null)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
-                {/* اسباب‌بازی‌ها Section */}
-                <div className="p-6 border-l border-border">
-                  <h3 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-soft text-primary">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                        />
+              <div className="relative grid grid-cols-1 md:grid-cols-3 divide-x divide-border p-4 sm:p-6 bg-dots-fade">
+                {/* اسباب‌بازی‌ها Column */}
+                <div className="px-5">
+                  <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
                     </span>
                     اسباب‌بازی‌ها
                   </h3>
-                  <div className="space-y-4">
-                    {Object.entries(megaMenuData.toys).map(
-                      ([key, section]) => (
-                        <div key={key}>
-                          <h4 className="font-semibold text-content-muted mb-2">
-                            {section.title}
-                          </h4>
-                          <div className="grid grid-cols-2 gap-1">
-                            {section.items.map((item, index) => (
-                              <Link
-                                key={index}
-                                href="/products"
-                                className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1 rounded-lg transition-colors"
-                              >
-                                {item}
-                              </Link>
-                            ))}
-                          </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(megaMenuData.toys).map(([key, section]) => (
+                      <div key={key}>
+                        <h4 className="text-xs font-bold text-content-subtle mb-2">{section.title}</h4>
+                        <div className="space-y-0.5">
+                          {section.items.map((item, index) => (
+                            <Link
+                              key={index}
+                              href="/products"
+                              className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group"
+                            >
+                              <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
+                              {item}
+                            </Link>
+                          ))}
                         </div>
-                      )
-                    )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* رده سنی و قیمت Section */}
-                <div className="p-6 border-l border-border">
-                  <h3 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-soft text-primary">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12a3 3 0 100-6 3 3 0 000 6zm7 6a4 4 0 00-8 0m12-3a3 3 0 10-2-5.24"
-                        />
+                {/* رده سنی و قیمت Column */}
+                <div className="px-5">
+                  <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12a3 3 0 100-6 3 3 0 000 6zm7 6a4 4 0 00-8 0m12-3a3 3 0 10-2-5.24" />
                       </svg>
                     </span>
                     رده سنی و قیمت
                   </h3>
-                  <div className="space-y-4">
-                    {Object.entries(megaMenuData.ageAndPrice).map(
-                      ([key, section]) => (
-                        <div key={key}>
-                          <h4 className="font-semibold text-content-muted mb-2">
-                            {section.title}
-                          </h4>
-                          <div className="grid grid-cols-2 gap-1">
-                            {section.items.map((item, index) => (
-                              <Link
-                                key={index}
-                                href="/products"
-                                className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1 rounded-lg transition-colors"
-                              >
-                                {item}
-                              </Link>
-                            ))}
-                          </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(megaMenuData.ageAndPrice).map(([key, section]) => (
+                      <div key={key}>
+                        <h4 className="text-xs font-bold text-content-subtle mb-2">{section.title}</h4>
+                        <div className="space-y-0.5">
+                          {section.items.map((item, index) => (
+                            <Link
+                              key={index}
+                              href="/products"
+                              className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group"
+                            >
+                              <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
+                              {item}
+                            </Link>
+                          ))}
                         </div>
-                      )
-                    )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* شخصیت‌ها و تم Section */}
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-soft text-primary">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-                        />
+                {/* شخصیت‌ها و تم Column */}
+                <div className="px-5">
+                  <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                       </svg>
                     </span>
                     شخصیت‌ها و تم
                   </h3>
-                  <div className="space-y-4">
-                    {Object.entries(megaMenuData.themes).map(
-                      ([key, section]) => (
-                        <div key={key}>
-                          <h4 className="font-semibold text-content-muted mb-2">
-                            {section.title}
-                          </h4>
-                          <div className="grid grid-cols-2 gap-1">
-                            {section.items.map((item, index) => (
-                              <Link
-                                key={index}
-                                href="/products"
-                                className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1 rounded-lg transition-colors"
-                              >
-                                {item}
-                              </Link>
-                            ))}
-                          </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(megaMenuData.themes).map(([key, section]) => (
+                      <div key={key}>
+                        <h4 className="text-xs font-bold text-content-subtle mb-2">{section.title}</h4>
+                        <div className="space-y-0.5">
+                          {section.items.map((item, index) => (
+                            <Link
+                              key={index}
+                              href="/products"
+                              className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group"
+                            >
+                              <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
+                              {item}
+                            </Link>
+                          ))}
                         </div>
-                      )
-                    )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1062,7 +1109,7 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
             {/* Services Mega Menu */}
             <div
               ref={servicesMenuRef}
-              className={`absolute top-full left-1/2 transform -translate-x-1/2 mt-2 max-w-7xl w-full bg-surface shadow-2xl rounded-3xl border border-border text-content z-50 transition-all duration-300 ease-out overflow-hidden ${
+              className={`absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-7xl bg-surface shadow-2xl rounded-3xl border border-border text-content z-50 transition-all duration-300 ease-out overflow-hidden ${
                 activeMegaMenu === "services"
                   ? "opacity-100 translate-y-0 scale-100"
                   : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
@@ -1070,226 +1117,82 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
               onMouseEnter={() => setActiveMegaMenu("services")}
               onMouseLeave={() => setActiveMegaMenu(null)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-0">
-                {/* تحویل و ارسال Section */}
-                <div className="p-6 border-l border-border">
-                  <h3 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-soft text-primary">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM20 17a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 16V6a1 1 0 00-1-1H3m10 11h6v-5m0 0l-3-3h-3m6 3H13"
-                        />
+              <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-x divide-border p-4 sm:p-6 bg-dots-fade">
+                {/* تحویل و ارسال */}
+                <div className="px-5">
+                  <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM20 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H3m10 11h6v-5m0 0l-3-3h-3m6 3H13" />
                       </svg>
                     </span>
                     تحویل و ارسال
                   </h3>
-                  <div className="space-y-2">
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      ارسال رایگان
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      تحویل سریع
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      رهگیری سفارش
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      تحویل درب منزل
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      ارسال به سراسر کشور
-                    </a>
+                  <div className="space-y-0.5">
+                    {["ارسال رایگان", "تحویل سریع", "رهگیری سفارش", "تحویل درب منزل", "ارسال به سراسر کشور"].map((item) => (
+                      <a key={item} href="/about" className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group">
+                        <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
+                        {item}
+                      </a>
+                    ))}
                   </div>
                 </div>
-
-                {/* ضمانت و مرجوعی Section */}
-                <div className="p-6 border-l border-border">
-                  <h3 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-soft text-primary">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                        />
+                {/* ضمانت و مرجوعی */}
+                <div className="px-5">
+                  <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
                     </span>
                     ضمانت و مرجوعی
                   </h3>
-                  <div className="space-y-2">
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      ۷ روز بازگشت
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      ضمانت اصالت
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      تعویض کالا
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      بازگشت وجه
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      ضمانت ایمنی و استاندارد
-                    </a>
+                  <div className="space-y-0.5">
+                    {["۷ روز بازگشت", "ضمانت اصالت", "تعویض کالا", "بازگشت وجه", "ضمانت ایمنی و استاندارد"].map((item) => (
+                      <a key={item} href="/about" className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group">
+                        <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
+                        {item}
+                      </a>
+                    ))}
                   </div>
                 </div>
-
-                {/* هدیه و باشگاه Section */}
-                <div className="p-6 border-l border-border">
-                  <h3 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-soft text-primary">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-7-4v16"
-                        />
+                {/* هدیه و باشگاه */}
+                <div className="px-5">
+                  <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-7-4v16" />
                       </svg>
                     </span>
                     هدیه و باشگاه
                   </h3>
-                  <div className="space-y-2">
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      بسته‌بندی هدیه
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      کارت هدیه
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      باشگاه مشتریان
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      امتیازات و جوایز
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      پیشنهاد تولد
-                    </a>
+                  <div className="space-y-0.5">
+                    {["بسته‌بندی هدیه", "کارت هدیه", "باشگاه مشتریان", "امتیازات و جوایز", "پیشنهاد تولد"].map((item) => (
+                      <a key={item} href="/about" className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group">
+                        <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
+                        {item}
+                      </a>
+                    ))}
                   </div>
                 </div>
-
-                {/* پشتیبانی Section */}
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-soft text-primary">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                        />
+                {/* پشتیبانی */}
+                <div className="px-5">
+                  <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
                     </span>
                     پشتیبانی
                   </h3>
-                  <div className="space-y-2">
-                    <a
-                      href="/contact"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      مشاوره خرید
-                    </a>
-                    <a
-                      href="/contact"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      راهنمای سنی
-                    </a>
-                    <a
-                      href="/contact"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      پشتیبانی ۲۴/۷
-                    </a>
-                    <a
-                      href="/contact"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      سوالات متداول
-                    </a>
-                    <a
-                      href="/about"
-                      className="block text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-3 py-2 rounded-xl transition-colors"
-                    >
-                      تماس با کارشناسان
-                    </a>
+                  <div className="space-y-0.5">
+                    {["مشاوره خرید", "راهنمای سنی", "پشتیبانی ۲۴/۷", "سوالات متداول", "تماس با کارشناسان"].map((item) => (
+                      <a key={item} href="/contact" className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group">
+                        <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
+                        {item}
+                      </a>
+                    ))}
                   </div>
                 </div>
               </div>

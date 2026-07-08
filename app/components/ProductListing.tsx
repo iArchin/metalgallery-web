@@ -8,6 +8,7 @@ import { useCart } from "@/app/components/CartContext";
 import { productImage } from "@/app/utils/images";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
 import { discountPercent, type Category, type Product } from "@/lib/types";
+import QuickLookModal from "@/app/components/QuickLookModal";
 
 type SortOption = "newest" | "price-low" | "price-high" | "rating" | "name";
 
@@ -44,6 +45,7 @@ export default function ProductListing({
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [addedIds, setAddedIds] = useState<Record<number, boolean>>({});
+  const [quickLookProduct, setQuickLookProduct] = useState<Product | null>(null);
   const productsPerPage = 9;
 
   // Sync the selected category when the URL's category param changes (client-side
@@ -166,6 +168,7 @@ export default function ProductListing({
     selectedAgeGroup;
 
   return (
+    <>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
         {/* Header */}
         <div className="mb-6">
@@ -405,17 +408,34 @@ export default function ProductListing({
                       <Link
                         key={product.id}
                         href={`/product/${product.id}`}
-                        className="group bg-surface border border-border rounded-2xl shadow-sm p-3 sm:p-4 hover:shadow-lg hover:-translate-y-0.5 transition-all block"
+                        className="group bg-surface border border-border rounded-2xl shadow-sm p-3 sm:p-4 transition-colors block"
                       >
                         <div className="relative h-36 sm:h-48 w-full overflow-hidden rounded-xl sm:rounded-2xl bg-surface-2 mb-3 sm:mb-4">
                           <img
                             src={productImage(product)}
                             alt={product.name}
                             loading="lazy"
-                            className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                            className={`h-full w-full object-cover ${
                               outOfStock ? "opacity-60 grayscale" : ""
                             }`}
                           />
+                          {/* Quick Look button */}
+                          {!outOfStock && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setQuickLookProduct(product);
+                              }}
+                              aria-label={`مشاهده سریع ${product.name}`}
+                              className="absolute bottom-2 left-2 h-9 w-9 inline-flex items-center justify-center rounded-full border border-border bg-surface/90 text-content hover:text-primary hover:border-primary hover:bg-surface backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                          )}
                           {off > 0 && !outOfStock && (
                             <span className="absolute top-2 right-2 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-content shadow-sm">
                               ٪{toPersianNumber(off.toString())} تخفیف
@@ -555,5 +575,15 @@ export default function ProductListing({
           </div>
         </div>
     </div>
+
+    {/* Quick Look Modal */}
+    {quickLookProduct && (
+      <QuickLookModal
+        product={quickLookProduct}
+        open={!!quickLookProduct}
+        onClose={() => setQuickLookProduct(null)}
+      />
+    )}
+    </>
   );
 }
