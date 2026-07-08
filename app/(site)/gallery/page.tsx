@@ -5,9 +5,14 @@ import { toyImage } from "@/app/utils/images";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "گالری | متال گالری",
+  title: "گالری",
   description:
     "گالری تصاویر متال گالری؛ نگاهی به دنیای رنگارنگ اسباب‌بازی‌ها و محصولات فروشگاه ما.",
+  openGraph: {
+    title: "گالری متال گالری | تصاویر محصولات",
+    description:
+      "گالری تصاویر متال گالری؛ نگاهی به دنیای رنگارنگ اسباب‌بازی‌ها",
+  },
 };
 
 export default async function GalleryPage() {

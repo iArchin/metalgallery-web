@@ -9,7 +9,7 @@ const banners = [
     title: "اسباب‌بازی آموزشی برای کودکان",
     discount: `${toPersianNumber("15%")} تخفیف روی اسباب‌بازی و هدایای کودکان!`,
     buttonText: "همین حالا خرید کنید",
-    image: toyImage("lego building blocks educational toy", 31),
+    image: "/images/toy-promo.jpg",
     alt: "اسباب‌بازی آموزشی بلوک‌های ساختنی",
   },
   {
@@ -17,7 +17,7 @@ const banners = [
     title: "واگن و ماشین سواری کودکان",
     discount: `و همین حالا ${toPersianNumber("20%")} تخفیف خود را دریافت کنید!`,
     buttonText: "همین حالا خرید کنید",
-    image: toyImage("ride on toy car kids", 43),
+    image: "/images/toy-kids-3.jpg",
     alt: "ماشین سواری کودکان",
   },
   {
@@ -25,7 +25,7 @@ const banners = [
     title: "اسباب‌بازی حرکتی برای کودکان",
     discount: `و همین حالا ${toPersianNumber("10%")} تخفیف خود را دریافت کنید!`,
     buttonText: "همین حالا خرید کنید",
-    image: toyImage("plush toy puppy dog", 21),
+    image: "/images/toy-kids-4.jpg",
     alt: "عروسک پولیشی سگ",
   },
 ];
@@ -33,12 +33,12 @@ const banners = [
 export default function PromotionalBanners() {
   return (
     <section className="bg-background px-4 py-12 sm:px-6 md:py-16">
-      <div className="mx-auto max-w-7xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {banners.map((banner) => (
             <div
               key={banner.id}
-              className="group relative min-h-[220px] overflow-hidden rounded-2xl bg-surface-2 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              className="group relative min-h-[220px] overflow-hidden rounded-2xl bg-surface-2 shadow-sm transition-colors"
             >
               {/* real toy photo */}
               <img
@@ -53,9 +53,9 @@ export default function PromotionalBanners() {
 
               {/* content anchored to the bottom */}
               <div className="relative z-10 flex min-h-[220px] flex-col justify-end p-5 sm:p-6">
-                <h3 className="mb-1.5 text-lg font-bold leading-snug text-white sm:text-xl">
+                <h2 className="mb-1.5 text-lg font-bold leading-snug text-white sm:text-xl">
                   {banner.title}
-                </h3>
+                </h2>
                 <p className="mb-4 text-sm text-white/85">{banner.discount}</p>
                 <Link href="/products" className="self-start">
                   <Button variant="secondary" size="sm">

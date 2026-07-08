@@ -7,9 +7,14 @@ import { toPersianNumber } from "@/app/utils/numbers";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "درباره ما | متال گالری",
+  title: "درباره ما",
   description:
     "متال گالری؛ فروشگاه تخصصی اسباب‌بازی و اکشن فیگور از سال ۱۳۹۵ — ضمانت اصالت کالا، مشاوره تخصصی و پشتیبانی واقعی.",
+  openGraph: {
+    title: "درباره ما | متال گالری - فروشگاه تخصصی اسباب‌بازی",
+    description:
+      "متال گالری؛ فروشگاه تخصصی اسباب‌بازی و اکشن فیگور از سال ۱۳۹۵",
+  },
 };
 
 const valueIcons = [
@@ -125,7 +130,7 @@ export default async function AboutPage() {
           {c.values.map((value, i) => (
             <div
               key={value.title}
-              className="bg-surface border border-border rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all p-6"
+              className="bg-surface border border-border rounded-2xl shadow-sm transition-colors p-6"
             >
               <div className="w-12 h-12 rounded-2xl bg-primary-soft text-primary flex items-center justify-center">
                 {valueIcons[i % valueIcons.length]}
@@ -153,7 +158,7 @@ export default async function AboutPage() {
           </p>
           <Link
             href="/products"
-            className="mt-6 inline-flex items-center justify-center gap-2 min-h-12 px-8 py-3 rounded-full bg-surface text-primary font-bold text-sm sm:text-base shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-content focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+            className="mt-6 inline-flex items-center justify-center gap-2 min-h-12 px-8 py-3 rounded-full bg-surface text-primary font-bold text-sm sm:text-base shadow-sm transition-colors active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-content focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
           >
             {c.ctaButton}
             <svg

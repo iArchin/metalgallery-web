@@ -7,9 +7,14 @@ import { toPersianNumber } from "@/app/utils/numbers";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "تماس با ما | متال گالری",
+  title: "تماس با ما",
   description:
     "با فروشگاه اسباب‌بازی متال گالری در تماس باشید؛ تلفن، ایمیل، آدرس فروشگاه و فرم ارسال پیام.",
+  openGraph: {
+    title: "تماس با ما | متال گالری",
+    description:
+      "با فروشگاه اسباب‌بازی متال گالری در تماس باشید",
+  },
 };
 
 const icons: Record<string, ReactNode> = {
@@ -128,7 +133,7 @@ export default async function ContactPage() {
         {infoCards.map((card) => (
           <div
             key={card.title}
-            className="bg-surface border border-border rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-start gap-4"
+            className="bg-surface border border-border rounded-2xl p-5 shadow-sm transition-colors flex items-start gap-4"
           >
             <span className="w-11 h-11 shrink-0 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
               {card.icon}

@@ -17,8 +17,25 @@ export async function generateMetadata({
   const { id } = await params;
   const article = await articlesRepo.get(parseInt(id));
   return {
-    title: `${article?.title ?? "مقاله"} | متال گالری`,
+    title: article?.title ?? "مقاله",
     description: article?.excerpt,
+    openGraph: article
+      ? {
+          title: article.title,
+          description: article.excerpt,
+          type: "article",
+          publishedTime: article.date,
+          authors: [article.author],
+          images: [
+            {
+              url: toyImage(article.imageKeyword, article.imageLock, 1200, 630),
+              width: 1200,
+              height: 630,
+              alt: article.title,
+            },
+          ],
+        }
+      : undefined,
   };
 }
 
@@ -127,7 +144,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <Link
                 key={related.id}
                 href={`/blog/${related.id}`}
-                className="group bg-surface border border-border rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:shadow-md transition-all overflow-hidden"
+                className="group bg-surface border border-border rounded-2xl shadow-sm transition-colors overflow-hidden"
               >
                 <div className="h-36 sm:h-40 overflow-hidden bg-surface-2">
                   <img

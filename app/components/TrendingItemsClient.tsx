@@ -37,7 +37,7 @@ export default function TrendingItemsClient({
   return (
     <>
     <section className="py-12 md:py-16 px-4 sm:px-6 bg-background">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Promotional Banner */}
           <div className="md:col-span-1 min-h-[180px] md:min-h-0 bg-primary text-primary-content rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-sm">
@@ -53,7 +53,7 @@ export default function TrendingItemsClient({
               </div>
               <div className="h-36 sm:h-40 w-full overflow-hidden rounded-xl bg-white/15">
                 <img
-                  src={toyImage("teddy bear toy", 21)}
+                  src="/images/toy-kids-2.jpg"
                   alt="اسباب‌بازی خرسی پلوش با تخفیف ویژه"
                   loading="lazy"
                   className="h-full w-full object-cover"
@@ -149,7 +149,7 @@ export default function TrendingItemsClient({
                           {outOfStock
                             ? "ناموجود"
                             : added
-                              ? "✓ اضافه شد"
+                              ? "افزوده شد"
                               : "افزودن به سبد خرید"}
                         </Button>
                       </div>

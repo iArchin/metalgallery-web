@@ -7,9 +7,14 @@ import { toyImage } from "@/app/utils/images";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "بلاگ | متال گالری",
+  title: "بلاگ",
   description:
     "مقالات و راهنماهای متال گالری درباره انتخاب اسباب‌بازی، رشد کودک، ایمنی و دنیای کلکسیونری.",
+  openGraph: {
+    title: "بلاگ متال گالری | مقالات و راهنماهای اسباب‌بازی",
+    description:
+      "مقالات و راهنماهای متال گالری درباره انتخاب اسباب‌بازی، رشد کودک، ایمنی و دنیای کلکسیونری.",
+  },
 };
 
 export default async function BlogPage() {
@@ -38,7 +43,7 @@ export default async function BlogPage() {
           {/* Featured article */}
           <Link
             href={`/blog/${featured.id}`}
-            className="group grid md:grid-cols-2 bg-surface border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all mb-10 sm:mb-12"
+            className="group grid md:grid-cols-2 bg-surface border border-border rounded-2xl overflow-hidden shadow-sm transition-colors mb-10 sm:mb-12"
           >
             <div className="h-56 sm:h-72 md:h-full overflow-hidden bg-surface-2">
               <img
@@ -93,7 +98,7 @@ export default async function BlogPage() {
               <Link
                 key={a.id}
                 href={`/blog/${a.id}`}
-                className="group flex flex-col bg-surface border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                className="group flex flex-col bg-surface border border-border rounded-2xl overflow-hidden shadow-sm transition-colors"
               >
                 <div className="h-44 overflow-hidden bg-surface-2">
                   <img

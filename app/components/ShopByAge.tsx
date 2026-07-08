@@ -1,55 +1,47 @@
 import Link from "next/link";
 import { toPersianNumber } from "../utils/numbers";
-import { toyImage } from "../utils/images";
 
 const ageGroups = [
   {
     id: 1,
     age: `${toPersianNumber("0")}-${toPersianNumber("1")} سال`,
-    keyword: "baby rattle toy",
-    lock: 71,
+    image: "/images/toy-kids-1.jpg",
     alt: "اسباب‌بازی جغجغه نوزاد",
   },
   {
     id: 2,
     age: `${toPersianNumber("1")}-${toPersianNumber("2")} سال`,
-    keyword: "stacking toy",
-    lock: 72,
+    image: "/images/toy-kids-2.jpg",
     alt: "اسباب‌بازی حلقه‌های روی‌هم",
   },
   {
     id: 3,
     age: `${toPersianNumber("3")}-${toPersianNumber("4")} سال`,
-    keyword: "building blocks toy",
-    lock: 73,
+    image: "/images/toy-kids-3.jpg",
     alt: "اسباب‌بازی بلوک‌های ساختنی",
   },
   {
     id: 4,
     age: `${toPersianNumber("0")}-${toPersianNumber("2")} سال`,
-    keyword: "soft plush toy",
-    lock: 74,
+    image: "/images/toy-kids-4.jpg",
     alt: "عروسک پولیشی نرم",
   },
   {
     id: 5,
     age: `${toPersianNumber("4")}-${toPersianNumber("7")} سال`,
-    keyword: "action figure",
-    lock: 75,
+    image: "/images/toy-kids-5.jpg",
     alt: "اکشن فیگور",
   },
   {
     id: 6,
     age: `${toPersianNumber("7")}-${toPersianNumber("10")} سال`,
-    keyword: "board game toy",
-    lock: 76,
+    image: "/images/toy-hero.jpg",
     alt: "بازی رومیزی",
   },
   {
     id: 7,
     age: `${toPersianNumber("12") + "+"} سال`,
-    keyword: "model kit toy",
-    lock: 77,
+    image: "/images/toy-banner.jpg",
     alt: "کیت ماکت مدل‌سازی",
   },
 ];
@@ -57,7 +49,7 @@ const ageGroups = [
 export default function ShopByAge() {
   return (
     <section className="py-12 md:py-16 px-4 sm:px-6 bg-background">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-center mb-3 text-content">
           بر اساس سن خرید کنید
         </h2>
@@ -71,9 +63,9 @@ export default function ShopByAge() {
               href="/products"
               className="shrink-0 snap-start flex flex-col items-center group"
             >
-              <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-surface-2 border-2 border-border group-hover:border-primary shadow-sm mb-3 sm:mb-4 transition-all group-hover:-translate-y-0.5 group-hover:shadow-lg group-active:scale-95">
+              <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-surface-2 border-2 border-border group-hover:border-primary shadow-sm mb-3 sm:mb-4 transition-all">
                 <img
-                  src={toyImage(group.keyword, group.lock, 300, 300)}
+                  src={group.image}
                   alt={group.alt}
                   loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"

@@ -138,8 +138,8 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
 
       {/* Bottom Section - Links */}
       <div className="py-12 px-4 sm:px-6 bg-dots-fade text-content-subtle">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-5 md:gap-8 mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-5 md:gap-8 mb-8 items-center">
             {/* About */}
             <div className="col-span-2">
               <Link
@@ -152,7 +152,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
                   alt="متال گالری"
                   width={250}
                   height={250}
-                  className="w-40 sm:w-48 h-auto object-contain"
+                  className="w-40 sm:w-48 h-auto object-contain dark:brightness-0 dark:invert"
                 />
               </Link>
               <p className="text-content-muted mb-4 text-sm">
@@ -162,7 +162,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
                 <a
                   href={settings.socials.facebook}
                   aria-label="فیسبوک"
-                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:bg-primary hover:text-primary-content hover:shadow-lg active:bg-primary active:text-primary-content"
+                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-colors hover:bg-primary hover:text-primary-content active:bg-primary active:text-primary-content"
                 >
                   <svg
                     className="w-5 h-5"
@@ -175,7 +175,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
                 <a
                   href={settings.socials.twitter}
                   aria-label="توییتر"
-                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:bg-primary hover:text-primary-content hover:shadow-lg active:bg-primary active:text-primary-content"
+                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-colors hover:bg-primary hover:text-primary-content active:bg-primary active:text-primary-content"
                 >
                   <svg
                     className="w-5 h-5"
@@ -188,7 +188,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
                 <a
                   href={settings.socials.linkedin}
                   aria-label="لینکدین"
-                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:bg-primary hover:text-primary-content hover:shadow-lg active:bg-primary active:text-primary-content"
+                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-colors hover:bg-primary hover:text-primary-content active:bg-primary active:text-primary-content"
                 >
                   <svg
                     className="w-5 h-5"
@@ -201,7 +201,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
                 <a
                   href={settings.socials.instagram}
                   aria-label="اینستاگرام"
-                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:bg-primary hover:text-primary-content hover:shadow-lg active:bg-primary active:text-primary-content"
+                  className="w-10 h-10 bg-primary-soft text-primary rounded-full flex items-center justify-center transition-colors hover:bg-primary hover:text-primary-content active:bg-primary active:text-primary-content"
                 >
                   <svg
                     className="w-5 h-5"
@@ -216,7 +216,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
 
             {/* Customer Support */}
             <div>
-              <h4 className="text-lg font-semibold mb-4">پشتیبانی مشتری</h4>
+              <h3 className="text-lg font-semibold mb-4">پشتیبانی مشتری</h3>
               <ul className="space-y-2 text-content-muted text-sm">
                 {supportLinks.map((link) => (
                   <li key={link.label}>
@@ -233,7 +233,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
 
             {/* My Account */}
             <div>
-              <h4 className="text-lg font-semibold mb-4">حساب کاربری من</h4>
+              <h3 className="text-lg font-semibold mb-4">حساب کاربری من</h3>
               <ul className="space-y-2 text-content-muted text-sm">
                 {accountLinks.map((link) => (
                   <li key={link.label}>
@@ -250,7 +250,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
 
             {/* Services */}
             <div>
-              <h4 className="text-lg font-semibold mb-4">خدمات</h4>
+              <h3 className="text-lg font-semibold mb-4">خدمات</h3>
               <ul className="space-y-2 text-content-muted text-sm">
                 {serviceLinks.map((link) => (
                   <li key={link.label}>

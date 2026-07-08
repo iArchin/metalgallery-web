@@ -132,7 +132,7 @@ export default function WishlistClient({ products }: { products: Product[] }) {
             return (
               <div
                 key={item.id}
-                className="bg-surface border border-border rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all p-3 sm:p-4 flex flex-col"
+                className="bg-surface border border-border rounded-2xl shadow-sm transition-colors p-3 sm:p-4 flex flex-col"
               >
                 <Link
                   href={`/product/${item.id}`}
@@ -175,7 +175,7 @@ export default function WishlistClient({ products }: { products: Product[] }) {
                     {item.stock <= 0
                       ? "ناموجود"
                       : isAdded
-                        ? "افزوده شد ✓"
+                        ? "افزوده شد"
                         : "افزودن به سبد"}
                   </Button>
                   <button

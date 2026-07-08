@@ -20,7 +20,7 @@ export default function LiveChat({
     <>
       <button
         onClick={handleChatClick}
-        className="fixed bottom-6 right-6 bg-primary hover:bg-primary-hover text-primary-content p-4 rounded-full shadow-lg shadow-primary/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 z-50 group"
+        className="fixed bottom-6 right-6 bg-primary hover:bg-primary-hover text-primary-content p-4 rounded-full shadow-lg shadow-primary/30 transition-colors duration-300 z-50 group"
         aria-label="چت آنلاین"
       >
         <svg

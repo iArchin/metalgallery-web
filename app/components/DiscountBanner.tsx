@@ -12,7 +12,7 @@ export default async function DiscountBanner() {
   return (
     <section className="py-12 md:py-16 px-4 sm:px-6 bg-background">
       <div className="max-w-7xl mx-auto">
-        <div className="relative overflow-hidden rounded-3xl bg-primary p-6 sm:p-10 shadow-sm transition-all hover:shadow-lg">
+        <div className="relative overflow-hidden rounded-3xl bg-primary p-6 sm:p-10 shadow-sm">
           {/* Very subtle dotted backdrop */}
           <div className="pointer-events-none absolute inset-0 bg-play-dots text-white/10" />
 
@@ -38,7 +38,7 @@ export default async function DiscountBanner() {
             {/* Clean real toys photo */}
             <div className="w-full md:w-80 shrink-0 overflow-hidden rounded-2xl bg-surface-2">
               <img
-                src={toyBanner("toys pile", 72)}
+                src="/images/toy-banner.jpg"
                 alt={sale.title}
                 loading="lazy"
                 className="w-full h-40 sm:h-48 md:h-56 object-cover"

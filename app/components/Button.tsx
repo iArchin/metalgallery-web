@@ -24,7 +24,7 @@ export default function Button({
 
   const variantStyles = {
     primary:
-      "bg-primary text-primary-content shadow-sm shadow-primary/30 hover:bg-primary-hover hover:shadow-md hover:shadow-primary/40 hover:-translate-y-0.5",
+      "bg-primary text-primary-content shadow-sm shadow-primary/30 hover:bg-primary-hover",
     secondary:
       "bg-surface text-content border border-border hover:bg-surface-2 hover:border-border-strong",
     outline:

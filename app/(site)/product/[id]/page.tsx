@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductDetail from "@/app/components/ProductDetail";
+import JsonLdProduct from "@/app/components/JsonLdProduct";
 import { getProduct, listProducts } from "@/lib/server/repos";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,17 @@ export async function generateMetadata({
   return {
     title: product.name,
     description: product.description,
+    alternates: {
+      canonical: `https://metalgallery.ir/product/${product.id}`,
+    },
+    openGraph: {
+      title: product.name,
+      description: product.description,
+      type: "article",
+      images: product.image
+        ? [{ url: product.image, width: 600, height: 600, alt: product.name }]
+        : [],
+    },
   };
 }
 
@@ -36,6 +48,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <main>
+      <JsonLdProduct product={product} />
       <ProductDetail product={product} related={related} />
     </main>
   );

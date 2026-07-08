@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +8,7 @@ import ThemeToggle from "./ThemeToggle";
 import { toyImage, productImage } from "../utils/images";
 import { toPersianNumber, formatPersianNumber } from "../utils/numbers";
 import { useCart } from "@/app/components/CartContext";
+import type { Product } from "@/lib/types";
 
 interface NavbarSettings {
   phone?: string;
@@ -23,7 +24,53 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+
+  // Close search on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Instant search with debounce
+  const doSearch = useCallback(async (q: string) => {
+    if (!q.trim()) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
+      const json = await res.json();
+      if (json.ok) {
+        setSearchResults(json.data);
+        setSearchOpen(json.data.length > 0);
+      }
+    } catch {
+      setSearchResults([]);
+    }
+  }, []);
+
+  const handleSearchInput = (value: string) => {
+    setSearchQuery(value);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => doSearch(value), 150);
+  };
+
+  // Close results on route change
+  useEffect(() => {
+    setSearchOpen(false);
+  }, [pathname]);
 
   // Live wishlist badge: the wishlist lives in localStorage (mg_wishlist_v1,
   // owned by WishlistClient). Re-read on every route change (the navbar stays
@@ -194,26 +241,9 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
       {/* Top Header */}
       <header className="bg-surface border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link
-                href="/"
-                aria-label="متال گالری - صفحه اصلی"
-                className="flex items-center gap-2"
-              >
-                <Image
-                  src="/images/logo.png"
-                  alt="متال گالری"
-                  width={80}
-                  height={80}
-                  className="w-16 sm:w-20 object-contain"
-                />
-              </Link>
-            </div>
-
-            {/* Search Bar */}
-            <div className="hidden md:flex flex-1 max-w-lg mx-8 border border-border rounded-full bg-surface shadow-sm focus-within:ring-2 focus-within:ring-primary transition-shadow">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center h-16 gap-4">
+            {/* Search Bar — right side, wider */}
+            <div className="hidden md:flex border border-border rounded-full bg-surface shadow-sm focus-within:ring-1 focus-within:ring-primary transition-shadow max-w-md">
               <div className="relative w-full flex">
                 {/* Category Dropdown */}
                 <div ref={dropdownRef} className="relative">
@@ -259,11 +289,14 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                 </div>
 
                 {/* Search Input */}
-                <div className="relative flex-1">
+                <div ref={searchRef} className="relative flex-1">
                   <input
                     type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchInput(e.target.value)}
+                    onFocus={() => { if (searchResults.length > 0) setSearchOpen(true); }}
                     placeholder="اسباب‌بازی مورد نظر را جستجو کنید"
-                    className="w-full h-10 px-4 py-2 rounded-l-full bg-surface text-content placeholder:text-content-subtle focus:outline-none text-right pr-12"
+                    className="w-full h-10 pl-10 pr-4 py-2 rounded-l-full bg-surface text-content text-sm placeholder:text-content-subtle placeholder:text-sm focus:outline-none text-right"
                   />
                   <button className="absolute left-3 top-1/2 transform -translate-y-1/2 text-content-subtle hover:text-primary transition-colors">
                     <svg
@@ -280,13 +313,57 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       />
                     </svg>
                   </button>
+
+                  {/* Search Results Dropdown */}
+                  {searchOpen && searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                      {searchResults.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={`/product/${product.id}`}
+                          onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors border-b border-border last:border-0"
+                        >
+                          <img
+                            src={productImage(product, 80, 80)}
+                            alt={product.name}
+                            className="w-10 h-10 rounded-xl object-cover shrink-0 bg-surface-2"
+                          />
+                          <div className="flex-1 text-right min-w-0">
+                            <p className="text-sm font-medium text-content truncate">{product.name}</p>
+                            <p className="text-xs text-content-muted">{formatPersianNumber(product.price)} تومان</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
+            {/* Logo — center */}
+            <div className="flex items-center justify-center">
+              <Link
+                href="/"
+                aria-label="متال گالری - صفحه اصلی"
+                className="flex items-center gap-2"
+              >
+                <Image
+                  src="/images/logo.png"
+                  alt="متال گالری"
+                  width={80}
+                  height={80}
+                  className="w-20 sm:w-24 object-contain dark:brightness-0 dark:invert"
+                />
+              </Link>
+            </div>
+
             {/* Right Icons */}
-            <div className="flex items-center gap-1 sm:gap-3">
-              <div className="hidden lg:flex items-center gap-2 text-content-muted">
+            <div className="flex items-center gap-1 sm:gap-3 justify-end">
+              <div className="hidden lg:flex items-center gap-2 text-content-muted ml-4 border-l border-border pl-4">
+                <span className="text-sm">
+                  {settings?.phone ? toPersianNumber(settings.phone) : "۰۲۱-۱۲۳۴۵۶۷۸"}
+                </span>
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -300,9 +377,6 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                   />
                 </svg>
-                <span className="text-sm">
-                  {settings?.phone ? toPersianNumber(settings.phone) : "۰۲۱-۱۲۳۴۵۶۷۸"}
-                </span>
               </div>
 
               {/* Theme Toggle */}
@@ -334,7 +408,7 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                     />
                   </svg>
-                  <span className="absolute top-0 right-0 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
                     {toPersianNumber(3)}
                   </span>
                 </button>
@@ -411,7 +485,7 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                     />
                   </svg>
                   {wishlistCount > 0 && (
-                    <span className="absolute top-0 right-0 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
                       {toPersianNumber(wishlistCount)}
                     </span>
                   )}
@@ -467,7 +541,7 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                     />
                   </svg>
                   {count > 0 && (
-                    <span className="absolute top-0 right-0 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
                       {toPersianNumber(count)}
                     </span>
                   )}
@@ -548,7 +622,7 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                         <Link
                           href="/cart"
                           onClick={() => setOpenDropdown(null)}
-                          className="flex-1 inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 cursor-pointer rounded-full active:scale-95 bg-primary text-primary-content shadow-sm shadow-primary/30 hover:bg-primary-hover hover:shadow-md hover:shadow-primary/40 px-4 py-2 text-sm"
+                          className="flex-1 inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 cursor-pointer rounded-full active:scale-95 bg-primary text-primary-content shadow-sm shadow-primary/30 hover:bg-primary-hover px-4 py-2 text-sm"
                         >
                           تسویه حساب
                         </Link>
@@ -675,8 +749,11 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
           <div className="relative">
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearchInput(e.target.value)}
+              onFocus={() => { if (searchResults.length > 0) setSearchOpen(true); }}
               placeholder="اسباب‌بازی مورد نظر را جستجو کنید"
-              className="w-full h-11 px-4 pr-11 rounded-full border border-border bg-surface-2 text-content text-sm placeholder:text-content-subtle focus:outline-none focus:ring-2 focus:ring-primary text-right transition-shadow"
+              className="w-full h-11 pl-10 pr-4 rounded-full border border-border bg-surface-2 text-content text-xs placeholder:text-content-subtle placeholder:text-xs focus:outline-none focus:ring-1 focus:ring-primary text-right transition-shadow"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-content-subtle">
               <svg
@@ -693,6 +770,30 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                 />
               </svg>
             </span>
+
+            {/* Mobile Search Results */}
+            {searchOpen && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                {searchResults.map((product) => (
+                  <Link
+                    key={product.id}
+                    href={`/product/${product.id}`}
+                    onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors border-b border-border last:border-0"
+                  >
+                    <img
+                      src={productImage(product, 80, 80)}
+                      alt={product.name}
+                      className="w-10 h-10 rounded-xl object-cover shrink-0 bg-surface-2"
+                    />
+                    <div className="flex-1 text-right min-w-0">
+                      <p className="text-sm font-medium text-content truncate">{product.name}</p>
+                      <p className="text-xs text-content-muted">{formatPersianNumber(product.price)} تومان</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </header>

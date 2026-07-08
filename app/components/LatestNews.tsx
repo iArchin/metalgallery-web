@@ -27,7 +27,7 @@ export default async function LatestNews() {
           {latest.map((article) => (
             <article
               key={article.id}
-              className="group bg-surface border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
+              className="group bg-surface border border-border rounded-2xl overflow-hidden shadow-sm transition-colors"
             >
               <Link
                 href={`/blog/${article.id}`}

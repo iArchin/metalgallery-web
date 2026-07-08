@@ -203,7 +203,7 @@ export default function ProductListing({
                   aria-label="بستن فیلترها"
                   className="lg:hidden flex h-10 w-10 items-center justify-center rounded-full text-content-muted hover:text-content hover:bg-surface-2 active:bg-surface-3 transition-colors"
                 >
-                  ✕
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
 
@@ -373,7 +373,7 @@ export default function ProductListing({
                 onClick={() => setShowFilters(true)}
                 className="lg:hidden inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold text-content hover:bg-surface-2 active:bg-surface-3 transition-colors"
               >
-                <span>☰</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                 <span>فیلترها</span>
               </button>
 
@@ -495,7 +495,7 @@ export default function ProductListing({
                             {outOfStock
                               ? "ناموجود"
                               : added
-                                ? "✓ افزوده شد"
+                                ? "افزوده شد"
                                 : "افزودن به سبد خرید"}
                           </Button>
                         </div>
@@ -560,7 +560,7 @@ export default function ProductListing({
               </>
             ) : (
               <div className="bg-surface border border-border rounded-2xl shadow-sm p-8 sm:p-12 text-center">
-                <div className="text-5xl sm:text-6xl mb-4">🔍</div>
+                <div className="mb-4 flex justify-center"><svg className="w-16 h-16 text-content-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></div>
                 <h3 className="text-lg sm:text-xl font-semibold text-content mb-2">
                   محصولی یافت نشد
                 </h3>

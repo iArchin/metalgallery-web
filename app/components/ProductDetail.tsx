@@ -137,7 +137,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`shrink-0 h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-xl border-2 bg-surface-2 transition-all hover:-translate-y-0.5 active:scale-95 ${
+                    className={`shrink-0 h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-xl border-2 bg-surface-2 transition-colors ${
                       selectedImage === index
                         ? "border-primary ring-2 ring-primary"
                         : "border-border hover:border-border-strong"
@@ -259,7 +259,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
                 {inStock ? "افزودن به سبد خرید" : "ناموجود"}
               </Button>
               <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                ❤️
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
               </Button>
             </div>
 
@@ -267,7 +267,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
             <div aria-live="polite" className="mb-6 min-h-6">
               {addedMessage && (
                 <div className="inline-flex items-center gap-2 rounded-full bg-mint-soft px-3 py-1.5 text-mint text-sm font-semibold">
-                  <span>✓</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                   <span>به سبد اضافه شد</span>
                 </div>
               )}
@@ -403,7 +403,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
                             </span>
                             {comment.verified && (
                               <span className="text-xs bg-mint-soft text-mint px-2 py-1 rounded-full font-semibold">
-                                ✓ تأیید شده
+                                تأیید شده
                               </span>
                             )}
                           </div>
@@ -451,7 +451,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
               <Link
                 key={relatedProduct.id}
                 href={`/product/${relatedProduct.id}`}
-                className="group border border-border bg-surface rounded-2xl p-3 sm:p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg active:shadow-md"
+                className="group border border-border bg-surface rounded-2xl p-3 sm:p-4 shadow-sm transition-colors"
               >
                 <div className="relative h-28 sm:h-32 w-full overflow-hidden rounded-xl bg-surface-2 mb-3">
                   <img

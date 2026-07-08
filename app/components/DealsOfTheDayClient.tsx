@@ -88,22 +88,21 @@ export default function DealsOfTheDayClient({
               پیشنهادات روز
             </h2>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-start gap-1.5 sm:gap-2">
             {timeUnits.map((unit, i) => (
-              <div
-                key={unit.label}
-                className="flex items-center gap-1.5 sm:gap-2"
-              >
-                <div className="w-12 sm:w-[60px] rounded-xl bg-surface-2 border border-border px-1 sm:px-2 py-2 text-center shadow-sm">
-                  <div className="text-lg sm:text-2xl font-extrabold text-content tabular-nums">
-                    {toPersianNumber(String(unit.value).padStart(2, "0"))}
+              <div key={unit.label} className="flex items-start gap-1.5 sm:gap-2">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-surface-2 border border-border flex items-center justify-center text-center shadow-sm">
+                    <div className="text-lg sm:text-2xl font-extrabold text-content tabular-nums">
+                      {toPersianNumber(String(unit.value).padStart(2, "0"))}
+                    </div>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-content-muted">
+                  <span className="text-[10px] sm:text-xs text-content-muted font-medium">
                     {unit.label}
-                  </div>
+                  </span>
                 </div>
                 {i < timeUnits.length - 1 && (
-                  <span className="text-lg sm:text-2xl font-bold text-primary pb-4">
+                  <span className="text-lg sm:text-2xl font-bold text-primary mt-3 sm:mt-4">
                     :
                   </span>
                 )}
@@ -198,7 +197,7 @@ export default function DealsOfTheDayClient({
                       {outOfStock
                         ? "ناموجود"
                         : added
-                          ? "✓ اضافه شد"
+                          ? "افزوده شد"
                           : "افزودن به سبد خرید"}
                     </Button>
                   </div>

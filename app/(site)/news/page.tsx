@@ -5,9 +5,14 @@ import { newsRepo } from "@/lib/server/repos";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "اخبار | متال گالری",
+  title: "اخبار",
   description:
     "تازه‌ترین اخبار و اطلاعیه‌های فروشگاه اسباب‌بازی متال گالری؛ جشنواره‌ها، محصولات جدید و خدمات تازه.",
+  openGraph: {
+    title: "اخبار متال گالری | جشنواره‌ها و اطلاعیه‌ها",
+    description:
+      "تازه‌ترین اخبار و اطلاعیه‌های فروشگاه اسباب‌بازی متال گالری",
+  },
 };
 
 export default async function NewsPage() {
@@ -36,7 +41,7 @@ export default async function NewsPage() {
           items.map((item) => (
             <article
               key={item.id}
-              className="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
+              className="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm transition-colors"
             >
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="bg-primary-soft text-primary text-xs font-bold rounded-full px-2.5 py-1">
