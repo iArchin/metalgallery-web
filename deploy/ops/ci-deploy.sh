@@ -12,6 +12,14 @@
 # Deploying is: pull that exact tag, restart onto it, wait for the healthcheck.
 # If it never becomes healthy we put the previous image back, because the
 # alternative is a container that is up, unhealthy, and serving 500s.
+#
+# THIS SHIPS THE IMAGE, NOT THE COMPOSE FILE. /opt/metalgallery/compose.yml is
+# managed on the server by hand; a push that only changes compose.yml will NOT
+# reach production. When you change it in the repo, upload it yourself:
+#   scp deploy/metalgallery/compose.yml root@HOST:/opt/metalgallery/compose.yml
+# The seam that lets the image change without touching this file is MG_IMAGE,
+# which this script rewrites in .env; compose.yml must reference
+# ${MG_IMAGE:-metalgallery-web:latest} for that to work.
 set -euo pipefail
 
 PROJECT_DIR=/opt/metalgallery
