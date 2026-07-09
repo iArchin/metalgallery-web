@@ -18,7 +18,9 @@ export const metadata: Metadata = {
 };
 
 export default async function BlogPage() {
-  const articles = (await articlesRepo.list()).filter((a) => a.published);
+  const articles = (await articlesRepo.list())
+    .filter((a) => a.published)
+    .sort((a, b) => b.id - a.id); // newest first
   const [featured, ...rest] = articles;
 
   return (

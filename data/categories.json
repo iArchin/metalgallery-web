@@ -4,41 +4,95 @@
     "name": "اسباب‌بازی و بازی",
     "imageKeyword": "toys",
     "imageLock": 101,
-    "active": true
+    "active": true,
+    "image": "/images/categories/cars.png"
   },
   {
     "id": 2,
     "name": "اسباب‌بازی هوشمند",
     "imageKeyword": "educational toy",
     "imageLock": 102,
-    "active": true
+    "active": true,
+    "image": "/images/categories/blocks.png"
   },
   {
     "id": 3,
     "name": "اسباب‌بازی فضای باز",
     "imageKeyword": "outdoor kids toy",
     "imageLock": 103,
-    "active": true
+    "active": true,
+    "image": ""
   },
   {
     "id": 4,
     "name": "اسباب‌بازی حرکتی",
     "imageKeyword": "ride on toy",
     "imageLock": 104,
-    "active": true
+    "active": true,
+    "image": ""
   },
   {
     "id": 5,
     "name": "اسباب‌بازی کنترلی",
     "imageKeyword": "remote control car toy",
     "imageLock": 105,
-    "active": true
+    "active": true,
+    "image": "/images/categories/cars.png"
   },
   {
     "id": 6,
     "name": "اکشن فیگور",
     "imageKeyword": "action figure",
     "imageLock": 106,
-    "active": true
+    "active": true,
+    "image": "/images/categories/action-figure.png"
+  },
+  {
+    "id": 7,
+    "name": "عروسک",
+    "imageKeyword": "doll",
+    "imageLock": 107,
+    "active": true,
+    "image": "/images/categories/rhino.png"
+  },
+  {
+    "id": 8,
+    "name": "پازل و بازی فکری",
+    "imageKeyword": "puzzle toy",
+    "imageLock": 108,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": 9,
+    "name": "لگو و ساختنی",
+    "imageKeyword": "building blocks",
+    "imageLock": 109,
+    "active": true,
+    "image": "/images/categories/blocks.png"
+  },
+  {
+    "id": 10,
+    "name": "عروسک پولیشی",
+    "imageKeyword": "plush toy",
+    "imageLock": 110,
+    "active": true,
+    "image": "/images/categories/dinosaur.png"
+  },
+  {
+    "id": 11,
+    "name": "بازی رومیزی",
+    "imageKeyword": "board game",
+    "imageLock": 111,
+    "active": true,
+    "image": ""
+  },
+  {
+    "id": 12,
+    "name": "ماشین اسباب‌بازی",
+    "imageKeyword": "toy car",
+    "imageLock": 112,
+    "active": true,
+    "image": "/images/categories/cars.png"
   }
 ]

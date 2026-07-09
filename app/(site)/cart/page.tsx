@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CartClient from "@/app/(site)/cart/CartClient";
+import { getSettings } from "@/lib/server/repos";
 
 export const metadata: Metadata = {
   title: "سبد خرید",
@@ -12,6 +13,12 @@ export const metadata: Metadata = {
 // chrome) would be frozen at build time.
 export const dynamic = "force-dynamic";
 
-export default function CartPage() {
-  return <CartClient />;
+export default async function CartPage() {
+  const s = await getSettings();
+  return (
+    <CartClient
+      freeShippingThreshold={s.freeShippingThreshold}
+      shippingCost={s.shippingCost}
+    />
+  );
 }

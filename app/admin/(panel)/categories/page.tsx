@@ -21,11 +21,21 @@ import {
   useToast,
 } from "@/app/admin/_components/ui";
 
+// Category artwork (transparent PNGs) shown as a corner accent on the home tiles.
+const CATEGORY_IMAGES = [
+  "/images/categories/action-figure.png",
+  "/images/categories/blocks.png",
+  "/images/categories/cars.png",
+  "/images/categories/dinosaur.png",
+  "/images/categories/rhino.png",
+];
+
 interface CategoryForm {
   name: string;
   imageKeyword: string;
   imageLock: string;
   active: boolean;
+  image: string;
 }
 
 const EMPTY_FORM: CategoryForm = {
@@ -33,6 +43,7 @@ const EMPTY_FORM: CategoryForm = {
   imageKeyword: "toy",
   imageLock: "1",
   active: true,
+  image: "",
 };
 
 export default function AdminCategoriesPage() {
@@ -71,6 +82,7 @@ export default function AdminCategoriesPage() {
       imageKeyword: c.imageKeyword,
       imageLock: String(c.imageLock),
       active: c.active,
+      image: c.image ?? "",
     });
     setEditing(c);
   }
@@ -88,6 +100,7 @@ export default function AdminCategoriesPage() {
         imageKeyword: form.imageKeyword.trim() || "toy",
         imageLock: Number(form.imageLock) || 0,
         active: form.active,
+        image: form.image,
       };
       if (editing === "new") {
         await apiSend<Category>("/api/categories", "POST", body);
@@ -125,8 +138,6 @@ export default function AdminCategoriesPage() {
     }
   }
 
-  const previewSrc = toyImage(form.imageKeyword.trim() || "toy", Number(form.imageLock) || 0, 300, 300);
-
   return (
     <div>
       <PageHeader
@@ -153,13 +164,22 @@ export default function AdminCategoriesPage() {
           {items.map((c) => (
             <tr key={c.id} className="hover:bg-surface-2/50 transition-colors">
               <td className="px-4 py-3">
-                <div className="h-12 w-12 rounded-xl bg-surface-2 overflow-hidden border border-border">
-                  <img
-                    src={toyImage(c.imageKeyword, c.imageLock, 100, 100)}
-                    alt={c.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
+                <div className="h-12 w-12 grid place-items-center rounded-xl bg-surface-2 overflow-hidden border border-border">
+                  {c.image?.trim() ? (
+                    <img
+                      src={c.image}
+                      alt={c.name}
+                      loading="lazy"
+                      className="h-full w-full object-contain p-1"
+                    />
+                  ) : (
+                    <img
+                      src={toyImage(c.imageKeyword, c.imageLock, 100, 100)}
+                      alt={c.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  )}
                 </div>
               </td>
               <td className="px-4 py-3 font-bold text-content whitespace-nowrap">{c.name}</td>
@@ -225,17 +245,41 @@ export default function AdminCategoriesPage() {
             </Field>
           </div>
 
-          <div>
-            <span className="block text-sm font-bold text-content mb-1.5">پیش‌نمایش تصویر</span>
-            <div className="h-32 w-32 rounded-2xl bg-surface-2 overflow-hidden border border-border">
-              <img
-                key={previewSrc}
-                src={previewSrc}
-                alt="پیش‌نمایش دسته‌بندی"
-                className="h-full w-full object-cover"
-              />
+          <Field
+            label="تصویر دسته‌بندی"
+            hint="در گوشه‌ی کارت دسته‌بندی در صفحه اصلی نمایش داده می‌شود؛ «بدون تصویر» یعنی نمایش ایموجی."
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, image: "" })}
+                aria-pressed={!form.image}
+                className={`grid h-16 w-16 place-items-center rounded-xl border-2 text-[11px] font-bold transition-all ${
+                  !form.image
+                    ? "border-primary ring-2 ring-primary/30 text-primary"
+                    : "border-border text-content-muted hover:border-border-strong"
+                }`}
+              >
+                بدون تصویر
+              </button>
+              {CATEGORY_IMAGES.map((src) => (
+                <button
+                  type="button"
+                  key={src}
+                  onClick={() => setForm({ ...form, image: src })}
+                  aria-pressed={form.image === src}
+                  className={`h-16 w-16 overflow-hidden rounded-xl border-2 bg-surface-2 p-1 transition-all ${
+                    form.image === src
+                      ? "border-primary ring-2 ring-primary/30"
+                      : "border-border hover:border-border-strong"
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-contain" />
+                </button>
+              ))}
             </div>
-          </div>
+          </Field>
 
           <Toggle
             checked={form.active}

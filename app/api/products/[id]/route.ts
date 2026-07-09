@@ -93,7 +93,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     if (!Number.isFinite(n) || n < field.min) {
       return Response.json({ ok: false, error: field.error }, { status: 400 });
     }
-    patch[field.key] = field.key === "rating" ? Math.min(5, n) : Math.floor(n);
+    patch[field.key] = field.key === "rating" ? Math.min(5, Math.floor(n)) : Math.floor(n);
   }
 
   // originalPrice: null/undefined-in-body clears it, otherwise coerce

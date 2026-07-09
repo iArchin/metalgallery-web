@@ -27,41 +27,37 @@ const TOY_PHOTO_IDS: Record<string, string[]> = {
 const GENERIC_TOY_IDS = ["1567196", "1559458", "1587654", "3672903", "1535680", "1593571"];
 
 /**
- * Build an Unsplash image URL for the given keywords + lock.
- * The lock picks which photo ID to use for a consistent result.
+ * Local toy photos served from /public. Remote stock services (Unsplash, etc.)
+ * are unreliable / blocked in-region, so all keyword-based imagery resolves to
+ * one of these instead — guaranteeing pictures load everywhere.
+ */
+const LOCAL_TOY_IMAGES = [
+  "/images/toy-kids-1.jpg",
+  "/images/toy-kids-2.jpg",
+  "/images/toy-kids-3.jpg",
+  "/images/toy-kids-4.jpg",
+  "/images/toy-kids-5.jpg",
+  "/images/toy-banner.jpg",
+  "/images/toy-promo.jpg",
+  "/images/toy-hero.jpg",
+] as const;
+
+/**
+ * Resolve keywords + lock to a local toy photo. `lock` is stable per item, so
+ * each product/article/category keeps a consistent image. (Width/height are
+ * accepted for call-site compatibility but no longer needed.)
  */
 export function toyImage(
   keywords: string,
   lock: number,
-  width = 600,
-  height = 600
+  _width = 600,
+  _height = 600
 ): string {
-  const key = keywords.trim().toLowerCase();
-  // Try exact match first, then check if any key phrase is contained
-  let ids: string[] | undefined;
-  for (const [phrase, photoIds] of Object.entries(TOY_PHOTO_IDS)) {
-    if (key === phrase || key.includes(phrase) || phrase.includes(key)) {
-      ids = photoIds;
-      break;
-    }
-  }
-  if (!ids) {
-    // Try matching individual words
-    const words = key.split(/[\s,]+/);
-    for (const word of words) {
-      for (const [phrase, photoIds] of Object.entries(TOY_PHOTO_IDS)) {
-        if (phrase.includes(word) || word.includes(phrase)) {
-          ids = photoIds;
-          break;
-        }
-      }
-      if (ids) break;
-    }
-  }
-  if (!ids) ids = GENERIC_TOY_IDS;
-
-  const photoId = ids[Math.abs(lock) % ids.length];
-  return `https://images.unsplash.com/photo-${photoId}?w=${width}&h=${height}&fit=crop`;
+  void keywords;
+  void _width;
+  void _height;
+  const idx = Math.abs(Math.trunc(lock || 0)) % LOCAL_TOY_IMAGES.length;
+  return LOCAL_TOY_IMAGES[idx];
 }
 
 /** Wide banner variant (16:9-ish) for hero / promo strips. */

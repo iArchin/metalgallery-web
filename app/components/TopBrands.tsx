@@ -1,14 +1,74 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { Brand } from "@/lib/types";
 
 export default function TopBrands({ brands }: { brands: Brand[] }) {
+  // Brand ids whose logo image failed to load — fall back to a wordmark so a
+  // missing/broken file never leaves an empty chip.
+  const [failed, setFailed] = useState<Set<number>>(new Set());
+
   if (brands.length === 0) return null;
 
-  // Fill enough copies to cover 2x viewport width seamlessly
-  const copies = Math.max(10, Math.ceil(40 / brands.length));
-  const items = Array.from({ length: copies }, () => brands).flat();
+  // Repeat the brands so a single group comfortably exceeds most viewports,
+  // then render that group twice. Animating the track to -50% swaps the first
+  // group out for its identical duplicate — a seamless, gapless loop.
+  const repeat = Math.max(2, Math.ceil(14 / brands.length));
+  const group = Array.from({ length: repeat }, () => brands).flat();
+
+  const markFailed = (id: number) =>
+    setFailed((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
+  const renderGroup = (duplicate: boolean) => (
+    // pr matches the flex gap so the last→first seam keeps even spacing.
+    <ul
+      className="flex items-start gap-6 sm:gap-8 pr-6 sm:pr-8 shrink-0 list-none m-0 p-0"
+      aria-hidden={duplicate || undefined}
+    >
+      {group.map((brand, i) => {
+        const showLogo = Boolean(brand.logo) && !failed.has(brand.id);
+        return (
+          <li key={`${brand.id}-${i}`} className="shrink-0">
+            <Link
+              href="/products"
+              tabIndex={duplicate ? -1 : undefined}
+              title={brand.name}
+              className="group/brand flex w-40 sm:w-52 flex-col items-center gap-3"
+            >
+              {/* Bare logo — no chip. The fixed-height slot only keeps the
+                  tiles aligned in the row. */}
+              <div className="flex h-24 sm:h-28 w-full items-center justify-center">
+                {showLogo ? (
+                  <img
+                    src={brand.logo}
+                    alt={brand.name}
+                    loading="lazy"
+                    onError={() => markFailed(brand.id)}
+                    className="max-h-16 w-auto max-w-full object-contain transition-transform duration-300 group-hover/brand:scale-105 sm:max-h-20"
+                  />
+                ) : (
+                  <span className="text-center text-lg font-extrabold text-content">
+                    {brand.name}
+                  </span>
+                )}
+              </div>
+              {showLogo && (
+                <span className="text-xs sm:text-sm font-bold text-content-muted text-center transition-colors group-hover/brand:text-primary">
+                  {brand.name}
+                </span>
+              )}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
     <section className="py-12 md:py-16 bg-background overflow-hidden">
@@ -21,40 +81,30 @@ export default function TopBrands({ brands }: { brands: Brand[] }) {
         </p>
       </div>
 
-      <div className="relative overflow-hidden [mask-image:linear-gradient(to_left,transparent,black_10%,black_90%,transparent)]">
-        <div className="flex gap-4 sm:gap-6 animate-marquee-brand w-max">
-          {items.map((brand, i) => (
-            <Link
-              key={`${brand.id}-${i}`}
-              href="/products"
-              className="shrink-0 flex flex-col items-center gap-2 sm:gap-3 group/brand"
-            >
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-surface-2 border-2 border-border group-hover/brand:border-primary shadow-sm transition-all">
-                <img
-                  src="/images/toy-kids-5.jpg"
-                  alt={brand.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div className="text-sm sm:text-base font-semibold text-content text-center group-hover/brand:text-primary transition-colors">
-                {brand.name}
-              </div>
-            </Link>
-          ))}
+      {/* dir=ltr is essential: the page is RTL, which would otherwise anchor the
+          track to the right and make the -50% scroll open a blank gap. Forcing
+          LTR left-anchors the strip so the duplicate group fills the seam. */}
+      <div
+        dir="ltr"
+        className="group/marquee relative overflow-hidden mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
+      >
+        <div className="flex w-max animate-marquee-brand group-hover/marquee:[animation-play-state:paused]">
+          {renderGroup(false)}
+          {renderGroup(true)}
         </div>
       </div>
 
       <style>{`
         @keyframes marquee-brand {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-100% / ${copies})); }
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
         }
         .animate-marquee-brand {
-          animation: marquee-brand 25s linear infinite;
+          animation: marquee-brand 90s linear infinite;
+          will-change: transform;
         }
-        .animate-marquee-brand:hover {
-          animation-play-state: paused;
+        @media (prefers-reduced-motion: reduce) {
+          .animate-marquee-brand { animation: none; }
         }
       `}</style>
     </section>

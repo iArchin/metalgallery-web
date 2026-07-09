@@ -255,3 +255,140 @@ html {
     display: none;
   }
 }
+
+/* ---- Hero carousel animations --------------------------------------------
+   Longhands (not the `animation` shorthand) so components can set only
+   duration / play-state inline without clobbering name, easing or fill. */
+@keyframes hero-bar-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes hero-zoom {
+  from {
+    transform: scale3d(1, 1, 1);
+  }
+  to {
+    transform: scale3d(1.08, 1.08, 1);
+  }
+}
+.animate-hero-bar {
+  animation-name: hero-bar-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+.animate-hero-zoom {
+  animation-name: hero-zoom;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+  /* Promote to its own GPU layer so the scale is composited (no per-frame
+     re-raster of the large image) — this removes the zoom jank/lag. */
+  will-change: transform;
+  transform-origin: center;
+  backface-visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-zoom {
+    animation: none;
+  }
+}
+
+/* ---- Category launcher tiles: one-time staggered pop-in entrance ---------- */
+@keyframes tile-pop {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-tile-pop {
+  animation: tile-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-tile-pop {
+    animation: none;
+  }
+}
+
+/* ---- Categories curved marquee (legacy — no longer used) ------------------
+   The horizontal scroll runs on the compositor (smooth under main-thread
+   load); JS only reads this animation's clock to place the U-curve. */
+@keyframes cat-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.animate-cat-scroll {
+  animation-name: cat-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: 60s; /* overridden inline from the measured width */
+  will-change: transform;
+}
+/* Per-tile vertical U-curve (a parabola: full rise off-centre, 0 at centre),
+   phase-shifted per tile via animation-delay so the arc stays screen-anchored.
+   Runs on the compositor — no per-frame JS — so the up/down motion is smooth. */
+@keyframes cat-curve {
+  0%,
+  25%,
+  75%,
+  100% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -1), 0);
+  }
+  29% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.71), 0);
+  }
+  33% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.46), 0);
+  }
+  37% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.27), 0);
+  }
+  41% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.13), 0);
+  }
+  45% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.04), 0);
+  }
+  50% {
+    transform: translate3d(0, 0, 0);
+  }
+  55% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.04), 0);
+  }
+  59% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.13), 0);
+  }
+  63% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.27), 0);
+  }
+  67% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.46), 0);
+  }
+  71% {
+    transform: translate3d(0, calc(var(--cat-max, 100px) * -0.71), 0);
+  }
+}
+.cat-tile {
+  animation-name: cat-curve;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: 60s; /* overridden inline to match the scroll */
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-cat-scroll,
+  .cat-tile {
+    animation: none;
+  }
+}

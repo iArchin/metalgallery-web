@@ -1,8 +1,11 @@
 [
-  { "id": 1, "name": "لگو", "items": 175, "active": true },
-  { "id": 2, "name": "متل", "items": 109, "active": true },
-  { "id": 3, "name": "هاسبرو", "items": 100, "active": true },
-  { "id": 4, "name": "فیشر پرایس", "items": 104, "active": true },
-  { "id": 5, "name": "پلی‌موبیل", "items": 112, "active": true },
-  { "id": 6, "name": "بندای", "items": 140, "active": true }
+  { "id": 1, "name": "لگو", "items": 175, "active": true, "logo": "/images/brands/lego.png" },
+  { "id": 2, "name": "متل", "items": 109, "active": true, "logo": "/images/brands/mattel.png" },
+  { "id": 3, "name": "هاسبرو", "items": 100, "active": true, "logo": "/images/brands/hasbro.jpeg" },
+  { "id": 4, "name": "فیشر پرایس", "items": 104, "active": true, "logo": "" },
+  { "id": 5, "name": "پلی‌موبیل", "items": 112, "active": true, "logo": "/images/brands/playmobil.png" },
+  { "id": 6, "name": "بندای", "items": 140, "active": true, "logo": "/images/brands/bandai.png" },
+  { "id": 7, "name": "استار وارز", "items": 95, "active": true, "logo": "/images/brands/starwars1.png" },
+  { "id": 8, "name": "ترانسفورمرز", "items": 80, "active": true, "logo": "/images/brands/transformersLogo.jpeg" },
+  { "id": 9, "name": "مای لیتل پونی", "items": 65, "active": true, "logo": "/images/brands/mlp1.png" }
 ]

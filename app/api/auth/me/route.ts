@@ -1,6 +1,6 @@
-import { getCurrentAdmin } from "@/lib/server/auth";
+import { getCurrentAdmin, getCurrentCustomer } from "@/lib/server/auth";
 
 export async function GET() {
-  const admin = await getCurrentAdmin();
-  return Response.json({ ok: true, data: admin });
+  const [admin, customer] = await Promise.all([getCurrentAdmin(), getCurrentCustomer()]);
+  return Response.json({ ok: true, data: { admin, customer } });
 }

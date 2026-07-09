@@ -2,10 +2,12 @@ import "server-only";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { readCollection } from "./db";
-import type { AdminUser } from "../types";
+import { readCollection, updateCollection, nextId } from "./db";
+import { normalizePhone } from "./otp";
+import type { AdminUser, Customer } from "../types";
 
 const SESSION_COOKIE = "mg_admin_session";
+const USER_SESSION_COOKIE = "mg_user_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 // Prefer an env secret; fall back to a fixed dev secret so the panel works
@@ -112,4 +114,82 @@ export async function requireAdminApi(): Promise<Response | null> {
 export async function findUserByEmail(email: string): Promise<AdminUser | undefined> {
   const users = await readCollection<AdminUser[]>("users");
   return users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+}
+
+/** The admin whose registered phone matches (canonical `09…`), if any. */
+export async function findAdminByPhone(phone: string): Promise<AdminUser | undefined> {
+  const users = await readCollection<AdminUser[]>("users");
+  return users.find((u) => u.phone && normalizePhone(u.phone) === phone);
+}
+
+// ----------------------------------------------------- customer sessions
+
+export async function setCustomerSessionCookie(customerId: number): Promise<void> {
+  const store = await cookies();
+  store.set(USER_SESSION_COOKIE, createSessionToken(customerId), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: SESSION_TTL_MS / 1000,
+    path: "/",
+  });
+}
+
+export async function clearCustomerSessionCookie(): Promise<void> {
+  const store = await cookies();
+  store.delete(USER_SESSION_COOKIE);
+}
+
+/** The logged-in customer, or null. Safe to call from pages and APIs. */
+export async function getCurrentCustomer(): Promise<Customer | null> {
+  const store = await cookies();
+  const payload = verifySessionToken(store.get(USER_SESSION_COOKIE)?.value);
+  if (!payload) return null;
+  const customers = await readCollection<Customer[]>("customers");
+  return customers.find((c) => c.id === payload.userId) ?? null;
+}
+
+export type CustomerProfilePatch = Partial<Pick<Customer, "name" | "avatar" | "address">>;
+
+/** Update the logged-in customer's editable profile fields. */
+export async function updateCustomer(
+  id: number,
+  patch: CustomerProfilePatch
+): Promise<Customer | undefined> {
+  return updateCollection<Customer[], Customer | undefined>("customers", (customers) => {
+    const idx = customers.findIndex((c) => c.id === id);
+    if (idx === -1) return { next: customers, result: undefined };
+    // id and phone are identity fields — never overwritten by a profile edit.
+    const updated: Customer = {
+      ...customers[idx],
+      ...patch,
+      id: customers[idx].id,
+      phone: customers[idx].phone,
+    };
+    const next = [...customers];
+    next[idx] = updated;
+    return { next, result: updated };
+  });
+}
+
+/** Find the customer for a (canonical) phone, creating one on first login. */
+export async function findOrCreateCustomer(phone: string): Promise<Customer> {
+  return updateCollection<Customer[], Customer>("customers", (customers) => {
+    const now = new Date().toISOString();
+    const idx = customers.findIndex((c) => c.phone === phone);
+    if (idx !== -1) {
+      const updated: Customer = { ...customers[idx], lastLoginAt: now };
+      const next = [...customers];
+      next[idx] = updated;
+      return { next, result: updated };
+    }
+    const customer: Customer = {
+      id: nextId(customers),
+      phone,
+      name: "",
+      createdAt: now,
+      lastLoginAt: now,
+    };
+    return { next: [...customers, customer], result: customer };
+  });
 }

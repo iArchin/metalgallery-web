@@ -24,12 +24,14 @@ interface BrandForm {
   name: string;
   items: string;
   active: boolean;
+  logo: string;
 }
 
 const EMPTY_FORM: BrandForm = {
   name: "",
   items: "0",
   active: true,
+  logo: "",
 };
 
 export default function AdminBrandsPage() {
@@ -67,6 +69,7 @@ export default function AdminBrandsPage() {
       name: b.name,
       items: String(b.items),
       active: b.active,
+      logo: b.logo ?? "",
     });
     setEditing(b);
   }
@@ -83,6 +86,7 @@ export default function AdminBrandsPage() {
         name: form.name.trim(),
         items: Math.max(0, Number(form.items) || 0),
         active: form.active,
+        logo: form.logo.trim(),
       };
       if (editing === "new") {
         await apiSend<Brand>("/api/brands", "POST", body);
@@ -145,7 +149,19 @@ export default function AdminBrandsPage() {
         <Table headers={["نام برند", "تعداد کالا", "وضعیت", "عملیات"]}>
           {brands.map((b) => (
             <tr key={b.id} className="hover:bg-surface-2/50 transition-colors">
-              <td className="px-4 py-3 font-bold text-content whitespace-nowrap">{b.name}</td>
+              <td className="px-4 py-3 font-bold text-content whitespace-nowrap">
+                <span className="inline-flex items-center gap-3">
+                  <span className="grid h-9 w-14 shrink-0 place-items-center overflow-hidden rounded-md border border-border bg-white">
+                    {b.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={b.logo} alt="" className="max-h-6 max-w-full object-contain" />
+                    ) : (
+                      <span className="text-[9px] font-bold text-zinc-400">—</span>
+                    )}
+                  </span>
+                  {b.name}
+                </span>
+              </td>
               <td className="px-4 py-3 text-content-muted whitespace-nowrap">
                 {toPersianNumber(b.items)} کالا
               </td>
@@ -195,6 +211,35 @@ export default function AdminBrandsPage() {
               onChange={(e) => setForm({ ...form, items: e.target.value })}
               dir="ltr"
             />
+          </Field>
+
+          <Field
+            label="لوگو برند"
+            hint="آدرس تصویر لوگو (URL) یا مسیر محلی مانند /images/brands/lego.png — خالی بماند تا نام برند نمایش داده شود"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid h-14 w-20 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-white">
+                {form.logo.trim() ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={form.logo.trim()}
+                    alt=""
+                    className="max-h-10 max-w-full object-contain"
+                  />
+                ) : (
+                  <span className="px-1 text-center text-[10px] font-bold text-zinc-500">
+                    {form.name.trim() || "لوگو"}
+                  </span>
+                )}
+              </div>
+              <Input
+                value={form.logo}
+                onChange={(e) => setForm({ ...form, logo: e.target.value })}
+                dir="ltr"
+                placeholder="https://logo.clearbit.com/lego.com"
+                className="flex-1"
+              />
+            </div>
           </Field>
 
           <Toggle

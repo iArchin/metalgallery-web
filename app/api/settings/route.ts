@@ -79,6 +79,30 @@ export async function PUT(req: Request) {
     if (sale.enabled !== undefined) sale.enabled = Boolean(sale.enabled);
     patch.saleCampaign = sale as SiteSettings["saleCampaign"];
   }
+  if (patch.heroSlides !== undefined) {
+    if (!Array.isArray(patch.heroSlides)) {
+      return Response.json(
+        { ok: false, error: "اطلاعات اسلایدهای بنر نامعتبر است" },
+        { status: 400 }
+      );
+    }
+    const str = (v: unknown) =>
+      typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim();
+    // Sanitize every slide and reassign sequential ids so keys stay unique.
+    patch.heroSlides = patch.heroSlides.map((raw, i): SiteSettings["heroSlides"][number] => {
+      const s = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+      return {
+        id: i + 1,
+        badgeText: str(s.badgeText),
+        title: str(s.title),
+        subtitle: str(s.subtitle),
+        ctaText: str(s.ctaText),
+        ctaHref: str(s.ctaHref) || "/products",
+        image: str(s.image),
+        active: s.active === undefined ? true : Boolean(s.active),
+      };
+    });
+  }
 
   try {
     const data = await updateSettings(patch as Partial<SiteSettings>);

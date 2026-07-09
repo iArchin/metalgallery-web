@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import Link from "next/link";
 import Button from "@/app/components/Button";
 import { useCart } from "@/app/components/CartContext";
@@ -15,7 +15,13 @@ interface SuccessInfo {
 const inputClass =
   "w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm text-content placeholder:text-content-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow";
 
-export default function CartClient() {
+export default function CartClient({
+  freeShippingThreshold = 0,
+  shippingCost = 0,
+}: {
+  freeShippingThreshold?: number;
+  shippingCost?: number;
+}) {
   const { items, count, subtotal, remove, setQuantity, clear } = useCart();
 
   const [showCheckout, setShowCheckout] = useState(false);
@@ -26,6 +32,34 @@ export default function CartClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
+
+  // Prefill the checkout from the logged-in customer's saved profile so paying
+  // customers don't retype their details; if the profile lacks a name/address,
+  // nudge them to complete it.
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!alive || !j || !j.ok) return;
+        const c = j.data;
+        const addr = c.address;
+        const composed = addr?.full
+          ? addr.postalCode
+            ? `${addr.full} — کد پستی: ${addr.postalCode}`
+            : addr.full
+          : "";
+        setName((v) => v || c.name || "");
+        setPhone((v) => v || c.phone || "");
+        setAddress((v) => v || composed);
+        if (!c.name || !addr?.full) setProfileIncomplete(true);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -320,8 +354,10 @@ export default function CartClient() {
                 </span>
               </div>
               <p className="text-xs text-content-muted leading-relaxed">
-                ارسال سفارش‌های بالای ۲ میلیون تومان رایگان است. هزینه نهایی
-                ارسال هنگام ثبت سفارش محاسبه می‌شود.
+                {freeShippingThreshold > 0
+                  ? `ارسال سفارش‌های بالای ${formatPersianNumber(freeShippingThreshold)} تومان رایگان است؛ در غیر این صورت هزینه ارسال ${formatPersianNumber(shippingCost)} تومان است.`
+                  : "ارسال برای همه سفارش‌ها رایگان است."}{" "}
+                هزینه نهایی ارسال هنگام ثبت سفارش محاسبه می‌شود.
               </p>
             </div>
 
@@ -340,6 +376,15 @@ export default function CartClient() {
                 <h3 className="text-sm font-bold text-content">
                   اطلاعات گیرنده
                 </h3>
+
+                {profileIncomplete && (
+                  <div className="rounded-xl bg-primary-soft px-3.5 py-2.5 text-xs font-bold text-primary flex items-center justify-between gap-2">
+                    <span>برای ثبت خودکار اطلاعات، پروفایل خود را کامل کنید.</span>
+                    <Link href="/profile" className="shrink-0 underline hover:no-underline">
+                      تکمیل پروفایل
+                    </Link>
+                  </div>
+                )}
 
                 <div>
                   <label

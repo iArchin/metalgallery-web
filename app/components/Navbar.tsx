@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import { toyImage, productImage } from "../utils/images";
 import { toPersianNumber, formatPersianNumber } from "../utils/numbers";
@@ -15,8 +15,26 @@ interface NavbarSettings {
   siteName?: string;
 }
 
-export default function Navbar({ settings }: { settings?: NavbarSettings }) {
+/** Persian relative time, e.g. "۲ ساعت پیش". Client-only (avoids SSR skew). */
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "لحظاتی پیش";
+  if (m < 60) return `${toPersianNumber(m)} دقیقه پیش`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${toPersianNumber(h)} ساعت پیش`;
+  return `${toPersianNumber(Math.floor(h / 24))} روز پیش`;
+}
+
+export default function Navbar({
+  settings,
+  categories = [],
+}: {
+  settings?: NavbarSettings;
+  categories?: { id: number; name: string }[];
+}) {
   const { items, count, subtotal, remove } = useCart();
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("همه دسته‌بندی‌ها");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
@@ -30,6 +48,63 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const [customer, setCustomer] = useState<
+    { phone: string; name: string; avatar?: string } | null
+  >(null);
+  const [notifications, setNotifications] = useState<
+    { id: number; text: string; at: string }[]
+  >([]);
+  const [notifUnread, setNotifUnread] = useState(0);
+
+  // Load the logged-in customer + their notifications. Re-run on route change,
+  // on window focus, and after a profile edit (custom event) so the navbar
+  // avatar/name/badges stay fresh without a full reload.
+  const refreshAccount = useCallback(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.ok) setCustomer(j.data.customer ?? null);
+      })
+      .catch(() => {});
+    fetch("/api/notifications")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.ok) {
+          setNotifications(j.data.items ?? []);
+          setNotifUnread(j.data.unread ?? 0);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    refreshAccount();
+  }, [pathname, refreshAccount]);
+
+  useEffect(() => {
+    const onUpdate = () => refreshAccount();
+    window.addEventListener("mg:profile-updated", onUpdate);
+    window.addEventListener("focus", onUpdate);
+    return () => {
+      window.removeEventListener("mg:profile-updated", onUpdate);
+      window.removeEventListener("focus", onUpdate);
+    };
+  }, [refreshAccount]);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "user" }),
+      });
+    } catch {
+      // ignore
+    }
+    setCustomer(null);
+    setOpenDropdown(null);
+    window.location.reload();
+  };
 
   // Close search on outside click
   useEffect(() => {
@@ -151,15 +226,9 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [openDropdown]);
 
-  const categories = [
-    "همه دسته‌بندی‌ها",
-    "اسباب‌بازی",
-    "لباس کودکانه",
-    "کفش کودکانه",
-    "لوازم بهداشتی",
-    "لوازم ایمنی",
-    "کتاب‌های کودکانه",
-  ];
+  // Real, admin-managed categories (passed from the server layout), plus the
+  // "all" option. Selecting one navigates to the filtered shop.
+  const categoryOptions = [{ id: 0, name: "همه دسته‌بندی‌ها" }, ...categories];
 
   const navLinks = [
     { label: "خانه", href: "/" },
@@ -272,16 +341,21 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                   {/* Dropdown Menu */}
                   {isDropdownOpen && (
                     <div className="absolute top-full right-0 mt-2 w-[160px] bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden p-1">
-                      {categories.map((category, index) => (
+                      {categoryOptions.map((category) => (
                         <button
-                          key={index}
+                          key={category.id}
                           onClick={() => {
-                            setSelectedCategory(category);
+                            setSelectedCategory(category.name);
                             setIsDropdownOpen(false);
+                            router.push(
+                              category.id === 0
+                                ? "/products"
+                                : `/products?category=${category.id}`
+                            );
                           }}
                           className="w-full text-right px-4 py-2 text-sm text-content rounded-xl hover:bg-surface-2 hover:text-primary transition-colors"
                         >
-                          {category}
+                          {category.name}
                         </button>
                       ))}
                     </div>
@@ -408,9 +482,11 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                     />
                   </svg>
-                  <span className="absolute -top-1 -right-1 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
-                    {toPersianNumber(3)}
-                  </span>
+                  {notifUnread > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-content text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-surface">
+                      {toPersianNumber(notifUnread)}
+                    </span>
+                  )}
                 </button>
                 {openDropdown === "notifications" && (
                   <div className="absolute left-0 top-full mt-2 w-80 bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
@@ -420,38 +496,33 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       </h3>
                     </div>
                     <div className="max-h-96 overflow-y-auto">
-                      <div className="p-4 border-b border-border hover:bg-surface-2 cursor-pointer transition-colors">
-                        <p className="text-sm text-content text-right">
-                          سفارش شما تحویل داده شد
-                        </p>
-                        <p className="text-xs text-content-subtle text-right mt-1">
-                          ۲ ساعت پیش
-                        </p>
-                      </div>
-                      <div className="p-4 border-b border-border hover:bg-surface-2 cursor-pointer transition-colors">
-                        <p className="text-sm text-content text-right">
-                          اسباب‌بازی جدید به فروشگاه اضافه شد
-                        </p>
-                        <p className="text-xs text-content-subtle text-right mt-1">
-                          ۵ ساعت پیش
-                        </p>
-                      </div>
-                      <div className="p-4 border-b border-border hover:bg-surface-2 cursor-pointer transition-colors">
-                        <p className="text-sm text-content text-right">
-                          تخفیف ویژه برای شما
-                        </p>
-                        <p className="text-xs text-content-subtle text-right mt-1">
-                          دیروز
-                        </p>
-                      </div>
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-10 text-center text-sm text-content-muted">
+                          {customer ? "اعلان جدیدی ندارید" : "برای مشاهده اعلان‌ها وارد شوید"}
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <Link
+                            key={n.id}
+                            href="/profile"
+                            onClick={() => setOpenDropdown(null)}
+                            className="block p-4 border-b border-border hover:bg-surface-2 transition-colors"
+                          >
+                            <p className="text-sm text-content text-right">{n.text}</p>
+                            <p className="text-xs text-content-subtle text-right mt-1">
+                              {timeAgo(n.at)}
+                            </p>
+                          </Link>
+                        ))
+                      )}
                     </div>
                     <div className="p-3 border-t border-border">
                       <Link
-                        href="/news"
+                        href={customer ? "/profile" : "/login"}
                         onClick={() => setOpenDropdown(null)}
                         className="block w-full text-sm text-primary hover:text-primary-hover text-center font-medium transition-colors"
                       >
-                        مشاهده همه اعلان‌ها
+                        {customer ? "مشاهده سفارش‌های من" : "ورود به حساب"}
                       </Link>
                     </div>
                   </div>
@@ -640,82 +711,104 @@ export default function Navbar({ settings }: { settings?: NavbarSettings }) {
                       openDropdown === "profile" ? null : "profile"
                     )
                   }
-                  className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors"
+                  aria-label="حساب کاربری"
+                  className="relative h-10 w-10 inline-flex items-center justify-center overflow-hidden rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
+                  {customer?.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={customer.avatar} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  ) : (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  )}
                 </button>
                 {openDropdown === "profile" && (
                   <div className="absolute left-0 top-full mt-2 w-64 bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
                     <div className="p-4 border-b border-border">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-primary-soft rounded-full flex items-center justify-center">
-                          <svg
-                            className="w-6 h-6 text-primary"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
+                        <div className="w-12 h-12 bg-primary-soft rounded-full overflow-hidden flex items-center justify-center">
+                          {customer?.avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={customer.avatar} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <svg
+                              className="w-6 h-6 text-primary"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
+                            </svg>
+                          )}
                         </div>
                         <div className="text-right flex-1">
                           <p className="text-sm font-semibold text-content">
-                            کاربر مهمان
+                            {customer ? (customer.name || "حساب کاربری") : "کاربر مهمان"}
                           </p>
-                          <p className="text-xs text-content-subtle">user@example.com</p>
+                          <p className="text-xs text-content-subtle" dir="ltr">
+                            {customer ? toPersianNumber(customer.phone) : "وارد نشده‌اید"}
+                          </p>
                         </div>
                       </div>
                     </div>
-                    <div className="py-2">
-                      <a
-                        href="#"
-                        className="block px-4 py-2 text-sm text-content hover:bg-surface-2 hover:text-primary text-right transition-colors"
-                      >
-                        پروفایل من
-                      </a>
-                      <a
-                        href="#"
-                        className="block px-4 py-2 text-sm text-content hover:bg-surface-2 hover:text-primary text-right transition-colors"
-                      >
-                        سفارش‌های من
-                      </a>
-                      <a
-                        href="#"
-                        className="block px-4 py-2 text-sm text-content hover:bg-surface-2 hover:text-primary text-right transition-colors"
-                      >
-                        آدرس‌ها
-                      </a>
-                      <a
-                        href="#"
-                        className="block px-4 py-2 text-sm text-content hover:bg-surface-2 hover:text-primary text-right transition-colors"
-                      >
-                        تنظیمات
-                      </a>
-                      <div className="border-t border-border my-2"></div>
-                      <a
-                        href="#"
-                        className="block px-4 py-2 text-sm text-primary hover:bg-primary-soft text-right transition-colors"
-                      >
-                        خروج از حساب کاربری
-                      </a>
-                    </div>
+                    {customer ? (
+                      <div className="py-2">
+                        <Link
+                          href="/profile"
+                          onClick={() => setOpenDropdown(null)}
+                          className="block px-4 py-2 text-sm text-content hover:bg-surface-2 hover:text-primary text-right transition-colors"
+                        >
+                          پروفایل من
+                        </Link>
+                        <Link
+                          href="/wishlist"
+                          onClick={() => setOpenDropdown(null)}
+                          className="block px-4 py-2 text-sm text-content hover:bg-surface-2 hover:text-primary text-right transition-colors"
+                        >
+                          لیست علاقه‌مندی‌ها
+                        </Link>
+                        <Link
+                          href="/cart"
+                          onClick={() => setOpenDropdown(null)}
+                          className="block px-4 py-2 text-sm text-content hover:bg-surface-2 hover:text-primary text-right transition-colors"
+                        >
+                          سبد خرید
+                        </Link>
+                        <div className="border-t border-border my-2"></div>
+                        <button
+                          onClick={() => void handleLogout()}
+                          className="block w-full px-4 py-2 text-sm text-primary hover:bg-primary-soft text-right transition-colors"
+                        >
+                          خروج از حساب کاربری
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-2">
+                        <Link
+                          href="/login"
+                          onClick={() => setOpenDropdown(null)}
+                          className="block px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft text-right transition-colors"
+                        >
+                          ورود / ثبت‌نام
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -35,6 +35,9 @@ export interface Category {
   imageKeyword: string;
   imageLock: number;
   active: boolean;
+  /** Optional category artwork (transparent PNG). Shown as a corner accent on
+   *  the home category tiles; falls back to an emoji when empty. */
+  image?: string;
 }
 
 export interface Brand {
@@ -42,6 +45,10 @@ export interface Brand {
   name: string;
   items: number;
   active: boolean;
+  /** Brand logo — a remote URL or a local "/images/..." path. Optional; the
+   *  brand marquee falls back to a styled wordmark when it's absent or fails
+   *  to load. */
+  logo?: string;
 }
 
 // ------------------------------------------------------------------ orders
@@ -137,6 +144,18 @@ export interface AboutContent {
 }
 
 // ---------------------------------------------------------------- settings
+/** One rotating slide of the home hero carousel (the big banner). */
+export interface HeroSlide {
+  id: number;
+  badgeText: string; // pill label, e.g. "تا ۱۰٪ تخفیف"
+  title: string; // headline
+  subtitle: string; // supporting line under the title
+  ctaText: string; // button label
+  ctaHref: string; // button link, e.g. "/products"
+  image: string; // local banner image path, e.g. "/images/toy-hero.jpg"
+  active: boolean; // hidden from the carousel when false
+}
+
 export interface SiteSettings {
   siteName: string;
   tagline: string;
@@ -144,7 +163,10 @@ export interface SiteSettings {
   email: string;
   address: string;
   workingHours: string;
-  /** Hero (home) banner content */
+  /** Hero (home) banner content. The big banner rotates through `heroSlides`;
+   *  the `side*` fields drive the smaller card beside it. The `badgeText`/
+   *  `title`/`ctaText` fields remain as a fallback slide when `heroSlides`
+   *  is empty. */
   hero: {
     badgeText: string; // e.g. "تا ۱۰٪ تخفیف"
     title: string;
@@ -153,6 +175,8 @@ export interface SiteSettings {
     sideText: string;
     sideCtaText: string;
   };
+  /** Rotating slides for the home hero carousel (the big banner). */
+  heroSlides: HeroSlide[];
   /** The wide sale campaign band on the home page */
   saleCampaign: {
     enabled: boolean;
@@ -166,6 +190,24 @@ export interface SiteSettings {
   /** Free-shipping threshold used by the cart (0 = always free) */
   freeShippingThreshold: number;
   shippingCost: number;
+}
+
+// ------------------------------------------------------------- support chat
+export interface ChatMessage {
+  id: number;
+  from: "user" | "admin";
+  text: string;
+  at: string; // ISO
+}
+
+/** One visitor's support conversation. `id` is a token the browser keeps. */
+export interface ChatConversation {
+  id: string;
+  label: string; // visitor display label (phone if logged in, else guest)
+  messages: ChatMessage[];
+  createdAt: string;
+  updatedAt: string;
+  unreadForAdmin: number; // user messages the admin hasn't opened yet
 }
 
 // --------------------------------------------------------------- messages
@@ -184,8 +226,28 @@ export interface AdminUser {
   id: number;
   email: string;
   name: string;
-  passwordHash: string; // scrypt: salt:hash (hex)
+  passwordHash: string; // scrypt: salt:hash (hex) — legacy; login is via SMS OTP
+  phone?: string; // canonical 09xxxxxxxxx — the number that receives the admin OTP
   role: "admin";
+}
+
+/** A saved delivery address (used on the profile and at checkout). */
+export interface CustomerAddress {
+  full: string; // complete address text
+  postalCode: string; // کد پستی
+  lat?: number; // map location
+  lng?: number;
+}
+
+/** A storefront customer. Identified by phone; created on first OTP login. */
+export interface Customer {
+  id: number;
+  phone: string; // canonical 09xxxxxxxxx
+  name: string; // display name (empty until the customer provides one)
+  avatar?: string; // profile image URL (optional; falls back to initials)
+  address?: CustomerAddress;
+  createdAt: string; // ISO
+  lastLoginAt: string; // ISO
 }
 
 // -------------------------------------------------------------- api shape

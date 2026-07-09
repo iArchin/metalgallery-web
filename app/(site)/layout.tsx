@@ -2,7 +2,7 @@ import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import FloatingActions from "@/app/components/FloatingActions";
 import { CartProvider } from "@/app/components/CartContext";
-import { getSettings } from "@/lib/server/repos";
+import { getSettings, categoriesRepo } from "@/lib/server/repos";
 
 /**
  * Public site shell — every page under (site) gets the storefront chrome.
@@ -11,11 +11,14 @@ import { getSettings } from "@/lib/server/repos";
 export default async function SiteLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const s = await getSettings();
+  const [s, allCategories] = await Promise.all([getSettings(), categoriesRepo.list()]);
+  const categories = allCategories
+    .filter((c) => c.active)
+    .map((c) => ({ id: c.id, name: c.name }));
   return (
     <CartProvider>
       <div className="min-h-screen bg-background flex flex-col">
-        <Navbar settings={s} />
+        <Navbar settings={s} categories={categories} />
         <div className="flex-1">{children}</div>
         <Footer settings={s} />
       </div>

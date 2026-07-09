@@ -48,6 +48,9 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     patch.imageLock = Math.floor(n);
   }
   if (body.active !== undefined) patch.active = body.active === true;
+  if (body.image !== undefined) {
+    patch.image = typeof body.image === "string" ? body.image.trim() : "";
+  }
 
   try {
     const category = await categoriesRepo.update(id, patch);

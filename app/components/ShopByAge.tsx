@@ -1,48 +1,43 @@
 import Link from "next/link";
 import { toPersianNumber } from "../utils/numbers";
 
+// Standard, non-overlapping toy age bands with the developmental label
+// retailers commonly use.
 const ageGroups = [
   {
     id: 1,
-    age: `${toPersianNumber("0")}-${toPersianNumber("1")} سال`,
+    age: `${toPersianNumber("0")} تا ${toPersianNumber("2")} سال`,
+    label: "نوزاد و نوپا",
     image: "/images/toy-kids-1.jpg",
-    alt: "اسباب‌بازی جغجغه نوزاد",
+    alt: "اسباب‌بازی نوزاد و نوپا",
   },
   {
     id: 2,
-    age: `${toPersianNumber("1")}-${toPersianNumber("2")} سال`,
+    age: `${toPersianNumber("3")} تا ${toPersianNumber("5")} سال`,
+    label: "خردسال",
     image: "/images/toy-kids-2.jpg",
-    alt: "اسباب‌بازی حلقه‌های روی‌هم",
+    alt: "اسباب‌بازی خردسال",
   },
   {
     id: 3,
-    age: `${toPersianNumber("3")}-${toPersianNumber("4")} سال`,
+    age: `${toPersianNumber("6")} تا ${toPersianNumber("8")} سال`,
+    label: "کودک",
     image: "/images/toy-kids-3.jpg",
-    alt: "اسباب‌بازی بلوک‌های ساختنی",
+    alt: "اسباب‌بازی کودک",
   },
   {
     id: 4,
-    age: `${toPersianNumber("0")}-${toPersianNumber("2")} سال`,
+    age: `${toPersianNumber("9")} تا ${toPersianNumber("11")} سال`,
+    label: "پیش‌نوجوان",
     image: "/images/toy-kids-4.jpg",
-    alt: "عروسک پولیشی نرم",
+    alt: "اسباب‌بازی پیش‌نوجوان",
   },
   {
     id: 5,
-    age: `${toPersianNumber("4")}-${toPersianNumber("7")} سال`,
+    age: `${toPersianNumber("12")} سال به بالا`,
+    label: "نوجوان و بزرگسال",
     image: "/images/toy-kids-5.jpg",
-    alt: "اکشن فیگور",
-  },
-  {
-    id: 6,
-    age: `${toPersianNumber("7")}-${toPersianNumber("10")} سال`,
-    image: "/images/toy-hero.jpg",
-    alt: "بازی رومیزی",
-  },
-  {
-    id: 7,
-    age: `${toPersianNumber("12") + "+"} سال`,
-    image: "/images/toy-banner.jpg",
-    alt: "کیت ماکت مدل‌سازی",
+    alt: "اکشن فیگور و ماکت",
   },
 ];
 
@@ -74,6 +69,9 @@ export default function ShopByAge() {
               <h3 className="text-sm sm:text-base font-semibold text-content text-center group-hover:text-primary transition-colors">
                 {group.age}
               </h3>
+              <span className="mt-0.5 text-xs text-content-muted text-center">
+                {group.label}
+              </span>
             </Link>
           ))}
         </div>

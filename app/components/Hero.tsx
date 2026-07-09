@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { toPersianNumber } from "@/app/utils/numbers";
 import { getSettings } from "@/lib/server/repos";
+import type { HeroSlide } from "@/lib/types";
 import HeroBackground from "@/app/components/HeroBackground";
+import HeroCarousel from "@/app/components/HeroCarousel";
 
 const perks = [
   {
@@ -50,65 +52,62 @@ export default async function Hero() {
   const settings = await getSettings();
   const hero = settings.hero;
 
+  // Big banner rotates through the admin-managed slides; fall back to a single
+  // slide built from the legacy hero fields so the banner is never empty.
+  const activeSlides = (settings.heroSlides ?? []).filter((s) => s.active);
+  const slides: HeroSlide[] =
+    activeSlides.length > 0
+      ? activeSlides
+      : [
+          {
+            id: 0,
+            badgeText: hero.badgeText,
+            title: hero.title,
+            subtitle: "",
+            ctaText: hero.ctaText,
+            ctaHref: "/products",
+            image: "/images/toy-hero.jpg",
+            active: true,
+          },
+        ];
+
   return (
     <section className="min-h-screen relative bg-background overflow-hidden flex flex-col justify-start pt-8 md:pt-12">
       {/* Toy doodle background */}
       <HeroBackground />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Large Banner */}
-          <div className="group md:col-span-2 relative overflow-hidden rounded-2xl h-[300px] sm:h-[360px] md:h-[420px] bg-surface-2 border border-border shadow-sm transition-colors">
+          {/* Large Banner — auto-rotating carousel of admin-managed slides.
+              translateZ(0) puts the rounded clip on its own GPU layer so the
+              inner Ken-Burns zoom composites smoothly (no per-frame re-clip). */}
+          <div className="md:col-span-2 relative overflow-hidden rounded-2xl h-[300px] sm:h-[360px] md:h-[420px] bg-surface-2 border border-border shadow-sm transition-colors transform-[translateZ(0)]">
+            <HeroCarousel slides={slides} />
+          </div>
+
+          {/* Smaller Banner — full-bleed image with overlaid text, like the
+              carousel slides but static (single image, no rotation). */}
+          <div className="group relative overflow-hidden rounded-2xl h-[300px] sm:h-[360px] md:h-[420px] bg-surface-2 border border-border shadow-sm transition-colors">
             <img
-              src="/images/toy-hero.jpg"
-              alt={hero.title}
+              src="/images/toy-kids-1.jpg"
+              alt={hero.sideTitle}
               loading="lazy"
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-linear-to-l from-black/70 via-black/40 to-transparent" aria-hidden />
-            <div className="relative z-10 flex h-full max-w-md flex-col justify-center p-6 sm:p-10 text-white">
-              <span className="mb-3 inline-flex w-fit items-center rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-content">
-                {toPersianNumber(hero.badgeText)}
-              </span>
-              <h1 className="mb-5 text-2xl sm:text-3xl md:text-4xl font-extrabold leading-snug">
-                {hero.title}
-              </h1>
+            <div className="absolute inset-0 bg-linear-to-l from-black/75 via-black/45 to-transparent" aria-hidden />
+            <div className="relative z-10 flex h-full max-w-xs flex-col justify-center p-6 sm:p-8 text-white">
+              <h2 className="mb-3 text-xl sm:text-2xl font-extrabold leading-snug">
+                {hero.sideTitle}
+              </h2>
+              <p className="mb-5 text-sm sm:text-base font-semibold text-white/85 leading-relaxed">
+                {toPersianNumber(hero.sideText)}
+              </p>
               <div>
                 <Link
                   href="/products"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-surface px-8 py-3 text-lg font-bold text-content border border-border cursor-pointer transition-all duration-200 active:scale-95 hover:bg-surface-2 hover:border-border-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-surface px-6 py-2.5 text-base font-bold text-content border border-border cursor-pointer transition-all duration-200 active:scale-95 hover:bg-surface-2 hover:border-border-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black/30"
                 >
-                  {hero.ctaText}
+                  {hero.sideCtaText}
                 </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Smaller Banner */}
-          <div className="group relative overflow-hidden rounded-2xl h-[300px] sm:h-[360px] md:h-[420px] bg-surface border border-border shadow-sm transition-colors">
-            <div className="flex h-full">
-              <div className="flex flex-1 flex-col justify-center p-6 sm:p-8">
-                <div className="text-xl sm:text-2xl font-extrabold text-content mb-2">
-                  {hero.sideTitle}
-                </div>
-                <p className="text-sm sm:text-base font-semibold text-content-muted mb-5 leading-relaxed">
-                  {toPersianNumber(hero.sideText)}
-                </p>
-                <div>
-                  <Link
-                    href="/products"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-base font-bold text-primary-content shadow-sm shadow-primary/30 cursor-pointer transition-all duration-200 active:scale-95 hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-                  >
-                    {hero.sideCtaText}
-                  </Link>
-                </div>
-              </div>
-              <div className="relative w-2/5 shrink-0 overflow-hidden bg-surface-2">
-                <img
-                  src="/images/toy-kids-1.jpg"
-                  alt={hero.sideTitle}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
               </div>
             </div>
           </div>

@@ -457,7 +457,7 @@ export default function ProductListing({
                             <span
                               key={i}
                               className={`text-xs sm:text-sm ${
-                                i < product.rating
+                                i < Math.round(product.rating)
                                   ? "text-star"
                                   : "text-content-subtle"
                               }`}

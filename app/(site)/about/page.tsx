@@ -105,9 +105,9 @@ export default async function AboutPage() {
       {/* Stats */}
       <section className="mt-12 md:mt-16">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {c.stats.map((stat) => (
+          {c.stats.map((stat, i) => (
             <div
-              key={stat.label}
+              key={i}
               className="bg-surface border border-border rounded-2xl shadow-sm p-5 sm:p-6 text-center"
             >
               <div className="text-primary text-2xl sm:text-3xl font-extrabold" dir="ltr">
@@ -129,7 +129,7 @@ export default async function AboutPage() {
         <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {c.values.map((value, i) => (
             <div
-              key={value.title}
+              key={i}
               className="bg-surface border border-border rounded-2xl shadow-sm transition-colors p-6"
             >
               <div className="w-12 h-12 rounded-2xl bg-primary-soft text-primary flex items-center justify-center">

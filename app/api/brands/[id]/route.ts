@@ -25,10 +25,11 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     );
   }
 
-  const { name, items, active } = (body ?? {}) as {
+  const { name, items, active, logo } = (body ?? {}) as {
     name?: unknown;
     items?: unknown;
     active?: unknown;
+    logo?: unknown;
   };
 
   const patch: Partial<Omit<Brand, "id">> = {};
@@ -55,6 +56,8 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
   }
 
   if (active !== undefined) patch.active = Boolean(active);
+
+  if (logo !== undefined) patch.logo = typeof logo === "string" ? logo.trim() : "";
 
   try {
     const brand = await brandsRepo.update(brandId, patch);

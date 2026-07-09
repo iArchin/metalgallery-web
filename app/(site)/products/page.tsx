@@ -22,6 +22,9 @@ export default async function ProductsPage() {
     categoriesRepo.list(),
   ]);
   const categories = allCategories.filter((c) => c.active);
+  // Disabling a category also removes its products from the storefront.
+  const activeCatIds = new Set(categories.map((c) => c.id));
+  const visibleProducts = products.filter((p) => activeCatIds.has(p.categoryId));
 
   return (
     <main>
@@ -32,7 +35,7 @@ export default async function ProductsPage() {
           </div>
         }
       >
-        <ProductListing products={products} categories={categories} />
+        <ProductListing products={visibleProducts} categories={categories} />
       </Suspense>
     </main>
   );

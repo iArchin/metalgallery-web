@@ -27,10 +27,11 @@ export async function POST(req: Request) {
     );
   }
 
-  const { name, items, active } = (body ?? {}) as {
+  const { name, items, active, logo } = (body ?? {}) as {
     name?: unknown;
     items?: unknown;
     active?: unknown;
+    logo?: unknown;
   };
 
   if (typeof name !== "string" || !name.trim()) {
@@ -48,11 +49,14 @@ export async function POST(req: Request) {
     );
   }
 
+  const logoStr = typeof logo === "string" ? logo.trim() : "";
+
   try {
     const brand = await brandsRepo.create({
       name: name.trim(),
       items: itemsNum,
       active: active !== undefined ? Boolean(active) : true,
+      logo: logoStr || undefined,
     });
     return Response.json({ ok: true, data: brand });
   } catch {

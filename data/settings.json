@@ -13,6 +13,38 @@
     "sideText": "15% تخفیف روی اکشن فیگورها و هدایای کودکان!",
     "sideCtaText": "مشاهده فیگورها"
   },
+  "heroSlides": [
+    {
+      "id": 1,
+      "badgeText": "تا 10% تخفیف",
+      "title": "خرید اسباب‌بازی و لباس کودکان",
+      "subtitle": "جدیدترین کالکشن بازی و سرگرمی برای همه سنین",
+      "ctaText": "همین حالا خرید کنید",
+      "ctaHref": "/products",
+      "image": "/images/toy-hero.jpg",
+      "active": true
+    },
+    {
+      "id": 2,
+      "badgeText": "ارسال رایگان",
+      "title": "اکشن فیگورهای اورجینال",
+      "subtitle": "فیگورهای کلکسیونی با ضمانت اصالت کالا",
+      "ctaText": "مشاهده فیگورها",
+      "ctaHref": "/products",
+      "image": "/images/toy-banner.jpg",
+      "active": true
+    },
+    {
+      "id": 3,
+      "badgeText": "پرفروش‌ترین‌ها",
+      "title": "دنیای رنگارنگ ساختنی‌ها",
+      "subtitle": "خلاقیت کودک را با بهترین برندهای دنیا بسازید",
+      "ctaText": "کاوش محصولات",
+      "ctaHref": "/products",
+      "image": "/images/toy-promo.jpg",
+      "active": true
+    }
+  ],
   "saleCampaign": {
     "enabled": true,
     "percent": 45,
@@ -22,10 +54,10 @@
   },
   "footerAbout": "مقصد مورد اعتماد شما برای اسباب‌بازی و اکشن فیگور. محصولات اورجینال با ضمانت اصالت و قیمت‌های عالی.",
   "socials": {
-    "facebook": "#",
-    "twitter": "#",
-    "linkedin": "#",
-    "instagram": "#"
+    "facebook": "",
+    "twitter": "",
+    "linkedin": "",
+    "instagram": "https://instagram.com/metalgallery.ir"
   },
   "freeShippingThreshold": 2000000,
   "shippingCost": 85000

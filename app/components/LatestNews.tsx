@@ -5,6 +5,7 @@ import { toyImage } from "@/app/utils/images";
 export default async function LatestNews() {
   const latest = (await articlesRepo.list())
     .filter((a) => a.published)
+    .sort((a, b) => b.id - a.id) // newest first
     .slice(0, 3);
 
   if (latest.length === 0) return null;

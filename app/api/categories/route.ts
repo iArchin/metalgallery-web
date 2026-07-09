@@ -44,6 +44,7 @@ export async function POST(req: Request) {
       imageKeyword,
       imageLock: Math.floor(imageLock),
       active: body.active === undefined ? true : body.active === true,
+      image: typeof body.image === "string" ? body.image.trim() : "",
     });
     return Response.json({ ok: true, data: category });
   } catch {

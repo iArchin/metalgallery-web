@@ -23,6 +23,9 @@ export type CollectionName =
   | "gallery"
   | "messages"
   | "users"
+  | "customers"
+  | "otps"
+  | "chats"
   | "settings"
   | "pages";
 

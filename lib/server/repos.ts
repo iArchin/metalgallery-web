@@ -113,6 +113,14 @@ export async function getOrder(id: number): Promise<Order | undefined> {
   return orders.find((o) => o.id === id);
 }
 
+/** A customer's own orders (newest first), matched by phone. */
+export async function listOrdersByPhone(phone: string): Promise<Order[]> {
+  const orders = await readCollection<Order[]>("orders");
+  return orders
+    .filter((o) => o.customer.phone === phone)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
 /**
  * Checkout: validates stock against the product collection, snapshots names
  * and authoritative prices, decrements stock, and records the order.
@@ -200,11 +208,27 @@ export async function updateOrderStatus(
   id: number,
   status: OrderStatus
 ): Promise<Order | undefined> {
-  return updateCollection<Order[], Order | undefined>("orders", (orders) => {
-    const idx = orders.findIndex((o) => o.id === id);
-    if (idx === -1) return { next: orders, result: undefined };
-    const updated: Order = { ...orders[idx], status, updatedAt: now() };
-    const next = [...orders];
+  const orders = await readCollection<Order[]>("orders");
+  const order = orders.find((o) => o.id === id);
+  if (!order) return undefined;
+
+  // Cancelling an order returns its items to stock (once — only on the
+  // transition into "cancelled").
+  if (status === "cancelled" && order.status !== "cancelled") {
+    await updateCollection<Product[], void>("products", (products) => {
+      const next = products.map((p) => {
+        const line = order.items.find((l) => l.productId === p.id);
+        return line ? { ...p, stock: p.stock + line.quantity, updatedAt: now() } : p;
+      });
+      return { next, result: undefined };
+    });
+  }
+
+  return updateCollection<Order[], Order | undefined>("orders", (all) => {
+    const idx = all.findIndex((o) => o.id === id);
+    if (idx === -1) return { next: all, result: undefined };
+    const updated: Order = { ...all[idx], status, updatedAt: now() };
+    const next = [...all];
     next[idx] = updated;
     return { next, result: updated };
   });
