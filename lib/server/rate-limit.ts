@@ -1,4 +1,5 @@
 import "server-only";
+import { isCloudflareIp } from "./cloudflare";
 
 /**
  * In-memory fixed-window rate limiter, keyed by client IP.
@@ -26,23 +27,37 @@ function sweep(now: number): void {
 }
 
 /**
- * The client IP, from the one header the edge proxy is known to overwrite.
+ * The client IP, derived only from headers an attacker cannot control.
  *
- * X-Real-IP is set to the immediate peer by both proxies we support: nginx
- * (`proxy_set_header X-Real-IP $remote_addr`, which Nginx Proxy Manager emits
- * for every host) and Caddy (`header_up X-Real-IP {remote_host}` in
- * deploy/edge/Caddyfile). A client cannot forge it.
+ * `X-Real-IP` is the immediate peer, written by the proxy on every request:
+ * nginx sets `proxy_set_header X-Real-IP $remote_addr` (Nginx Proxy Manager
+ * emits this for every host), and Caddy does the same in deploy/edge/Caddyfile.
+ * It is the trust anchor here.
  *
- * X-Forwarded-For is only a fallback, and a poor one: nginx's
+ * The site sits behind Cloudflare, so that peer is usually a Cloudflare edge
+ * node and the visitor's own address arrives in `CF-Connecting-IP`. That header
+ * is only believable when the peer really is Cloudflare — the origin has a
+ * public IP, and anyone hitting it directly could otherwise invent one and get
+ * a fresh rate-limit bucket per request.
+ *
+ * `X-Forwarded-For` is a last resort and a poor one: nginx's
  * `$proxy_add_x_forwarded_for` APPENDS the peer to whatever the client sent, so
- * the leftmost entry is attacker-controlled. Reading it first would let anyone
- * rotate a fake IP per request and walk straight through this limiter — and the
- * limiter is what stands between a script and your SMS.ir balance. We take the
- * rightmost entry instead, which the proxy appended itself.
+ * the leftmost entry is attacker-controlled. Take the rightmost, which the
+ * proxy appended itself.
+ *
+ * Getting this wrong is not academic. Read the wrong header and either every
+ * visitor in the country shares one bucket (Cloudflare's IP), or every attacker
+ * gets an unlimited supply of them — and this limiter is what stands between a
+ * script and your SMS.ir balance.
  */
 export function clientIp(req: Request): string {
-  const real = req.headers.get("x-real-ip")?.trim();
-  if (real) return real;
+  const peer = req.headers.get("x-real-ip")?.trim();
+
+  if (peer && isCloudflareIp(peer)) {
+    const visitor = req.headers.get("cf-connecting-ip")?.trim();
+    if (visitor) return visitor;
+  }
+  if (peer) return peer;
 
   const xff = req.headers.get("x-forwarded-for");
   if (xff) {
