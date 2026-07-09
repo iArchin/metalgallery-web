@@ -110,23 +110,34 @@ public:
 ssh deploy@SERVER 'openssl rand -hex 32'    # paste into SESSION_SECRET
 ```
 
-## 4. Set the admin phone number
+## 4. Admins
 
-Login is SMS OTP. The seed ships one admin whose phone is the placeholder
-`09120000000`, which will never receive a code. **Edit `data.seed/users.json` in
-the repo now**, before the first deploy, and commit:
+Login is SMS OTP — there is no password. Two admins are seeded in
+[data.seed/users.json](../data.seed/users.json):
 
-```json
-[{ "id": 1, "email": "admin@metalgallery.ir", "name": "مدیر فروشگاه",
-   "passwordHash": "", "phone": "09xxxxxxxxx", "role": "admin" }]
-```
+| id | name | phone |
+|----|------|-------|
+| 1 | مدیر فروشگاه | 09196317160 |
+| 2 | مدیر دوم | 09399080489 |
 
-If the volume already exists, edit it in place instead:
+Any phone listed there gets into the panel; every other number is refused with
+"این شماره دسترسی مدیریت ندارد". Numbers are matched after normalisation, so
+`+98…` and Persian digits both work.
+
+The seed only populates a **fresh** volume. To add or change an admin on a
+running deployment, edit the volume — not the seed:
 
 ```bash
-ssh deploy@SERVER "docker compose -f /srv/metalgallery/compose.yml exec -u 0 web \
-  sh -c \"sed -i s/09120000000/09xxxxxxxxx/ /app/data/users.json\""
+docker exec -u 0 mg-web sh -c 'cat /app/data/users.json'   # look first
+docker exec -u 0 mg-web sh -c '
+  f=/app/data/users.json; t=$f.tmp
+  sed "s/09196317160/09xxxxxxxxx/" "$f" > "$t" && mv "$t" "$f" && chown 1001:1001 "$f"
+'
 ```
+
+No restart needed — the file is read on each request. Writing through a temp
+file and `mv` matches how the app itself writes, so a concurrent read never sees
+a half-written file.
 
 ## 5. Start the edge, then the app
 
@@ -155,12 +166,42 @@ brands — with no customers or orders, so you can place a test order immediatel
 
 ---
 
+## Continuous deployment
+
+Pushing to `main` runs [.github/workflows/deploy.yml](../.github/workflows/deploy.yml):
+typecheck → build → push `ghcr.io/iarchin/metalgallery-web:{latest,<sha>}` →
+SSH to the server and roll onto that exact SHA.
+
+The deploy step cannot do anything else. Its key is pinned in
+`/root/.ssh/authorized_keys` with
+`restrict,command="/opt/metalgallery/ops/ci-deploy.sh"`, so the only thing a
+caller can influence is the argument — and [ci-deploy.sh](ops/ci-deploy.sh)
+refuses anything but `deploy <40-hex-sha>`. No shell, no PTY, no forwarding.
+A compromised workflow can deploy a commit; it cannot read `.env`.
+
+If the new image never becomes healthy within 120s, `ci-deploy.sh` puts the
+previous image digest back, restarts, and exits non-zero. The site stays up on
+the last good build and the pipeline goes red.
+
+**Rolling back by hand:**
+
+```bash
+docker image ls ghcr.io/iarchin/metalgallery-web   # find the sha you want
+sed -i 's|^MG_IMAGE=.*|MG_IMAGE=ghcr.io/iarchin/metalgallery-web:<sha>|' /opt/metalgallery/.env
+cd /opt/metalgallery && docker compose up -d --wait
+```
+
+Required GitHub repo secrets: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER`.
+The server must be logged into GHCR once (`docker login ghcr.io`) so it can pull
+a package belonging to a private repo.
+
 ## Day-to-day
 
 | Task | Command |
 |---|---|
-| Deploy a code change | `SSH_HOST=deploy@SERVER ./deploy/ops/deploy.sh` |
-| Roll back | `SSH_HOST=deploy@SERVER ./deploy/ops/deploy.sh --rollback` |
+| Deploy a code change | `git push origin main` |
+| Deploy without a commit | Actions → *build & deploy* → Run workflow |
+| Roll back | edit `MG_IMAGE` in `/opt/metalgallery/.env`, `docker compose up -d --wait` |
 | Logs | `ssh deploy@SERVER 'docker logs -f mg-web'` |
 | Back up now | `ssh deploy@SERVER '/srv/metalgallery/ops/backup.sh'` |
 | Restore | `ssh deploy@SERVER '/srv/metalgallery/ops/restore.sh <archive> --force'` |

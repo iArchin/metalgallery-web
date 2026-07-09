@@ -1,12 +1,33 @@
-# /srv/metalgallery/compose.yml
+# /opt/metalgallery/compose.yml
 #
-# The storefront + admin panel. The edge proxy is a separate stack in /srv/edge
-# and reaches this container by name over the shared `edge` network.
+# The storefront + admin panel. The edge is the Nginx Proxy Manager container
+# that already runs on this server and owns 80/443; it reaches this container by
+# name (mg-web:3000) over a network dedicated to this project. Nothing here is
+# published to the host.
 #
-# There is deliberately no `build:` block. The image is built on a machine with
-# internet (deploy/ops/deploy.sh) and shipped here with `docker save | ssh |
-# docker load`. The Parspack VPS cannot reach Google Fonts, may not reach Docker
-# Hub, and does not have the RAM to spare for a Next build.
+# `mg_edge` exists so metalgallery and the unrelated `inky` project cannot reach
+# each other. Joining npm's own `npm_default` would put mg-web on one bridge with
+# inky-web and inky-api — same proxy, but also a direct route between two
+# projects that share nothing. Instead npm is attached to both networks and is
+# the only container on either side of the boundary:
+#
+#     npm ──┬── npm_default  ── inky-web, inky-api ── inky_inky-internal ── inky-db
+#           └── mg_edge      ── mg-web ── mg_data
+#
+# Create it once, and attach the proxy to it:
+#     docker network create mg_edge
+#     docker network connect mg_edge npm     # no restart; npm keeps serving
+#
+# Caveat worth knowing: `docker network connect` is a runtime attachment. If npm
+# is ever recreated (a `docker compose up -d` in /opt/npm), it rejoins only the
+# networks in its own compose file and metalgallery starts 502ing. The durable
+# fix is to declare mg_edge as an external network in /opt/npm/docker-compose.yml.
+#
+# The image is built on the server (`docker build -t metalgallery-web:latest .`
+# in the source dir) because this box can reach Docker Hub and npm, has 5.9 GB
+# of RAM, and the build no longer needs Google Fonts — Vazirmatn is vendored.
+# There is no `build:` block so that `docker compose up` never rebuilds by
+# accident; a rebuild is always an explicit `docker build`.
 #
 # Two facts drive this file and are not negotiable:
 #
@@ -22,7 +43,10 @@ name: metalgallery
 
 services:
   web:
-    image: metalgallery-web:latest
+    # Set MG_IMAGE in .env to pull a published build instead of a locally-built
+    # one, e.g. MG_IMAGE=ghcr.io/iarchin/metalgallery-web:latest. CI pins the
+    # commit SHA rather than :latest so a rollback is `MG_IMAGE=…:<sha>`.
+    image: ${MG_IMAGE:-metalgallery-web:latest}
     container_name: mg-web
 
     # The VPS is amd64. Pin it so an image built on an arm64 laptop and loaded
@@ -41,7 +65,7 @@ services:
     # the internet — Docker writes its NAT rules ahead of UFW, so `ufw default
     # deny incoming` would not stop it — and would bypass the proxy's forwarded
     # headers, breaking both the admin host routing and the OTP rate limiter.
-    # `expose` is documentation; the port is reachable only on the edge network.
+    # `expose` is documentation; the port is reachable only on the proxy network.
     expose:
       - "3000"
     networks:
@@ -84,6 +108,11 @@ volumes:
   mg_data:
     name: mg_data
 
+# Dedicated to this project; the proxy is attached to it separately. NPM resolves
+# `mg-web` by container name only because both sit on this network.
+# `external: true` means this stack never creates or deletes it — so a
+# `docker compose down` here can never take a network out from under npm.
 networks:
   edge:
     external: true
+    name: ${EDGE_NETWORK:-mg_edge}

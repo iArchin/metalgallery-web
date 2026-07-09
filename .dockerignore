@@ -33,6 +33,15 @@ next-env.d.ts
 
 # Deployment assets live on the server, not in the app image.
 deploy/
+.github/
+
+# Loose source photos sitting in the repo root. Nothing imports them — the
+# served images live under public/images — but `COPY . .` would drag several MB
+# through every build.
+/*.jpg
+/*.JPG
+/*.png
+/*.PNG
 
 # Editor / OS noise
 .vscode

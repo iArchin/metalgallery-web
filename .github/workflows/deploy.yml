@@ -1,0 +1,111 @@
+name: build & deploy
+
+# Every push to main publishes an image and rolls the server onto it.
+# Manual runs are allowed so you can redeploy without an empty commit.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # The app is a single container writing a single JSON database. Two deploys
+  # racing would stop and start the same container from both sides. Queue them,
+  # and never cancel one midway — a half-finished deploy is worse than a slow one.
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+  SITE_URL: https://metalgallery.ir
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # A type error means the Docker build would fail 5 minutes later, in a
+      # place with a worse error message. Fail here instead.
+      - run: npx tsc --noEmit
+
+      # Advisory only. Four pre-existing `react-hooks/set-state-in-effect`
+      # errors live in HeroCarousel, Navbar, QuickLookModal and
+      # TrendingItemsClient. They are genuine smells worth fixing, but they do
+      # not break the build, and a deploy pipeline that refuses to ship because
+      # of them would just get bypassed. Fix them, then delete this line.
+      - run: npx eslint .
+        continue-on-error: true
+
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # to push to GHCR as GITHUB_TOKEN
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          # :latest always points at the newest main; :<sha> is what the server
+          # actually runs, so a rollback is a one-word change on the server.
+          tags: |
+            type=raw,value=latest
+            type=sha,format=long,prefix=
+
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # NEXT_PUBLIC_* is inlined into the browser bundle at build time, so it
+          # must be a build arg. Changing it needs a rebuild, not a restart.
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=${{ env.SITE_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Roll the server onto this commit
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # The key on the server is pinned to a forced command (ci-deploy.sh),
+          # so this argument is all we can influence — it cannot run anything
+          # else, even if this workflow is compromised. The script pulls that
+          # exact tag, restarts, waits for the healthcheck, and rolls back to the
+          # previous image if it never becomes healthy.
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "deploy ${{ github.sha }}"

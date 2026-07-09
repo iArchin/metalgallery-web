@@ -4,7 +4,15 @@
     "email": "admin@metalgallery.ir",
     "name": "مدیر فروشگاه",
     "passwordHash": "",
-    "phone": "09120000000",
+    "phone": "09196317160",
+    "role": "admin"
+  },
+  {
+    "id": 2,
+    "email": "admin2@metalgallery.ir",
+    "name": "مدیر دوم",
+    "passwordHash": "",
+    "phone": "09399080489",
     "role": "admin"
   }
 ]

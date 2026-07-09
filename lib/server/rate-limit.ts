@@ -26,16 +26,30 @@ function sweep(now: number): void {
 }
 
 /**
- * The client IP, taken from the header the edge proxy sets. Caddy overwrites
- * X-Forwarded-For with the immediate peer, so a client cannot forge it — see
- * the `header_up X-Forwarded-For {remote_host}` line in deploy/edge/Caddyfile.
- * If that guarantee ever changes, this becomes spoofable and the limiter
- * becomes decorative.
+ * The client IP, from the one header the edge proxy is known to overwrite.
+ *
+ * X-Real-IP is set to the immediate peer by both proxies we support: nginx
+ * (`proxy_set_header X-Real-IP $remote_addr`, which Nginx Proxy Manager emits
+ * for every host) and Caddy (`header_up X-Real-IP {remote_host}` in
+ * deploy/edge/Caddyfile). A client cannot forge it.
+ *
+ * X-Forwarded-For is only a fallback, and a poor one: nginx's
+ * `$proxy_add_x_forwarded_for` APPENDS the peer to whatever the client sent, so
+ * the leftmost entry is attacker-controlled. Reading it first would let anyone
+ * rotate a fake IP per request and walk straight through this limiter — and the
+ * limiter is what stands between a script and your SMS.ir balance. We take the
+ * rightmost entry instead, which the proxy appended itself.
  */
 export function clientIp(req: Request): string {
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("x-real-ip")?.trim() || "unknown";
+  if (xff) {
+    const hops = xff.split(",");
+    return hops[hops.length - 1].trim();
+  }
+  return "unknown";
 }
 
 export interface RateLimitResult {
