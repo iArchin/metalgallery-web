@@ -56,13 +56,9 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 
-# /sitemap.xml is prerendered at build time and calls listProducts(), which
-# reads data/products.json. The live data/ is excluded from the build context,
-# so give the build the scrubbed seed to read. (readCollection also tolerates a
-# missing collection now, so this is belt and braces — but it keeps the sitemap
-# populated rather than empty.)
-RUN cp -r data.seed data
-
+# The build is DB-free: every page that reads data is force-dynamic, and
+# /sitemap.xml is now dynamic too, so nothing queries Postgres during
+# `next build`. No data/ needed here.
 RUN npm run build
 
 ###############################################################################
@@ -96,8 +92,13 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# The scrubbed seed, not the live DB. The entrypoint copies only the missing
-# collections out of it at boot.
+# SQL migrations — the boot migrator (lib/server/migrate.ts) applies these
+# against Postgres before the first request.
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+
+# The scrubbed seed. Used only to populate a genuinely fresh database on first
+# boot (import-json.ts); during cutover the live mg_data volume is imported
+# instead. The entrypoint still seeds it into /app/data for that case.
 COPY --chown=nextjs:nodejs data.seed ./data.seed
 COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
 

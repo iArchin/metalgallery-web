@@ -1,5 +1,19 @@
 import "server-only";
-import { readCollection, updateCollection, nextId } from "./db";
+import { and, eq, desc, inArray, sql } from "drizzle-orm";
+import { db } from "./db";
+import {
+  products as productsT,
+  categories as categoriesT,
+  brands as brandsT,
+  orders as ordersT,
+  orderItems as orderItemsT,
+  articles as articlesT,
+  news as newsT,
+  gallery as galleryT,
+  messages as messagesT,
+  settings as settingsT,
+  pages as pagesT,
+} from "./schema";
 import type {
   AboutContent,
   Article,
@@ -10,120 +24,256 @@ import type {
   NewsItem,
   Order,
   OrderCustomer,
+  OrderItem,
   OrderStatus,
   Product,
   SiteSettings,
 } from "../types";
 
-const now = () => new Date().toISOString();
+/* ---------------------------------------------------------------- mappers */
+// Drizzle rows use `null` for absent optional columns and Date for timestamps;
+// the domain types use `undefined` and ISO strings. These convert at the edge.
+
+type ProductRow = typeof productsT.$inferSelect;
+function toProduct(r: ProductRow): Product {
+  return {
+    id: r.id,
+    name: r.name,
+    description: r.description,
+    price: r.price,
+    originalPrice: r.originalPrice ?? undefined,
+    categoryId: r.categoryId,
+    ageGroup: r.ageGroup,
+    stock: r.stock,
+    rating: r.rating,
+    reviewCount: r.reviewCount,
+    image: r.image ?? undefined,
+    imageKeyword: r.imageKeyword,
+    imageLock: r.imageLock,
+    isDeal: r.isDeal,
+    isFlashSale: r.isFlashSale,
+    isTrending: r.isTrending,
+    active: r.active,
+    specifications: r.specifications,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  };
+}
+
+type OrderRow = typeof ordersT.$inferSelect;
+type OrderItemRow = typeof orderItemsT.$inferSelect;
+function toOrderItem(r: OrderItemRow): OrderItem {
+  return {
+    productId: r.productId,
+    name: r.name,
+    unitPrice: r.unitPrice,
+    quantity: r.quantity,
+    image: r.image ?? undefined,
+    imageKeyword: r.imageKeyword,
+    imageLock: r.imageLock,
+  };
+}
+function toOrder(r: OrderRow, items: OrderItemRow[]): Order {
+  return {
+    id: r.id,
+    code: r.code,
+    items: items.map(toOrderItem),
+    customer: {
+      name: r.customerName,
+      phone: r.customerPhone,
+      address: r.customerAddress,
+      note: r.customerNote ?? undefined,
+    },
+    subtotal: r.subtotal,
+    shipping: r.shipping,
+    total: r.total,
+    status: r.status as OrderStatus,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  };
+}
 
 /* ------------------------------------------------------------- products */
 
 export async function listProducts(opts?: {
   includeInactive?: boolean;
 }): Promise<Product[]> {
-  const products = await readCollection<Product[]>("products");
-  return opts?.includeInactive ? products : products.filter((p) => p.active);
+  const rows = opts?.includeInactive
+    ? await db.select().from(productsT).orderBy(productsT.id)
+    : await db.select().from(productsT).where(eq(productsT.active, true)).orderBy(productsT.id);
+  return rows.map(toProduct);
 }
 
 export async function getProduct(id: number): Promise<Product | undefined> {
-  const products = await readCollection<Product[]>("products");
-  return products.find((p) => p.id === id);
+  const [row] = await db.select().from(productsT).where(eq(productsT.id, id));
+  return row ? toProduct(row) : undefined;
 }
 
 export type ProductInput = Omit<Product, "id" | "createdAt" | "updatedAt">;
 
+function productValues(input: Partial<ProductInput>) {
+  // Convert domain optionals (undefined) to what Drizzle expects; only the keys
+  // present in `input` are set (Partial), so patches don't clobber other fields.
+  const v: Record<string, unknown> = { ...input };
+  if ("originalPrice" in input) v.originalPrice = input.originalPrice ?? null;
+  if ("image" in input) v.image = input.image ?? null;
+  return v;
+}
+
 export async function createProduct(input: ProductInput): Promise<Product> {
-  return updateCollection<Product[], Product>("products", (products) => {
-    const product: Product = {
-      ...input,
-      id: nextId(products),
-      createdAt: now(),
-      updatedAt: now(),
-    };
-    return { next: [...products, product], result: product };
-  });
+  const [row] = await db
+    .insert(productsT)
+    .values(productValues(input) as typeof productsT.$inferInsert)
+    .returning();
+  return toProduct(row);
 }
 
 export async function updateProduct(
   id: number,
   patch: Partial<ProductInput>
 ): Promise<Product | undefined> {
-  return updateCollection<Product[], Product | undefined>("products", (products) => {
-    const idx = products.findIndex((p) => p.id === id);
-    if (idx === -1) return { next: products, result: undefined };
-    const updated: Product = { ...products[idx], ...patch, id, updatedAt: now() };
-    const next = [...products];
-    next[idx] = updated;
-    return { next, result: updated };
-  });
+  const [row] = await db
+    .update(productsT)
+    .set({ ...productValues(patch), updatedAt: new Date() })
+    .where(eq(productsT.id, id))
+    .returning();
+  return row ? toProduct(row) : undefined;
 }
 
 export async function deleteProduct(id: number): Promise<boolean> {
-  return updateCollection<Product[], boolean>("products", (products) => {
-    const next = products.filter((p) => p.id !== id);
-    return { next, result: next.length !== products.length };
-  });
+  const rows = await db.delete(productsT).where(eq(productsT.id, id)).returning({ id: productsT.id });
+  return rows.length > 0;
 }
 
 /* ----------------------------------------------------- simple collections */
 
-function makeCrud<T extends { id: number }>(collection: "categories" | "brands" | "articles" | "news" | "gallery") {
-  return {
-    list: () => readCollection<T[]>(collection),
-    get: async (id: number) =>
-      (await readCollection<T[]>(collection)).find((i) => i.id === id),
-    create: (input: Omit<T, "id">) =>
-      updateCollection<T[], T>(collection, (items) => {
-        const item = { ...input, id: nextId(items) } as T;
-        return { next: [...items, item], result: item };
-      }),
-    update: (id: number, patch: Partial<Omit<T, "id">>) =>
-      updateCollection<T[], T | undefined>(collection, (items) => {
-        const idx = items.findIndex((i) => i.id === id);
-        if (idx === -1) return { next: items, result: undefined };
-        const updated = { ...items[idx], ...patch, id } as T;
-        const next = [...items];
-        next[idx] = updated;
-        return { next, result: updated };
-      }),
-    remove: (id: number) =>
-      updateCollection<T[], boolean>(collection, (items) => {
-        const next = items.filter((i) => i.id !== id);
-        return { next, result: next.length !== items.length };
-      }),
-  };
-}
+export const categoriesRepo = {
+  list: async (): Promise<Category[]> =>
+    (await db.select().from(categoriesT).orderBy(categoriesT.id)).map((r) => ({
+      ...r,
+      image: r.image ?? undefined,
+    })),
+  get: async (id: number): Promise<Category | undefined> => {
+    const [r] = await db.select().from(categoriesT).where(eq(categoriesT.id, id));
+    return r ? { ...r, image: r.image ?? undefined } : undefined;
+  },
+  create: async (input: Omit<Category, "id">): Promise<Category> => {
+    const [r] = await db
+      .insert(categoriesT)
+      .values({ ...input, image: input.image ?? null })
+      .returning();
+    return { ...r, image: r.image ?? undefined };
+  },
+  update: async (id: number, patch: Partial<Omit<Category, "id">>): Promise<Category | undefined> => {
+    const v: Record<string, unknown> = { ...patch };
+    if ("image" in patch) v.image = patch.image ?? null;
+    const [r] = await db.update(categoriesT).set(v).where(eq(categoriesT.id, id)).returning();
+    return r ? { ...r, image: r.image ?? undefined } : undefined;
+  },
+  remove: async (id: number): Promise<boolean> =>
+    (await db.delete(categoriesT).where(eq(categoriesT.id, id)).returning({ id: categoriesT.id })).length > 0,
+};
 
-export const categoriesRepo = makeCrud<Category>("categories");
-export const brandsRepo = makeCrud<Brand>("brands");
-export const articlesRepo = makeCrud<Article>("articles");
-export const newsRepo = makeCrud<NewsItem>("news");
-export const galleryRepo = makeCrud<GalleryItem>("gallery");
+export const brandsRepo = {
+  list: async (): Promise<Brand[]> =>
+    (await db.select().from(brandsT).orderBy(brandsT.id)).map((r) => ({ ...r, logo: r.logo ?? undefined })),
+  get: async (id: number): Promise<Brand | undefined> => {
+    const [r] = await db.select().from(brandsT).where(eq(brandsT.id, id));
+    return r ? { ...r, logo: r.logo ?? undefined } : undefined;
+  },
+  create: async (input: Omit<Brand, "id">): Promise<Brand> => {
+    const [r] = await db.insert(brandsT).values({ ...input, logo: input.logo ?? null }).returning();
+    return { ...r, logo: r.logo ?? undefined };
+  },
+  update: async (id: number, patch: Partial<Omit<Brand, "id">>): Promise<Brand | undefined> => {
+    const v: Record<string, unknown> = { ...patch };
+    if ("logo" in patch) v.logo = patch.logo ?? null;
+    const [r] = await db.update(brandsT).set(v).where(eq(brandsT.id, id)).returning();
+    return r ? { ...r, logo: r.logo ?? undefined } : undefined;
+  },
+  remove: async (id: number): Promise<boolean> =>
+    (await db.delete(brandsT).where(eq(brandsT.id, id)).returning({ id: brandsT.id })).length > 0,
+};
+
+// articles, news, gallery have no optional/date fields — the row shape matches
+// the domain type directly.
+export const articlesRepo = {
+  list: (): Promise<Article[]> => db.select().from(articlesT).orderBy(desc(articlesT.id)),
+  get: async (id: number): Promise<Article | undefined> =>
+    (await db.select().from(articlesT).where(eq(articlesT.id, id)))[0],
+  create: async (input: Omit<Article, "id">): Promise<Article> =>
+    (await db.insert(articlesT).values(input).returning())[0],
+  update: async (id: number, patch: Partial<Omit<Article, "id">>): Promise<Article | undefined> =>
+    (await db.update(articlesT).set(patch).where(eq(articlesT.id, id)).returning())[0],
+  remove: async (id: number): Promise<boolean> =>
+    (await db.delete(articlesT).where(eq(articlesT.id, id)).returning({ id: articlesT.id })).length > 0,
+};
+
+export const newsRepo = {
+  list: (): Promise<NewsItem[]> => db.select().from(newsT).orderBy(desc(newsT.id)),
+  get: async (id: number): Promise<NewsItem | undefined> =>
+    (await db.select().from(newsT).where(eq(newsT.id, id)))[0],
+  create: async (input: Omit<NewsItem, "id">): Promise<NewsItem> =>
+    (await db.insert(newsT).values(input).returning())[0],
+  update: async (id: number, patch: Partial<Omit<NewsItem, "id">>): Promise<NewsItem | undefined> =>
+    (await db.update(newsT).set(patch).where(eq(newsT.id, id)).returning())[0],
+  remove: async (id: number): Promise<boolean> =>
+    (await db.delete(newsT).where(eq(newsT.id, id)).returning({ id: newsT.id })).length > 0,
+};
+
+export const galleryRepo = {
+  list: (): Promise<GalleryItem[]> => db.select().from(galleryT).orderBy(galleryT.id),
+  get: async (id: number): Promise<GalleryItem | undefined> =>
+    (await db.select().from(galleryT).where(eq(galleryT.id, id)))[0],
+  create: async (input: Omit<GalleryItem, "id">): Promise<GalleryItem> =>
+    (await db.insert(galleryT).values(input).returning())[0],
+  update: async (id: number, patch: Partial<Omit<GalleryItem, "id">>): Promise<GalleryItem | undefined> =>
+    (await db.update(galleryT).set(patch).where(eq(galleryT.id, id)).returning())[0],
+  remove: async (id: number): Promise<boolean> =>
+    (await db.delete(galleryT).where(eq(galleryT.id, id)).returning({ id: galleryT.id })).length > 0,
+};
 
 /* --------------------------------------------------------------- orders */
 
+async function attachItems(rows: OrderRow[]): Promise<Order[]> {
+  if (!rows.length) return [];
+  const items = await db
+    .select()
+    .from(orderItemsT)
+    .where(inArray(orderItemsT.orderId, rows.map((r) => r.id)));
+  const byOrder = new Map<number, OrderItemRow[]>();
+  for (const it of items) {
+    const list = byOrder.get(it.orderId);
+    if (list) list.push(it);
+    else byOrder.set(it.orderId, [it]);
+  }
+  return rows.map((r) => toOrder(r, byOrder.get(r.id) ?? []));
+}
+
 export async function listOrders(): Promise<Order[]> {
-  const orders = await readCollection<Order[]>("orders");
-  return [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return attachItems(await db.select().from(ordersT).orderBy(desc(ordersT.createdAt)));
 }
 
 export async function getOrder(id: number): Promise<Order | undefined> {
-  const orders = await readCollection<Order[]>("orders");
-  return orders.find((o) => o.id === id);
+  const [row] = await db.select().from(ordersT).where(eq(ordersT.id, id));
+  if (!row) return undefined;
+  return (await attachItems([row]))[0];
 }
 
-/** A customer's own orders (newest first), matched by phone. */
 export async function listOrdersByPhone(phone: string): Promise<Order[]> {
-  const orders = await readCollection<Order[]>("orders");
-  return orders
-    .filter((o) => o.customer.phone === phone)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return attachItems(
+    await db.select().from(ordersT).where(eq(ordersT.customerPhone, phone)).orderBy(desc(ordersT.createdAt))
+  );
 }
+
+/** Thrown inside placeOrder's transaction to roll back with a user message. */
+class OrderError extends Error {}
 
 /**
- * Checkout: validates stock against the product collection, snapshots names
- * and authoritative prices, decrements stock, and records the order.
+ * Checkout, in one transaction: locks each product row (FOR UPDATE) so stock
+ * can't oversell under concurrency, snapshots names + authoritative prices,
+ * decrements stock, and records the order and its items. Any failure rolls the
+ * whole thing back.
  */
 export async function placeOrder(input: {
   items: { productId: number; quantity: number }[];
@@ -136,121 +286,120 @@ export async function placeOrder(input: {
 
   const settings = await getSettings();
 
-  // Decrement stock first (serialized on the products queue)…
-  const stockResult = await updateCollection<
-    Product[],
-    { error?: string; lines?: Order["items"] }
-  >("products", (products) => {
-    const lines: Order["items"] = [];
-    const next = [...products];
-    for (const item of input.items) {
-      const qty = Math.max(1, Math.floor(item.quantity));
-      const idx = next.findIndex((p) => p.id === item.productId && p.active);
-      if (idx === -1) return { next: products, result: { error: "محصولی یافت نشد" } };
-      const product = next[idx];
-      if (product.stock < qty) {
-        return {
-          next: products,
-          result: { error: `موجودی «${product.name}» کافی نیست` },
-        };
+  try {
+    const order = await db.transaction(async (tx) => {
+      const lines: OrderItem[] = [];
+      for (const item of input.items) {
+        const qty = Math.max(1, Math.floor(item.quantity));
+        const [p] = await tx
+          .select()
+          .from(productsT)
+          .where(and(eq(productsT.id, item.productId), eq(productsT.active, true)))
+          .for("update");
+        if (!p) throw new OrderError("محصولی یافت نشد");
+        if (p.stock < qty) throw new OrderError(`موجودی «${p.name}» کافی نیست`);
+        await tx
+          .update(productsT)
+          .set({ stock: p.stock - qty, updatedAt: new Date() })
+          .where(eq(productsT.id, p.id));
+        lines.push({
+          productId: p.id,
+          name: p.name,
+          unitPrice: p.price,
+          quantity: qty,
+          image: p.image ?? undefined,
+          imageKeyword: p.imageKeyword,
+          imageLock: p.imageLock,
+        });
       }
-      next[idx] = { ...product, stock: product.stock - qty, updatedAt: now() };
-      lines.push({
-        productId: product.id,
-        name: product.name,
-        unitPrice: product.price,
-        quantity: qty,
-        image: product.image,
-        imageKeyword: product.imageKeyword,
-        imageLock: product.imageLock,
-      });
-    }
-    return { next, result: { lines } };
-  });
 
-  if (stockResult.error || !stockResult.lines) {
-    return { error: stockResult.error ?? "خطای نامشخص" };
+      const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
+      const shipping =
+        settings.freeShippingThreshold === 0 || subtotal >= settings.freeShippingThreshold
+          ? 0
+          : settings.shippingCost;
+
+      const [ord] = await tx
+        .insert(ordersT)
+        .values({
+          code: "PENDING", // real code needs the id; set just below
+          customerName: input.customer.name.trim(),
+          customerPhone: input.customer.phone.trim(),
+          customerAddress: input.customer.address.trim(),
+          customerNote: input.customer.note?.trim() || null,
+          subtotal,
+          shipping,
+          total: subtotal + shipping,
+          status: "pending",
+        })
+        .returning();
+
+      const code = `MG-${1000 + ord.id}`;
+      await tx.update(ordersT).set({ code }).where(eq(ordersT.id, ord.id));
+      await tx.insert(orderItemsT).values(lines.map((l) => ({ orderId: ord.id, ...l, image: l.image ?? null })));
+
+      return toOrder({ ...ord, code }, []); // items known from `lines`
+        // (rebuild below so the returned order carries them)
+    });
+
+    // The transaction returns the order shell; attach the just-inserted items.
+    return { order: (await getOrder(order.id))! };
+  } catch (e) {
+    if (e instanceof OrderError) return { error: e.message };
+    throw e;
   }
-
-  const subtotal = stockResult.lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
-  const shipping =
-    settings.freeShippingThreshold === 0 || subtotal >= settings.freeShippingThreshold
-      ? 0
-      : settings.shippingCost;
-
-  // …then record the order.
-  const order = await updateCollection<Order[], Order>("orders", (orders) => {
-    const id = nextId(orders);
-    const order: Order = {
-      id,
-      code: `MG-${1000 + id}`,
-      items: stockResult.lines!,
-      customer: {
-        name: input.customer.name.trim(),
-        phone: input.customer.phone.trim(),
-        address: input.customer.address.trim(),
-        note: input.customer.note?.trim() || undefined,
-      },
-      subtotal,
-      shipping,
-      total: subtotal + shipping,
-      status: "pending",
-      createdAt: now(),
-      updatedAt: now(),
-    };
-    return { next: [...orders, order], result: order };
-  });
-
-  return { order };
 }
 
 export async function updateOrderStatus(
   id: number,
   status: OrderStatus
 ): Promise<Order | undefined> {
-  const orders = await readCollection<Order[]>("orders");
-  const order = orders.find((o) => o.id === id);
-  if (!order) return undefined;
+  const updated = await db.transaction(async (tx) => {
+    const [current] = await tx.select().from(ordersT).where(eq(ordersT.id, id)).for("update");
+    if (!current) return undefined;
 
-  // Cancelling an order returns its items to stock (once — only on the
-  // transition into "cancelled").
-  if (status === "cancelled" && order.status !== "cancelled") {
-    await updateCollection<Product[], void>("products", (products) => {
-      const next = products.map((p) => {
-        const line = order.items.find((l) => l.productId === p.id);
-        return line ? { ...p, stock: p.stock + line.quantity, updatedAt: now() } : p;
-      });
-      return { next, result: undefined };
-    });
-  }
+    // Cancelling returns items to stock, once, only on the transition in.
+    if (status === "cancelled" && current.status !== "cancelled") {
+      const items = await tx.select().from(orderItemsT).where(eq(orderItemsT.orderId, id));
+      for (const it of items) {
+        await tx
+          .update(productsT)
+          .set({ stock: sql`${productsT.stock} + ${it.quantity}`, updatedAt: new Date() })
+          .where(eq(productsT.id, it.productId));
+      }
+    }
 
-  return updateCollection<Order[], Order | undefined>("orders", (all) => {
-    const idx = all.findIndex((o) => o.id === id);
-    if (idx === -1) return { next: all, result: undefined };
-    const updated: Order = { ...all[idx], status, updatedAt: now() };
-    const next = [...all];
-    next[idx] = updated;
-    return { next, result: updated };
+    const [row] = await tx
+      .update(ordersT)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(ordersT.id, id))
+      .returning();
+    return row;
   });
+
+  if (!updated) return undefined;
+  return getOrder(id);
 }
 
 /* ---------------------------------------------------- settings & pages */
 
 export async function getSettings(): Promise<SiteSettings> {
-  return readCollection<SiteSettings>("settings");
+  const [row] = await db.select().from(settingsT).where(eq(settingsT.id, 1));
+  if (!row) throw new Error("settings row missing — did the data migration run?");
+  return row.data;
 }
 
 export async function updateSettings(patch: Partial<SiteSettings>): Promise<SiteSettings> {
-  return updateCollection<SiteSettings, SiteSettings>("settings", (current) => {
-    const next = {
-      ...current,
-      ...patch,
-      hero: { ...current.hero, ...(patch.hero ?? {}) },
-      saleCampaign: { ...current.saleCampaign, ...(patch.saleCampaign ?? {}) },
-      socials: { ...current.socials, ...(patch.socials ?? {}) },
-    };
-    return { next, result: next };
-  });
+  const current = await getSettings();
+  const next: SiteSettings = {
+    ...current,
+    ...patch,
+    hero: { ...current.hero, ...(patch.hero ?? {}) },
+    saleCampaign: { ...current.saleCampaign, ...(patch.saleCampaign ?? {}) },
+    socials: { ...current.socials, ...(patch.socials ?? {}) },
+  };
+  await db.update(settingsT).set({ data: next }).where(eq(settingsT.id, 1));
+  return next;
 }
 
 export interface PagesContent {
@@ -258,98 +407,84 @@ export interface PagesContent {
 }
 
 export async function getAboutContent(): Promise<AboutContent> {
-  const pages = await readCollection<PagesContent>("pages");
-  return pages.about;
+  const [row] = await db.select().from(pagesT).where(eq(pagesT.id, 1));
+  if (!row) throw new Error("pages row missing — did the data migration run?");
+  return row.about;
 }
 
 export async function updateAboutContent(patch: Partial<AboutContent>): Promise<AboutContent> {
-  return updateCollection<PagesContent, AboutContent>("pages", (pages) => {
-    const about = { ...pages.about, ...patch };
-    return { next: { ...pages, about }, result: about };
-  });
+  const current = await getAboutContent();
+  const about: AboutContent = { ...current, ...patch };
+  await db.update(pagesT).set({ about }).where(eq(pagesT.id, 1));
+  return about;
 }
 
 /* -------------------------------------------------------------- messages */
 
 export async function listMessages(): Promise<ContactMessage[]> {
-  const messages = await readCollection<ContactMessage[]>("messages");
-  return [...messages].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const rows = await db.select().from(messagesT).orderBy(desc(messagesT.createdAt));
+  return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
 }
 
 export async function createMessage(
   input: Pick<ContactMessage, "name" | "email" | "subject" | "message">
 ): Promise<ContactMessage> {
-  return updateCollection<ContactMessage[], ContactMessage>("messages", (messages) => {
-    const message: ContactMessage = {
-      id: nextId(messages),
+  const [r] = await db
+    .insert(messagesT)
+    .values({
       name: input.name.trim(),
       email: input.email.trim(),
       subject: input.subject.trim(),
       message: input.message.trim(),
       read: false,
-      createdAt: now(),
-    };
-    return { next: [...messages, message], result: message };
-  });
+    })
+    .returning();
+  return { ...r, createdAt: r.createdAt.toISOString() };
 }
 
 export async function setMessageRead(id: number, read: boolean): Promise<ContactMessage | undefined> {
-  return updateCollection<ContactMessage[], ContactMessage | undefined>(
-    "messages",
-    (messages) => {
-      const idx = messages.findIndex((m) => m.id === id);
-      if (idx === -1) return { next: messages, result: undefined };
-      const updated = { ...messages[idx], read };
-      const next = [...messages];
-      next[idx] = updated;
-      return { next, result: updated };
-    }
-  );
+  const [r] = await db.update(messagesT).set({ read }).where(eq(messagesT.id, id)).returning();
+  return r ? { ...r, createdAt: r.createdAt.toISOString() } : undefined;
 }
 
 export async function deleteMessage(id: number): Promise<boolean> {
-  return updateCollection<ContactMessage[], boolean>("messages", (messages) => {
-    const next = messages.filter((m) => m.id !== id);
-    return { next, result: next.length !== messages.length };
-  });
+  return (await db.delete(messagesT).where(eq(messagesT.id, id)).returning({ id: messagesT.id })).length > 0;
 }
 
 /* ------------------------------------------------------------- dashboard */
 
 export async function getDashboardStats() {
-  const [products, orders, messages, articles] = await Promise.all([
-    readCollection<Product[]>("products"),
-    readCollection<Order[]>("orders"),
-    readCollection<ContactMessage[]>("messages"),
-    readCollection<Article[]>("articles"),
+  const [allProducts, allOrders, lowStockRows, unreadRow, articleRow] = await Promise.all([
+    db.select({ active: productsT.active }).from(productsT),
+    db.select().from(ordersT),
+    db
+      .select({ id: productsT.id, name: productsT.name, stock: productsT.stock })
+      .from(productsT)
+      .where(and(eq(productsT.active, true), sql`${productsT.stock} <= 5`))
+      .orderBy(productsT.stock),
+    db.select({ n: sql<number>`count(*)::int` }).from(messagesT).where(eq(messagesT.read, false)),
+    db.select({ n: sql<number>`count(*)::int` }).from(articlesT),
   ]);
 
-  const activeOrders = orders.filter(
-    (o) => o.status !== "cancelled" && o.status !== "delivered"
-  );
-  const revenue = orders
-    .filter((o) => o.status !== "cancelled")
-    .reduce((s, o) => s + o.total, 0);
+  const activeOrders = allOrders.filter((o) => o.status !== "cancelled" && o.status !== "delivered");
+  const revenue = allOrders.filter((o) => o.status !== "cancelled").reduce((s, o) => s + o.total, 0);
+  const recent = [...allOrders].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 6);
 
   return {
-    productCount: products.length,
-    activeProductCount: products.filter((p) => p.active).length,
-    lowStock: products
-      .filter((p) => p.active && p.stock <= 5)
-      .map((p) => ({ id: p.id, name: p.name, stock: p.stock })),
-    orderCount: orders.length,
+    productCount: allProducts.length,
+    activeProductCount: allProducts.filter((p) => p.active).length,
+    lowStock: lowStockRows,
+    orderCount: allOrders.length,
     openOrderCount: activeOrders.length,
     revenue,
-    unreadMessages: messages.filter((m) => !m.read).length,
-    articleCount: articles.length,
-    recentOrders: [...orders]
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .slice(0, 6),
+    unreadMessages: unreadRow[0]?.n ?? 0,
+    articleCount: articleRow[0]?.n ?? 0,
+    recentOrders: await attachItems(recent),
     statusBreakdown: (
       ["pending", "processing", "shipped", "delivered", "cancelled"] as OrderStatus[]
     ).map((status) => ({
       status,
-      count: orders.filter((o) => o.status === status).length,
+      count: allOrders.filter((o) => o.status === status).length,
     })),
   };
 }

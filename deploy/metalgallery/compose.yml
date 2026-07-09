@@ -71,10 +71,17 @@ services:
     networks:
       - edge
 
-    # The single durable artifact. The image entrypoint seeds missing
-    # collections into it on boot and never overwrites existing ones.
+    # mg_data still carries the legacy JSON. It is mounted so the first boot on
+    # Postgres can IMPORT it (import-json.ts) during cutover; after that it is
+    # dormant. Safe to drop from this list once the data lives in Postgres.
     volumes:
       - mg_data:/app/data
+
+    # Only start once Postgres is accepting connections — the boot migrator
+    # needs it. `--wait` then gates on the app's own healthcheck.
+    depends_on:
+      db:
+        condition: service_healthy
 
     # Standalone Next idles around 80–150 MB; 512m leaves room for render
     # spikes on a 1–2 GB VPS. These two keys are honored by plain
@@ -89,7 +96,7 @@ services:
         max-file: "3"
 
     # Gate for `docker compose up -d --wait`. /api/health touches no collection,
-    # so it answers while the volume is still seeding. node:22 ships fetch().
+    # so it answers immediately. node:22 ships fetch().
     healthcheck:
       test:
         - CMD
@@ -99,14 +106,43 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
+
+  # --- Postgres, private to this project -------------------------------------
+  # Only on mg_edge (never npm_default), so it is unreachable from inky and from
+  # the host — no published ports. The app connects as mg-db:5432.
+  db:
+    image: postgres:17-alpine
+    container_name: mg-db
+    restart: unless-stopped
+    # POSTGRES_* come from .env (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB).
+    # DATABASE_URL on the web service must match these.
+    env_file:
+      - .env
+    volumes:
+      - mg_pgdata:/var/lib/postgresql/data
+    networks:
+      - edge
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
       start_period: 20s
 
-# `name:` pins the real volume name with no project prefix, so the backup and
-# restore scripts can address it as mg_data. Rebuilding the image never
-# refreshes an existing volume.
+# mg_data = legacy JSON (kept for the cutover import). mg_pgdata = the Postgres
+# data directory, the durable artifact from here on. Back THIS up.
 volumes:
   mg_data:
     name: mg_data
+  mg_pgdata:
+    name: mg_pgdata
 
 # Dedicated to this project; the proxy is attached to it separately. NPM resolves
 # `mg-web` by container name only because both sit on this network.
