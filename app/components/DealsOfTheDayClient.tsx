@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
 import Button from "@/app/components/Button";
 import { useCart } from "@/app/components/CartContext";
@@ -68,6 +68,52 @@ export default function DealsOfTheDayClient({
     );
   };
 
+  /* ---- horizontal rail: chevron buttons + drag-to-scroll ---------------- */
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef({ active: false, startX: 0, startScroll: 0, moved: 0 });
+  const [dragging, setDragging] = useState(false);
+
+  /** dir=+1 scrolls toward the start (right, in RTL); dir=-1 toward the end. */
+  const scrollByAmount = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const amount = Math.max(240, el.clientWidth * 0.8);
+    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+  };
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    // Touch/pen keep native momentum scrolling; only mouse needs drag support.
+    if (e.pointerType !== "mouse") return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    dragRef.current = { active: true, startX: e.clientX, startScroll: el.scrollLeft, moved: 0 };
+    setDragging(true);
+  };
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    const el = scrollerRef.current;
+    if (!d.active || !el) return;
+    const dx = e.clientX - d.startX;
+    d.moved = Math.max(d.moved, Math.abs(dx));
+    el.scrollLeft = d.startScroll - dx;
+  };
+
+  const endDrag = () => {
+    if (!dragRef.current.active) return;
+    dragRef.current.active = false;
+    setDragging(false);
+  };
+
+  // A drag that moved shouldn't also "click" the product card underneath.
+  const onClickCapture = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (dragRef.current.moved > 5) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    dragRef.current.moved = 0;
+  };
+
   const timeUnits = [
     { label: "ثانیه", value: timeLeft.seconds },
     { label: "دقیقه", value: timeLeft.minutes },
@@ -112,8 +158,47 @@ export default function DealsOfTheDayClient({
         </div>
       </div>
 
-      <div className="overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-px-4 sm:scroll-px-6">
-        <div className="flex gap-4 sm:gap-6 pb-4 px-4 sm:px-6">
+      {/* The md+ side padding is the chevrons' gutter — the scroll area starts
+          after it, so cards never slide underneath the buttons. */}
+      <div className="relative md:px-16 lg:px-20">
+        {/* Prev (toward the start = right, in RTL) */}
+        <button
+          type="button"
+          onClick={() => scrollByAmount(1)}
+          aria-label="محصولات قبلی"
+          className="hidden md:grid absolute right-3 lg:right-5 top-1/2 -translate-y-1/2 z-10 h-12 w-12 place-items-center rounded-full border-2 border-border-strong bg-surface text-content shadow-lg transition-all hover:bg-primary hover:text-primary-content hover:border-primary active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* Next (toward the end = left, in RTL) */}
+        <button
+          type="button"
+          onClick={() => scrollByAmount(-1)}
+          aria-label="محصولات بعدی"
+          className="hidden md:grid absolute left-3 lg:left-5 top-1/2 -translate-y-1/2 z-10 h-12 w-12 place-items-center rounded-full border-2 border-border-strong bg-surface text-content shadow-lg transition-all hover:bg-primary hover:text-primary-content hover:border-primary active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <div
+          ref={scrollerRef}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerLeave={endDrag}
+          onPointerCancel={endDrag}
+          onClickCapture={onClickCapture}
+          style={{ scrollSnapType: dragging ? "none" : undefined }}
+          className={`overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-px-4 sm:scroll-px-6 ${
+            dragging ? "cursor-grabbing select-none" : "md:cursor-grab"
+          }`}
+        >
+          <div className="flex gap-4 sm:gap-6 pb-4 px-4 sm:px-6 md:px-0">
             {products.map((product) => {
               const off = discountPercent(product);
               const added = addedId === product.id;
@@ -204,6 +289,7 @@ export default function DealsOfTheDayClient({
                 </Link>
               );
             })}
+          </div>
         </div>
       </div>
     </section>

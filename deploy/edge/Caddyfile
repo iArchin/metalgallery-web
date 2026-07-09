@@ -1,0 +1,152 @@
+# /srv/edge/Caddyfile — the single edge for every site on this box.
+#
+# Why this file is short and still correct:
+#
+# The app decides which site to serve from the RAW Host header — a host-matched
+# rewrite in next.config.ts mounts the panel, middleware.ts canonicalises the
+# URLs, and lib/server/admin-base.ts reads the same header — and it builds its
+# redirects from req.nextUrl, whose scheme comes from X-Forwarded-Proto. Caddy's
+# reverse_proxy already passes the original Host upstream and sets
+# X-Forwarded-Proto/Host/For, with no directives at all. That is the entire
+# reason this is Caddy and not nginx, where forgetting any one of
+#     proxy_set_header Host              $host;
+#     proxy_set_header X-Forwarded-Proto $scheme;
+#     proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+# silently breaks the admin subdomain or produces an http/https redirect loop.
+
+{
+	# ACME account: expiry notices and recovery. Set a real mailbox before
+	# go-live. Caddy's built-in ZeroSSL fallback also needs an email to register,
+	# so this doubles as your insurance if Let's Encrypt is unreachable.
+	# email admin@metalgallery.ir
+
+	# While testing, point at LE staging so a misconfiguration cannot burn the
+	# real rate limit (5 failures per account per hostname per hour):
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# ---------------------------------------------------------------------------
+# Security headers, tuned to this app. Every allowance below is load-bearing —
+# read the note before tightening one.
+# ---------------------------------------------------------------------------
+(security_headers) {
+	header {
+		# Two years, subdomains included (admin.* is HTTPS too). No `preload`:
+		# that is a hard-to-reverse commitment binding every future subdomain.
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# geolocation must stay (self): the profile page's "ثبت موقعیت فعلی من"
+		# button calls navigator.geolocation (ProfileForm.tsx:90).
+		Permissions-Policy "geolocation=(self), camera=(), microphone=()"
+
+		# Each clause below is required by something concrete:
+		#   script-src 'unsafe-inline'  ThemeScript + two JSON-LD blocks
+		#                               (layout.tsx:83,109) + Next's bootstrap.
+		#                               Removing it blanks the theme and breaks
+		#                               hydration.
+		#   style-src  'unsafe-inline'  Next and Tailwind inject inline styles.
+		#   img-src    data:            avatars are stored as data: URLs.
+		#   img-src    blob:            the avatar picker decodes the chosen file
+		#                               through URL.createObjectURL before
+		#                               resizing (ProfileForm.tsx:21). 'self'
+		#                               does not cover the opaque blob: scheme,
+		#                               so upload fails silently without it.
+		#   frame-src  openstreetmap    the profile map embed. Remove it and the
+		#                               map goes blank.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src https://www.openstreetmap.org; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+
+		-Server
+		-X-Powered-By
+	}
+}
+
+# ---------------------------------------------------------------------------
+# Upstream: the metalgallery app container, by name, on the shared `edge`
+# network. It publishes no host ports; this is the only way in.
+# ---------------------------------------------------------------------------
+(mg_app) {
+	reverse_proxy mg-web:3000 {
+		# A redeploy stops the old container before the new one is healthy.
+		# Retry for 10s so users see a pause instead of a 502.
+		lb_try_duration 10s
+
+		# Caddy is the only hop in front of the app, so the immediate peer IS
+		# the client. OVERWRITE X-Forwarded-For rather than appending to it:
+		# Caddy's default appends, which would leave a client-supplied
+		# "X-Forwarded-For: 9.9.9.9" as the leftmost token. lib/server/rate-limit.ts
+		# reads that token, so without this an attacker rotates a forged IP to
+		# get a fresh bucket per request and burns your SMS.ir balance.
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Real-IP {remote_host}
+	}
+}
+
+# =============================================================================
+# Storefront
+# =============================================================================
+metalgallery.ir {
+	import security_headers
+	encode zstd gzip
+	import mg_app
+}
+
+# The app does not redirect www itself, so the edge must. This block also makes
+# Caddy provision a certificate for the www name.
+www.metalgallery.ir {
+	import security_headers
+	redir https://metalgallery.ir{uri} permanent
+}
+
+# =============================================================================
+# Admin panel — the SAME container. Routing is by Host, inside the app.
+# Do not strip a path prefix and do not rewrite the Host here: the app mounts
+# the panel by matching `admin.*` against the Host header it receives.
+# =============================================================================
+admin.metalgallery.ir {
+	import security_headers
+
+	# robots.txt is per-host, and on this host the app serves the storefront's
+	# "allow: /". Keep crawlers off the panel at the edge instead.
+	header X-Robots-Tag "noindex, nofollow"
+
+	encode zstd gzip
+	import mg_app
+}
+
+# =============================================================================
+# Adding project #2 and #3
+# =============================================================================
+# A new site is a stanza here plus a reload. Never a port change, never a
+# second proxy.
+#
+# 1) Give the project its own /srv/<project>/compose.yml whose service joins
+#    this same external network with a stable container_name and NO `ports:`
+#
+#        services:
+#          web:
+#            container_name: projecttwo-web
+#            expose: ["3000"]
+#            networks: [edge]
+#        networks:
+#          edge:
+#            external: true
+#
+# 2) Add the vhost and reload with zero downtime:
+#        docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+#
+#    projecttwo.ir, www.projecttwo.ir {
+#        encode zstd gzip
+#        reverse_proxy projecttwo-web:3000 {
+#            lb_try_duration 10s
+#        }
+#    }
+#
+# 3) Point the domain's A record at this server. Caddy issues the certificate
+#    on the first HTTPS request.
+#
+# Note: the (security_headers) snippet above is tuned for THIS app — the OSM
+# iframe, inline scripts, data: images. Give a different project its own
+# snippet rather than reusing this CSP.

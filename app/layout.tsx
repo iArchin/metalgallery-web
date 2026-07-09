@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Vazirmatn } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import ThemeScript from "./components/ThemeScript";
 
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+// Vazirmatn is vendored (app/fonts, SIL OFL) rather than pulled from
+// next/font/google, which downloads from fonts.gstatic.com during `next build`.
+// A build host that can't reach Google — which is the norm for an Iranian
+// server — would otherwise hang or fail. One variable file carries the whole
+// 300–800 range plus both the Arabic and Latin glyphs.
+const vazirmatn = localFont({
+  src: "./fonts/Vazirmatn-Variable.woff2",
+  weight: "300 800",
+  style: "normal",
+  display: "swap",
   variable: "--font-vazirmatn",
 });
 

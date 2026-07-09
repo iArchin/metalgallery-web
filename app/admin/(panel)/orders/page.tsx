@@ -12,6 +12,7 @@ import {
   ErrorBlock,
   EmptyState,
 } from "@/app/admin/_components/ui";
+import { useAdminBase } from "@/app/admin/_components/useAdminBase";
 import { toPersianNumber, formatPersianNumber } from "@/app/utils/numbers";
 
 const STATUSES = Object.keys(ORDER_STATUS_LABELS) as OrderStatus[];
@@ -19,6 +20,7 @@ const STATUSES = Object.keys(ORDER_STATUS_LABELS) as OrderStatus[];
 type Filter = "all" | OrderStatus;
 
 export default function OrdersPage() {
+  const { href } = useAdminBase();
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
@@ -157,7 +159,7 @@ export default function OrdersPage() {
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 <Link
-                  href={`/admin/orders/${o.id}`}
+                  href={href(`/orders/${o.id}`)}
                   className="inline-flex min-h-10 items-center rounded-lg px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary-soft transition-colors"
                 >
                   مشاهده جزئیات

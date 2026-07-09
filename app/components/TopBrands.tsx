@@ -8,6 +8,7 @@ export default function TopBrands({ brands }: { brands: Brand[] }) {
   // Brand ids whose logo image failed to load — fall back to a wordmark so a
   // missing/broken file never leaves an empty chip.
   const [failed, setFailed] = useState<Set<number>>(new Set());
+  const [paused, setPaused] = useState(false);
 
   if (brands.length === 0) return null;
 
@@ -86,9 +87,14 @@ export default function TopBrands({ brands }: { brands: Brand[] }) {
           LTR left-anchors the strip so the duplicate group fills the seam. */}
       <div
         dir="ltr"
-        className="group/marquee relative overflow-hidden mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
+        className="relative overflow-hidden mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
       >
-        <div className="flex w-max animate-marquee-brand group-hover/marquee:[animation-play-state:paused]">
+        <div
+          className="flex w-max animate-marquee-brand"
+          style={{ animationPlayState: paused ? "paused" : "running" }}
+        >
           {renderGroup(false)}
           {renderGroup(true)}
         </div>

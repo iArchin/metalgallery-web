@@ -310,7 +310,7 @@ export default function Navbar({
       {/* Top Header */}
       <header className="bg-surface border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center h-16 gap-4">
+          <div className="flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr] h-16 gap-4">
             {/* Search Bar — right side, wider */}
             <div className="hidden md:flex border border-border rounded-full bg-surface shadow-sm focus-within:ring-1 focus-within:ring-primary transition-shadow max-w-md">
               <div className="relative w-full flex">
@@ -433,7 +433,7 @@ export default function Navbar({
             </div>
 
             {/* Right Icons */}
-            <div className="flex items-center gap-1 sm:gap-3 justify-end">
+            <div className="flex items-center gap-2.5 sm:gap-3 justify-end">
               <div className="hidden lg:flex items-center gap-2 text-content-muted ml-4 border-l border-border pl-4">
                 <span className="text-sm">
                   {settings?.phone ? toPersianNumber(settings.phone) : "۰۲۱-۱۲۳۴۵۶۷۸"}
@@ -504,7 +504,7 @@ export default function Navbar({
                         notifications.map((n) => (
                           <Link
                             key={n.id}
-                            href="/profile"
+                            href="/profile/orders"
                             onClick={() => setOpenDropdown(null)}
                             className="block p-4 border-b border-border hover:bg-surface-2 transition-colors"
                           >
@@ -518,7 +518,7 @@ export default function Navbar({
                     </div>
                     <div className="p-3 border-t border-border">
                       <Link
-                        href={customer ? "/profile" : "/login"}
+                        href={customer ? "/profile/orders" : "/login"}
                         onClick={() => setOpenDropdown(null)}
                         className="block w-full text-sm text-primary hover:text-primary-hover text-center font-medium transition-colors"
                       >
@@ -704,7 +704,7 @@ export default function Navbar({
               </div>
 
               {/* Profile Dropdown */}
-              <div ref={profileDropdownRef} className="relative">
+              <div ref={profileDropdownRef} className="relative flex items-center">
                 <button
                   onClick={() =>
                     setOpenDropdown(
@@ -712,11 +712,15 @@ export default function Navbar({
                     )
                   }
                   aria-label="حساب کاربری"
-                  className="relative h-10 w-10 inline-flex items-center justify-center overflow-hidden rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors"
+                  className={`h-10 w-10 inline-flex items-center justify-center rounded-full transition-colors ${
+                    customer?.avatar
+                      ? ""
+                      : "border border-border bg-surface-2 text-content hover:text-primary hover:border-primary"
+                  }`}
                 >
                   {customer?.avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={customer.avatar} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    <img src={customer.avatar} alt="" className="block h-10 w-10 rounded-full object-cover" />
                   ) : (
                     <svg
                       className="w-5 h-5"
@@ -775,6 +779,13 @@ export default function Navbar({
                           className="block px-4 py-2 text-sm text-content hover:bg-surface-2 hover:text-primary text-right transition-colors"
                         >
                           پروفایل من
+                        </Link>
+                        <Link
+                          href="/profile/orders"
+                          onClick={() => setOpenDropdown(null)}
+                          className="block px-4 py-2 text-sm text-content hover:bg-surface-2 hover:text-primary text-right transition-colors"
+                        >
+                          سفارش‌های من
                         </Link>
                         <Link
                           href="/wishlist"
@@ -848,7 +859,7 @@ export default function Navbar({
               placeholder="اسباب‌بازی مورد نظر را جستجو کنید"
               className="w-full h-11 pl-10 pr-4 rounded-full border border-border bg-surface-2 text-content text-xs placeholder:text-content-subtle placeholder:text-xs focus:outline-none focus:ring-1 focus:ring-primary text-right transition-shadow"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-content-subtle">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-content-subtle">
               <svg
                 className="w-5 h-5"
                 fill="none"

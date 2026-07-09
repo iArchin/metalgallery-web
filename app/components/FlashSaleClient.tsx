@@ -17,6 +17,7 @@ export default function FlashSaleClient({
   const { add } = useCart();
   const [addedId, setAddedId] = useState<number | null>(null);
   const [quickLookProduct, setQuickLookProduct] = useState<Product | null>(null);
+  const [paused, setPaused] = useState(false);
 
   const handleAdd = (p: Product) => {
     add({
@@ -146,12 +147,19 @@ export default function FlashSaleClient({
         </div>
 
         {/* Hover-pausable infinite marquee. dir=ltr left-anchors the RTL track
-            so the -50% loop stays gapless. */}
+            so the -50% loop stays gapless. Pause is driven by state + an inline
+            animation-play-state so it always beats the stylesheet's `animation`
+            shorthand (which otherwise resets play-state to running). */}
         <div
           dir="ltr"
-          className="group/marquee relative overflow-hidden mask-[linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]"
+          className="relative overflow-hidden mask-[linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
         >
-          <div className="flex w-max py-2 animate-flash-marquee group-hover/marquee:[animation-play-state:paused]">
+          <div
+            className="flex w-max py-2 animate-flash-marquee"
+            style={{ animationPlayState: paused ? "paused" : "running" }}
+          >
             {renderGroup(false)}
             {renderGroup(true)}
           </div>

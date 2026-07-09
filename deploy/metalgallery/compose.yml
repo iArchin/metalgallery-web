@@ -1,0 +1,89 @@
+# /srv/metalgallery/compose.yml
+#
+# The storefront + admin panel. The edge proxy is a separate stack in /srv/edge
+# and reaches this container by name over the shared `edge` network.
+#
+# There is deliberately no `build:` block. The image is built on a machine with
+# internet (deploy/ops/deploy.sh) and shipped here with `docker save | ssh |
+# docker load`. The Parspack VPS cannot reach Google Fonts, may not reach Docker
+# Hub, and does not have the RAM to spare for a Next build.
+#
+# Two facts drive this file and are not negotiable:
+#
+#   1. The JSON database serializes writes through an in-process queue, so
+#      exactly one process may ever write to mg_data. The fixed container_name
+#      makes Compose physically unable to run old and new containers at once
+#      (name collision), which is the guarantee we want. Never scale this
+#      service.
+#   2. NEXT_PUBLIC_SITE_URL is inlined into the browser bundle at BUILD time.
+#      Setting it here does nothing for the client. It is baked by deploy.sh.
+
+name: metalgallery
+
+services:
+  web:
+    image: metalgallery-web:latest
+    container_name: mg-web
+
+    # The VPS is amd64. Pin it so an image built on an arm64 laptop and loaded
+    # here fails fast at `docker load` rather than at exec time.
+    platform: linux/amd64
+
+    restart: unless-stopped
+
+    # SESSION_SECRET, ADMIN_HOST, SMS_IR_*, NODE_ENV, DATA_DIR, TZ.
+    # Compose auto-loads `.env` from this directory, so plain `docker compose
+    # ps|logs|down` work without --env-file.
+    env_file:
+      - .env
+
+    # No `ports:`. Publishing 3000 would expose an unencrypted Next server to
+    # the internet — Docker writes its NAT rules ahead of UFW, so `ufw default
+    # deny incoming` would not stop it — and would bypass the proxy's forwarded
+    # headers, breaking both the admin host routing and the OTP rate limiter.
+    # `expose` is documentation; the port is reachable only on the edge network.
+    expose:
+      - "3000"
+    networks:
+      - edge
+
+    # The single durable artifact. The image entrypoint seeds missing
+    # collections into it on boot and never overwrites existing ones.
+    volumes:
+      - mg_data:/app/data
+
+    # Standalone Next idles around 80–150 MB; 512m leaves room for render
+    # spikes on a 1–2 GB VPS. These two keys are honored by plain
+    # `docker compose up` (the `deploy.resources` block is swarm-only).
+    mem_limit: 512m
+    cpus: 1.0
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Gate for `docker compose up -d --wait`. /api/health touches no collection,
+    # so it answers while the volume is still seeding. node:22 ships fetch().
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+# `name:` pins the real volume name with no project prefix, so the backup and
+# restore scripts can address it as mg_data. Rebuilding the image never
+# refreshes an existing volume.
+volumes:
+  mg_data:
+    name: mg_data
+
+networks:
+  edge:
+    external: true

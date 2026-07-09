@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash, randomInt, timingSafeEqual } from "crypto";
 import { readCollection, updateCollection } from "./db";
+import { SESSION_SECRET as SECRET } from "./secret";
 
 /**
  * Phone + OTP core, shared by the customer and admin login flows.
@@ -15,9 +16,6 @@ const OTP_TTL_MS = 2 * 60 * 1000; // code valid for 2 minutes
 const RESEND_COOLDOWN_MS = 60 * 1000; // one code per phone per minute
 const MAX_ATTEMPTS = 5; // wrong tries before a code is burned
 const CODE_LENGTH = 5;
-
-const SECRET =
-  process.env.SESSION_SECRET ?? "metalgallery-dev-secret-change-in-production";
 
 interface OtpRecord {
   codeHash: string;
@@ -127,6 +125,7 @@ export async function requestOtp(rawPhone: unknown): Promise<RequestOtpResult> {
 
   const code = generateCode();
   const isDev = process.env.NODE_ENV !== "production";
+  const hasProvider = Boolean(process.env.SMS_IR_API_KEY);
   const send = await sendVerifySms(phone, code);
   // Production must actually deliver the SMS. In dev we continue regardless (the
   // provider may be unreachable, or SMS.ir sandbox mode doesn't deliver a real
@@ -149,7 +148,11 @@ export async function requestOtp(rawPhone: unknown): Promise<RequestOtpResult> {
     return { next, result: undefined };
   });
 
-  return { ok: true, devCode: isDev ? code : undefined };
+  // Echo the code back to the browser only when there is no SMS provider at all
+  // — i.e. nothing could have delivered it. Once SMS_IR_API_KEY is configured the
+  // app behaves like production and the code stays server-side (console only),
+  // so a misread NODE_ENV can never turn the login form into a code oracle.
+  return { ok: true, devCode: isDev && !hasProvider ? code : undefined };
 }
 
 export interface VerifyOtpResult {

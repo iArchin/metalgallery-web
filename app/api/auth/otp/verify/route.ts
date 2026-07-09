@@ -5,12 +5,21 @@ import {
   findOrCreateCustomer,
   setCustomerSessionCookie,
 } from "@/lib/server/auth";
+import { clientIp, rateLimit, tooManyRequests } from "@/lib/server/rate-limit";
+
+// otp.ts burns a code after 5 wrong tries, but a 5-digit code is only 100k
+// combinations and codes are re-requestable. Cap guesses per origin IP.
+const VERIFY_LIMIT = 20;
+const VERIFY_WINDOW_MS = 10 * 60 * 1000;
 
 /**
  * Verify an OTP and open a session. `scope: "admin"` restricts login to phones
  * registered to an admin; anything else logs in (or creates) a customer.
  */
 export async function POST(req: Request) {
+  const limit = rateLimit(`otp:verify:${clientIp(req)}`, VERIFY_LIMIT, VERIFY_WINDOW_MS);
+  if (!limit.ok) return tooManyRequests(limit.retryAfter);
+
   let body: { phone?: unknown; code?: unknown; scope?: unknown };
   try {
     body = await req.json();

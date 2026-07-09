@@ -9,9 +9,14 @@ import path from "path";
  * atomic (tmp file + rename) and serialized through a per-collection promise
  * queue so concurrent route handlers can't interleave read-modify-write
  * cycles within this process.
+ *
+ * That queue lives in a single Node process, so exactly one process may ever
+ * write to a given data dir. Never run two replicas against the same volume.
  */
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// In a container the data dir is a mounted volume rather than a subdirectory of
+// the app, and `output: "standalone"` moves what process.cwd() resolves to.
+const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
 
 export type CollectionName =
   | "products"
@@ -31,13 +36,44 @@ export type CollectionName =
 
 const writeQueues = new Map<CollectionName, Promise<unknown>>();
 
+/**
+ * What a collection looks like before anything has been written to it. Every
+ * collection is a list except `otps`, which is keyed by phone. `settings` and
+ * `pages` are singletons with no meaningful empty form, so they are absent
+ * here and a missing file stays a real error rather than an empty homepage.
+ */
+const EMPTY: Partial<Record<CollectionName, unknown>> = {
+  products: [],
+  categories: [],
+  brands: [],
+  orders: [],
+  articles: [],
+  news: [],
+  gallery: [],
+  messages: [],
+  users: [],
+  customers: [],
+  chats: [],
+  otps: {},
+};
+
 function fileFor(name: CollectionName): string {
   return path.join(DATA_DIR, `${name}.json`);
 }
 
 export async function readCollection<T>(name: CollectionName): Promise<T> {
-  const raw = await fs.readFile(fileFor(name), "utf-8");
-  return JSON.parse(raw) as T;
+  try {
+    const raw = await fs.readFile(fileFor(name), "utf-8");
+    return JSON.parse(raw) as T;
+  } catch (err) {
+    // A never-written collection is not a failure: a fresh data volume has no
+    // otps.json until the first login, and a release that adds a collection
+    // meets volumes that predate it. Corrupt JSON or a permissions problem
+    // still throws.
+    const notFound = (err as NodeJS.ErrnoException).code === "ENOENT";
+    if (notFound && name in EMPTY) return EMPTY[name] as T;
+    throw err;
+  }
 }
 
 async function writeCollection<T>(name: CollectionName, data: T): Promise<void> {

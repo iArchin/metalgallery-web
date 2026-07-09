@@ -32,6 +32,12 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# Runtime JSON database. Live orders, customer phone numbers and uploaded
+# avatars — never commit it. In production this is a Docker volume, seeded once
+# from the committed, PII-free data.seed/. Locally it is just your scratch data.
+/data/
 
 # vercel
 .vercel

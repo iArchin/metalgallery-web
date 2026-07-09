@@ -1,0 +1,70 @@
+# /srv/edge/compose.yml
+#
+# The one containerized edge for the whole server. This is the ONLY container
+# that publishes host ports. Every app — metalgallery today, two more later —
+# publishes nothing and is reached by Caddy over the shared `edge` network, by
+# container name.
+#
+#   docker network create edge          # once, before the first `up`
+#   cd /srv/edge && docker compose up -d
+#   docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile   # no downtime
+
+name: edge
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: edge-caddy
+    restart: unless-stopped
+
+    # The only published ports on the box.
+    #   80      ACME HTTP-01 challenge, and the redirect to HTTPS
+    #   443     HTTPS
+    #   443/udp HTTP/3
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+
+    volumes:
+      # Edited by hand on the host, so a bind mount. Read-only inside.
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # ACME account key and every issued certificate. THIS MUST PERSIST or
+      # Caddy re-issues on each recreate and will eventually hit Let's Encrypt's
+      # rate limit. A named volume, not a host bind: Caddy writes 0600 key
+      # material here as root, and host bind mounts invite permission surprises.
+      - caddy_data:/data
+      - caddy_config:/config
+
+    networks:
+      - edge
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Caddy's admin API always listens on 127.0.0.1:2019 inside the container.
+    # The long start_period covers first-boot certificate issuance.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+# Pinned names (no compose project prefix) so backup commands like
+# `docker run -v caddy_data:/data ...` resolve.
+volumes:
+  caddy_data:
+    name: caddy_data
+  caddy_config:
+    name: caddy_config
+
+# Created once, out of band: `docker network create edge`. Marked external so
+# no stack ever creates or deletes it. "network edge declared as external, but
+# could not be found" means you skipped that command.
+networks:
+  edge:
+    external: true

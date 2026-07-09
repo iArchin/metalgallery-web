@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "email": "admin@metalgallery.ir",
+    "name": "مدیر فروشگاه",
+    "passwordHash": "",
+    "phone": "09120000000",
+    "role": "admin"
+  }
+]

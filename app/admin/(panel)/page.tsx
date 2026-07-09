@@ -14,6 +14,7 @@ import {
   ErrorBlock,
   EmptyState,
 } from "@/app/admin/_components/ui";
+import { useAdminBase } from "@/app/admin/_components/useAdminBase";
 import { ORDER_STATUS_LABELS, type Order, type OrderStatus } from "@/lib/types";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
 
@@ -44,6 +45,7 @@ function StatCard({ label, value, suffix }: { label: string; value: string; suff
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const { href } = useAdminBase();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,7 +100,7 @@ export default function AdminDashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-extrabold text-content">آخرین سفارش‌ها</h2>
-            <Link href="/admin/orders" className="text-sm font-bold text-primary hover:underline">
+            <Link href={href("/orders")} className="text-sm font-bold text-primary hover:underline">
               همه سفارش‌ها
             </Link>
           </div>
@@ -111,12 +113,12 @@ export default function AdminDashboardPage() {
               {stats.recentOrders.map((o) => (
                 <tr
                   key={o.id}
-                  onClick={() => router.push(`/admin/orders/${o.id}`)}
+                  onClick={() => router.push(href(`/orders/${o.id}`))}
                   className="cursor-pointer hover:bg-surface-2 transition-colors"
                 >
                   <td className="px-4 py-3 whitespace-nowrap">
                     <Link
-                      href={`/admin/orders/${o.id}`}
+                      href={href(`/orders/${o.id}`)}
                       className="font-bold text-primary"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -143,7 +145,7 @@ export default function AdminDashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-extrabold text-content">موجودی رو به اتمام</h2>
-            <Link href="/admin/products" className="text-sm font-bold text-primary hover:underline">
+            <Link href={href("/products")} className="text-sm font-bold text-primary hover:underline">
               مدیریت محصولات
             </Link>
           </div>
@@ -158,7 +160,7 @@ export default function AdminDashboardPage() {
                 {stats.lowStock.map((p) => (
                   <li key={p.id}>
                     <Link
-                      href="/admin/products"
+                      href={href("/products")}
                       className="flex items-center justify-between gap-3 px-3 py-3 rounded-xl hover:bg-surface-2 transition-colors min-h-[44px]"
                     >
                       <span className="text-sm font-bold text-content truncate">{p.name}</span>

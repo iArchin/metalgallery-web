@@ -3,17 +3,14 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { readCollection, updateCollection, nextId } from "./db";
+import { getAdminBase } from "./admin-base";
 import { normalizePhone } from "./otp";
+import { SESSION_SECRET as SECRET } from "./secret";
 import type { AdminUser, Customer } from "../types";
 
 const SESSION_COOKIE = "mg_admin_session";
 const USER_SESSION_COOKIE = "mg_user_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
-
-// Prefer an env secret; fall back to a fixed dev secret so the panel works
-// out of the box on a local machine. Set SESSION_SECRET in production.
-const SECRET =
-  process.env.SESSION_SECRET ?? "metalgallery-dev-secret-change-in-production";
 
 // ------------------------------------------------------------ passwords
 export function hashPassword(password: string): string {
@@ -95,7 +92,11 @@ export async function getCurrentAdmin(): Promise<Omit<AdminUser, "passwordHash">
 /** Panel guard for server layouts/pages — redirects anonymous visitors. */
 export async function requireAdminOrRedirect() {
   const admin = await getCurrentAdmin();
-  if (!admin) redirect("/admin/login");
+  if (!admin) {
+    // "/login" on the admin host, "/admin/login" on the main site.
+    const base = await getAdminBase();
+    redirect(`${base}/login`);
+  }
   return admin;
 }
 

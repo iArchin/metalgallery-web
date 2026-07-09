@@ -312,8 +312,23 @@ html {
 .animate-tile-pop {
   animation: tile-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+/* Featured-product spotlight crossfade */
+@keyframes spotlight-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-spotlight {
+  animation: spotlight-fade 0.45s ease-out both;
+}
 @media (prefers-reduced-motion: reduce) {
-  .animate-tile-pop {
+  .animate-tile-pop,
+  .animate-spotlight {
     animation: none;
   }
 }

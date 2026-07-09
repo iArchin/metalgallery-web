@@ -16,6 +16,7 @@ import {
   ErrorBlock,
   useToast,
 } from "@/app/admin/_components/ui";
+import { useAdminBase } from "@/app/admin/_components/useAdminBase";
 import Button from "@/app/components/Button";
 import { productImage } from "@/app/utils/images";
 import { toPersianNumber, formatPersianNumber } from "@/app/utils/numbers";
@@ -23,6 +24,7 @@ import { toPersianNumber, formatPersianNumber } from "@/app/utils/numbers";
 const STATUSES = Object.keys(ORDER_STATUS_LABELS) as OrderStatus[];
 
 export default function OrderDetail({ orderId }: { orderId: number }) {
+  const { href } = useAdminBase();
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<OrderStatus>("pending");
@@ -53,7 +55,7 @@ export default function OrderDetail({ orderId }: { orderId: number }) {
 
   const backLink = (
     <Link
-      href="/admin/orders"
+      href={href("/orders")}
       className="inline-flex min-h-10 items-center gap-1.5 text-sm font-bold text-content-muted hover:text-primary transition-colors"
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
