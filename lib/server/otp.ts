@@ -1,30 +1,23 @@
 import "server-only";
 import { createHash, randomInt, timingSafeEqual } from "crypto";
-import { readCollection, updateCollection } from "./db";
+import { eq, lt } from "drizzle-orm";
+import { db } from "./db";
+import { otps } from "./schema";
 import { SESSION_SECRET as SECRET } from "./secret";
 
 /**
  * Phone + OTP core, shared by the customer and admin login flows.
  *
- * Codes are stored hashed (never in plaintext) in the `otps` collection, keyed
- * by canonical phone, with a short TTL, a resend cooldown and a max-attempts
- * cap. Delivery goes through SMS.ir's verify API; when no provider is
- * configured the code is logged to the server console instead (dev fallback).
+ * Codes are stored hashed (never in plaintext) in the `otps` table, one row per
+ * canonical phone, with a short TTL, a resend cooldown and a max-attempts cap.
+ * Delivery goes through SMS.ir's verify API; when no provider is configured the
+ * code is logged to the server console instead (dev fallback).
  */
 
 const OTP_TTL_MS = 2 * 60 * 1000; // code valid for 2 minutes
 const RESEND_COOLDOWN_MS = 60 * 1000; // one code per phone per minute
 const MAX_ATTEMPTS = 5; // wrong tries before a code is burned
 const CODE_LENGTH = 5;
-
-interface OtpRecord {
-  codeHash: string;
-  expiresAt: number;
-  attempts: number;
-  lastSentAt: number;
-}
-
-type OtpStore = Record<string, OtpRecord>;
 
 /* --------------------------------------------------------------- helpers */
 
@@ -117,9 +110,9 @@ export async function requestOtp(rawPhone: unknown): Promise<RequestOtpResult> {
   if (!phone) return { ok: false, error: "شماره موبایل معتبر نیست" };
 
   const now = Date.now();
-  const existing = (await readCollection<OtpStore>("otps"))[phone];
-  if (existing && now - existing.lastSentAt < RESEND_COOLDOWN_MS) {
-    const cooldown = Math.ceil((RESEND_COOLDOWN_MS - (now - existing.lastSentAt)) / 1000);
+  const [existing] = await db.select().from(otps).where(eq(otps.phone, phone));
+  if (existing && now - existing.lastSentAt.getTime() < RESEND_COOLDOWN_MS) {
+    const cooldown = Math.ceil((RESEND_COOLDOWN_MS - (now - existing.lastSentAt.getTime())) / 1000);
     return { ok: false, error: `تا ${cooldown} ثانیه دیگر می‌توانید کد جدید بگیرید`, cooldown };
   }
 
@@ -135,18 +128,18 @@ export async function requestOtp(rawPhone: unknown): Promise<RequestOtpResult> {
   }
   if (isDev) console.warn(`[OTP] code for ${phone}: ${code}${send.ok ? "" : " (SMS not delivered)"}`);
 
-  await updateCollection<OtpStore, void>("otps", (store) => {
-    const next: OtpStore = {};
-    // Drop expired records while we're here, then write the fresh one.
-    for (const [k, v] of Object.entries(store)) if (v.expiresAt > now) next[k] = v;
-    next[phone] = {
-      codeHash: hashCode(phone, code),
-      expiresAt: now + OTP_TTL_MS,
-      attempts: 0,
-      lastSentAt: now,
-    };
-    return { next, result: undefined };
-  });
+  // Sweep expired rows, then upsert this phone's fresh code.
+  await db.delete(otps).where(lt(otps.expiresAt, new Date(now)));
+  const fresh = {
+    codeHash: hashCode(phone, code),
+    expiresAt: new Date(now + OTP_TTL_MS),
+    attempts: 0,
+    lastSentAt: new Date(now),
+  };
+  await db
+    .insert(otps)
+    .values({ phone, ...fresh })
+    .onConflictDoUpdate({ target: otps.phone, set: fresh });
 
   // Echo the code back to the browser only when there is no SMS provider at all
   // — i.e. nothing could have delivered it. Once SMS_IR_API_KEY is configured the
@@ -167,23 +160,23 @@ export async function verifyOtp(rawPhone: unknown, rawCode: unknown): Promise<Ve
   const code = toAsciiDigits(String(rawCode ?? "")).replace(/\D/g, "");
   if (!code) return { ok: false, error: "کد تایید را وارد کنید" };
 
-  return updateCollection<OtpStore, VerifyOtpResult>("otps", (store) => {
-    const now = Date.now();
-    const rec = store[phone];
+  // One transaction with the row locked FOR UPDATE, so two concurrent verify
+  // attempts can't both slip past the attempt cap.
+  return db.transaction(async (tx): Promise<VerifyOtpResult> => {
+    const now = new Date();
+    const [rec] = await tx.select().from(otps).where(eq(otps.phone, phone)).for("update");
     if (!rec || rec.expiresAt < now) {
-      return { next: store, result: { ok: false, error: "کد منقضی شده است. دوباره درخواست دهید" } };
+      return { ok: false, error: "کد منقضی شده است. دوباره درخواست دهید" };
     }
     if (rec.attempts >= MAX_ATTEMPTS) {
-      const next = { ...store };
-      delete next[phone];
-      return { next, result: { ok: false, error: "تعداد تلاش‌ها زیاد است. دوباره درخواست دهید" } };
+      await tx.delete(otps).where(eq(otps.phone, phone));
+      return { ok: false, error: "تعداد تلاش‌ها زیاد است. دوباره درخواست دهید" };
     }
     if (!codesMatch(phone, code, rec.codeHash)) {
-      const next = { ...store, [phone]: { ...rec, attempts: rec.attempts + 1 } };
-      return { next, result: { ok: false, error: "کد تایید نادرست است" } };
+      await tx.update(otps).set({ attempts: rec.attempts + 1 }).where(eq(otps.phone, phone));
+      return { ok: false, error: "کد تایید نادرست است" };
     }
-    const next = { ...store };
-    delete next[phone]; // one-time use
-    return { next, result: { ok: true, phone } };
+    await tx.delete(otps).where(eq(otps.phone, phone)); // one-time use
+    return { ok: true, phone };
   });
 }

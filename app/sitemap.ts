@@ -3,6 +3,10 @@ import { listProducts, articlesRepo } from "@/lib/server/repos";
 
 const BASE_URL = "https://metalgallery.ir";
 
+// Generated per request, not at build time — it reads the live database, which
+// isn't reachable during `next build`. Cheap and cached at the CDN/proxy anyway.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static routes
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -15,16 +19,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
   ];
 
-  // Product routes
-  const products = await listProducts();
-  const productRoutes: MetadataRoute.Sitemap = products
-    .filter((p) => p.active)
-    .map((p) => ({
-      url: `${BASE_URL}/product/${p.id}`,
-      lastModified: new Date(p.updatedAt || p.createdAt),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    }));
+  // Product routes. Tolerate a DB hiccup — a sitemap with only static routes
+  // beats a 500.
+  let productRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const products = await listProducts();
+    productRoutes = products
+      .filter((p) => p.active)
+      .map((p) => ({
+        url: `${BASE_URL}/product/${p.id}`,
+        lastModified: new Date(p.updatedAt || p.createdAt),
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      }));
+  } catch {}
 
   // Blog routes
   let blogRoutes: MetadataRoute.Sitemap = [];

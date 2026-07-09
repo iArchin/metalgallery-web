@@ -1,23 +1,30 @@
+import { eq, sql } from "drizzle-orm";
 import { requireAdminApi } from "@/lib/server/auth";
 import { totalUnreadForAdmin } from "@/lib/server/chat";
-import { readCollection } from "@/lib/server/db";
-import type { ContactMessage, Order } from "@/lib/types";
+import { db } from "@/lib/server/db";
+import { messages, orders } from "@/lib/server/schema";
 
 /** Admin: live counts for the sidebar badges (chat, messages, pending orders). */
 export async function GET() {
   const denied = await requireAdminApi();
   if (denied) return denied;
-  const [chatUnread, messages, orders] = await Promise.all([
+
+  const [chatUnread, messagesUnread, pendingOrders] = await Promise.all([
     totalUnreadForAdmin(),
-    readCollection<ContactMessage[]>("messages"),
-    readCollection<Order[]>("orders"),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(messages)
+      .where(eq(messages.read, false))
+      .then((r) => r[0]?.n ?? 0),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(orders)
+      .where(eq(orders.status, "pending"))
+      .then((r) => r[0]?.n ?? 0),
   ]);
+
   return Response.json({
     ok: true,
-    data: {
-      chatUnread,
-      messagesUnread: messages.filter((m) => !m.read).length,
-      pendingOrders: orders.filter((o) => o.status === "pending").length,
-    },
+    data: { chatUnread, messagesUnread, pendingOrders },
   });
 }

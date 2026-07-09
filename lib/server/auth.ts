@@ -2,7 +2,9 @@ import "server-only";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { readCollection, updateCollection, nextId } from "./db";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
+import { adminUsers, customers as customersT } from "./schema";
 import { getAdminBase } from "./admin-base";
 import { normalizePhone } from "./otp";
 import { SESSION_SECRET as SECRET } from "./secret";
@@ -11,6 +13,32 @@ import type { AdminUser, Customer } from "../types";
 const SESSION_COOKIE = "mg_admin_session";
 const USER_SESSION_COOKIE = "mg_user_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+// ---------------------------------------------------------------- mappers
+type AdminRow = typeof adminUsers.$inferSelect;
+function toAdmin(r: AdminRow): AdminUser {
+  return {
+    id: r.id,
+    email: r.email,
+    name: r.name,
+    passwordHash: r.passwordHash,
+    phone: r.phone ?? undefined,
+    role: "admin",
+  };
+}
+
+type CustomerRow = typeof customersT.$inferSelect;
+function toCustomer(r: CustomerRow): Customer {
+  return {
+    id: r.id,
+    phone: r.phone,
+    name: r.name,
+    avatar: r.avatar ?? undefined,
+    address: r.address ?? undefined,
+    createdAt: r.createdAt.toISOString(),
+    lastLoginAt: r.lastLoginAt.toISOString(),
+  };
+}
 
 // ------------------------------------------------------------ passwords
 export function hashPassword(password: string): string {
@@ -83,10 +111,9 @@ export async function getCurrentAdmin(): Promise<Omit<AdminUser, "passwordHash">
   const store = await cookies();
   const payload = verifySessionToken(store.get(SESSION_COOKIE)?.value);
   if (!payload) return null;
-  const users = await readCollection<AdminUser[]>("users");
-  const user = users.find((u) => u.id === payload.userId);
+  const [user] = await db.select().from(adminUsers).where(eq(adminUsers.id, payload.userId));
   if (!user) return null;
-  return { id: user.id, email: user.email, name: user.name, role: user.role };
+  return { id: user.id, email: user.email, name: user.name, role: "admin" };
 }
 
 /** Panel guard for server layouts/pages — redirects anonymous visitors. */
@@ -113,14 +140,18 @@ export async function requireAdminApi(): Promise<Response | null> {
 }
 
 export async function findUserByEmail(email: string): Promise<AdminUser | undefined> {
-  const users = await readCollection<AdminUser[]>("users");
-  return users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  // admin_users is a tiny table; fetch and compare case-insensitively to match
+  // the original behaviour exactly.
+  const rows = await db.select().from(adminUsers);
+  const row = rows.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  return row ? toAdmin(row) : undefined;
 }
 
 /** The admin whose registered phone matches (canonical `09…`), if any. */
 export async function findAdminByPhone(phone: string): Promise<AdminUser | undefined> {
-  const users = await readCollection<AdminUser[]>("users");
-  return users.find((u) => u.phone && normalizePhone(u.phone) === phone);
+  const rows = await db.select().from(adminUsers);
+  const row = rows.find((u) => u.phone && normalizePhone(u.phone) === phone);
+  return row ? toAdmin(row) : undefined;
 }
 
 // ----------------------------------------------------- customer sessions
@@ -146,8 +177,8 @@ export async function getCurrentCustomer(): Promise<Customer | null> {
   const store = await cookies();
   const payload = verifySessionToken(store.get(USER_SESSION_COOKIE)?.value);
   if (!payload) return null;
-  const customers = await readCollection<Customer[]>("customers");
-  return customers.find((c) => c.id === payload.userId) ?? null;
+  const [row] = await db.select().from(customersT).where(eq(customersT.id, payload.userId));
+  return row ? toCustomer(row) : null;
 }
 
 export type CustomerProfilePatch = Partial<Pick<Customer, "name" | "avatar" | "address">>;
@@ -157,40 +188,28 @@ export async function updateCustomer(
   id: number,
   patch: CustomerProfilePatch
 ): Promise<Customer | undefined> {
-  return updateCollection<Customer[], Customer | undefined>("customers", (customers) => {
-    const idx = customers.findIndex((c) => c.id === id);
-    if (idx === -1) return { next: customers, result: undefined };
-    // id and phone are identity fields — never overwritten by a profile edit.
-    const updated: Customer = {
-      ...customers[idx],
-      ...patch,
-      id: customers[idx].id,
-      phone: customers[idx].phone,
-    };
-    const next = [...customers];
-    next[idx] = updated;
-    return { next, result: updated };
-  });
+  // id and phone are identity fields — never touched by a profile edit.
+  const set: Record<string, unknown> = {};
+  if ("name" in patch) set.name = patch.name;
+  if ("avatar" in patch) set.avatar = patch.avatar ?? null;
+  if ("address" in patch) set.address = patch.address ?? null;
+  if (Object.keys(set).length === 0) {
+    const [row] = await db.select().from(customersT).where(eq(customersT.id, id));
+    return row ? toCustomer(row) : undefined;
+  }
+  const [row] = await db.update(customersT).set(set).where(eq(customersT.id, id)).returning();
+  return row ? toCustomer(row) : undefined;
 }
 
 /** Find the customer for a (canonical) phone, creating one on first login. */
 export async function findOrCreateCustomer(phone: string): Promise<Customer> {
-  return updateCollection<Customer[], Customer>("customers", (customers) => {
-    const now = new Date().toISOString();
-    const idx = customers.findIndex((c) => c.phone === phone);
-    if (idx !== -1) {
-      const updated: Customer = { ...customers[idx], lastLoginAt: now };
-      const next = [...customers];
-      next[idx] = updated;
-      return { next, result: updated };
-    }
-    const customer: Customer = {
-      id: nextId(customers),
-      phone,
-      name: "",
-      createdAt: now,
-      lastLoginAt: now,
-    };
-    return { next: [...customers, customer], result: customer };
-  });
+  const nowDate = new Date();
+  // Atomic upsert: insert on first login, otherwise just bump lastLoginAt. The
+  // unique index on phone makes this race-free without a transaction.
+  const [row] = await db
+    .insert(customersT)
+    .values({ phone, name: "", createdAt: nowDate, lastLoginAt: nowDate })
+    .onConflictDoUpdate({ target: customersT.phone, set: { lastLoginAt: nowDate } })
+    .returning();
+  return toCustomer(row);
 }

@@ -1,33 +1,67 @@
 import "server-only";
-import { readCollection, updateCollection } from "./db";
+import { desc, eq, inArray, sql } from "drizzle-orm";
+import { db } from "./db";
+import { chats, chatMessages } from "./schema";
 import type { ChatConversation, ChatMessage } from "../types";
 
 /**
  * Support-chat store. Each visitor keeps a conversation token in their browser
  * and posts to it; admins list conversations and reply. Backed by the `chats`
- * JSON collection through the serialized updateCollection queue.
+ * and `chat_messages` tables. Message ids are a global sequence — still unique
+ * and insert-ordered, which is all the client needs.
  */
 
-const now = () => new Date().toISOString();
 const MAX_LEN = 2000;
+const DEFAULT_LABEL = "بازدیدکننده";
 
-function nextMsgId(msgs: ChatMessage[]): number {
-  return msgs.reduce((m, x) => Math.max(m, x.id), 0) + 1;
+type ChatRow = typeof chats.$inferSelect;
+type ChatMsgRow = typeof chatMessages.$inferSelect;
+
+function toChatMessage(r: ChatMsgRow): ChatMessage {
+  return { id: r.id, from: r.fromRole as "user" | "admin", text: r.text, at: r.at.toISOString() };
+}
+function toConversation(c: ChatRow, msgs: ChatMsgRow[]): ChatConversation {
+  return {
+    id: c.id,
+    label: c.label,
+    messages: msgs.map(toChatMessage),
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+    unreadForAdmin: c.unreadForAdmin,
+  };
+}
+
+async function attach(rows: ChatRow[]): Promise<ChatConversation[]> {
+  if (!rows.length) return [];
+  const msgs = await db
+    .select()
+    .from(chatMessages)
+    .where(inArray(chatMessages.chatId, rows.map((r) => r.id)))
+    .orderBy(chatMessages.id);
+  const byChat = new Map<string, ChatMsgRow[]>();
+  for (const m of msgs) {
+    const list = byChat.get(m.chatId);
+    if (list) list.push(m);
+    else byChat.set(m.chatId, [m]);
+  }
+  return rows.map((r) => toConversation(r, byChat.get(r.id) ?? []));
 }
 
 export async function listConversations(): Promise<ChatConversation[]> {
-  const all = await readCollection<ChatConversation[]>("chats");
-  return [...all].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return attach(await db.select().from(chats).orderBy(desc(chats.updatedAt)));
 }
 
 export async function getConversation(id: string): Promise<ChatConversation | undefined> {
-  const all = await readCollection<ChatConversation[]>("chats");
-  return all.find((c) => c.id === id);
+  const [row] = await db.select().from(chats).where(eq(chats.id, id));
+  if (!row) return undefined;
+  return (await attach([row]))[0];
 }
 
 export async function totalUnreadForAdmin(): Promise<number> {
-  const all = await readCollection<ChatConversation[]>("chats");
-  return all.reduce((s, c) => s + (c.unreadForAdmin || 0), 0);
+  const [row] = await db
+    .select({ n: sql<number>`coalesce(sum(${chats.unreadForAdmin}), 0)::int` })
+    .from(chats);
+  return row?.n ?? 0;
 }
 
 /** Visitor sends a message; creates the conversation on first contact. */
@@ -38,28 +72,32 @@ export async function postUserMessage(
 ): Promise<ChatConversation | undefined> {
   const clean = text.trim().slice(0, MAX_LEN);
   if (!id || !clean) return undefined;
-  return updateCollection<ChatConversation[], ChatConversation>("chats", (all) => {
-    const t = now();
-    const idx = all.findIndex((c) => c.id === id);
-    const base: ChatConversation =
-      idx === -1
-        ? {
-            id,
-            label: label?.trim() || "بازدیدکننده",
-            messages: [],
-            createdAt: t,
-            updatedAt: t,
-            unreadForAdmin: 0,
-          }
-        : { ...all[idx], messages: [...all[idx].messages] };
-    if (idx !== -1 && label?.trim() && base.label === "بازدیدکننده") {
-      base.label = label.trim();
+
+  return db.transaction(async (tx) => {
+    const t = new Date();
+    const [existing] = await tx.select().from(chats).where(eq(chats.id, id)).for("update");
+    if (!existing) {
+      await tx.insert(chats).values({
+        id,
+        label: label?.trim() || DEFAULT_LABEL,
+        createdAt: t,
+        updatedAt: t,
+        unreadForAdmin: 0,
+      });
+    } else if (label?.trim() && existing.label === DEFAULT_LABEL) {
+      // a guest who later identifies themselves upgrades the label
+      await tx.update(chats).set({ label: label.trim() }).where(eq(chats.id, id));
     }
-    base.messages.push({ id: nextMsgId(base.messages), from: "user", text: clean, at: t });
-    base.updatedAt = t;
-    base.unreadForAdmin = (base.unreadForAdmin || 0) + 1;
-    const next = idx === -1 ? [...all, base] : all.map((c, i) => (i === idx ? base : c));
-    return { next, result: base };
+
+    await tx.insert(chatMessages).values({ chatId: id, fromRole: "user", text: clean, at: t });
+    const [updated] = await tx
+      .update(chats)
+      .set({ updatedAt: t, unreadForAdmin: sql`${chats.unreadForAdmin} + 1` })
+      .where(eq(chats.id, id))
+      .returning();
+
+    const msgs = await tx.select().from(chatMessages).where(eq(chatMessages.chatId, id)).orderBy(chatMessages.id);
+    return toConversation(updated, msgs);
   });
 }
 
@@ -70,22 +108,24 @@ export async function postAdminMessage(
 ): Promise<ChatConversation | undefined> {
   const clean = text.trim().slice(0, MAX_LEN);
   if (!id || !clean) return undefined;
-  return updateCollection<ChatConversation[], ChatConversation | undefined>("chats", (all) => {
-    const idx = all.findIndex((c) => c.id === id);
-    if (idx === -1) return { next: all, result: undefined };
-    const t = now();
-    const convo: ChatConversation = { ...all[idx], messages: [...all[idx].messages] };
-    convo.messages.push({ id: nextMsgId(convo.messages), from: "admin", text: clean, at: t });
-    convo.updatedAt = t;
-    convo.unreadForAdmin = 0; // replying implies the admin has read it
-    const next = all.map((c, i) => (i === idx ? convo : c));
-    return { next, result: convo };
+
+  return db.transaction(async (tx) => {
+    const t = new Date();
+    const [existing] = await tx.select().from(chats).where(eq(chats.id, id)).for("update");
+    if (!existing) return undefined;
+
+    await tx.insert(chatMessages).values({ chatId: id, fromRole: "admin", text: clean, at: t });
+    const [updated] = await tx
+      .update(chats)
+      .set({ updatedAt: t, unreadForAdmin: 0 }) // replying implies the admin has read it
+      .where(eq(chats.id, id))
+      .returning();
+
+    const msgs = await tx.select().from(chatMessages).where(eq(chatMessages.chatId, id)).orderBy(chatMessages.id);
+    return toConversation(updated, msgs);
   });
 }
 
 export async function markReadByAdmin(id: string): Promise<void> {
-  return updateCollection<ChatConversation[], void>("chats", (all) => {
-    const next = all.map((c) => (c.id === id ? { ...c, unreadForAdmin: 0 } : c));
-    return { next, result: undefined };
-  });
+  await db.update(chats).set({ unreadForAdmin: 0 }).where(eq(chats.id, id));
 }

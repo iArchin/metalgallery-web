@@ -4,6 +4,11 @@ import FloatingActions from "@/app/components/FloatingActions";
 import { CartProvider } from "@/app/components/CartContext";
 import { getSettings, categoriesRepo } from "@/lib/server/repos";
 
+// This layout reads the database (settings + categories for the chrome), so the
+// whole (site) segment renders per request, not at build time. Keeps any static
+// page under it — e.g. /login — from trying to reach Postgres during the build.
+export const dynamic = "force-dynamic";
+
 /**
  * Public site shell — every page under (site) gets the storefront chrome.
  * Individual pages must NOT render Navbar/Footer themselves.
