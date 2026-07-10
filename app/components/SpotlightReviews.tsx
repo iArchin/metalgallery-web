@@ -74,7 +74,7 @@ export default function SpotlightReviews({
             </span>
           ))}
         </div>
-        <p className="text-sm leading-relaxed text-content-muted line-clamp-3">
+        <p className="truncate text-sm leading-relaxed text-content-muted">
           «{c.text}»
         </p>
         <div className="mt-auto pt-2 text-xs font-bold text-content">— {c.name}</div>
