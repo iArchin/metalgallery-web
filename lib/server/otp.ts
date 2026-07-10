@@ -78,8 +78,12 @@ async function sendVerifySms(
   // customers who opted out of promotional SMS would never receive the code.
   const lineNumber = process.env.SMS_IR_LINE_NUMBER;
   if (lineNumber) {
+    // No URL in the default: Iranian carriers filter SMS containing a link on a
+    // non-service line, so "metalgallery.ir" in the body silently dropped every
+    // code (verified: the same message without the URL delivered, with it did
+    // not). Keep any override URL-free too.
     const template =
-      process.env.SMS_IR_OTP_MESSAGE || "کد ورود شما: {code}\nmetalgallery.ir";
+      process.env.SMS_IR_OTP_MESSAGE || "کد ورود متال گالری: {code}";
     const messageText = template.replace("{code}", code);
     try {
       const res = await fetch("https://api.sms.ir/v1/send/bulk", {
