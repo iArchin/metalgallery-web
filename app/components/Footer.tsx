@@ -29,7 +29,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
     <footer className="bg-surface-2 text-content">
       {/* Top Section - Contact Info */}
       <div className="bg-surface-3 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="site-container">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="flex items-center gap-3">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
@@ -138,7 +138,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
 
       {/* Bottom Section - Links */}
       <div className="py-12 px-4 sm:px-6 bg-dots-fade text-content-subtle">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="site-container">
           <div className="grid grid-cols-2 gap-6 md:grid-cols-5 md:gap-8 mb-8 items-center">
             {/* About */}
             <div className="col-span-2">
@@ -235,7 +235,7 @@ export default function Footer({ settings }: { settings: SiteSettings }) {
 
       {/* Copyright Bar */}
       <div className="bg-surface-3 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="site-container">
           <div className="flex flex-col items-center gap-2 text-center">
             <p className="text-content-muted text-sm">
               © کپی‌رایت {toPersianNumber("۱۴۰۴")} توسط {settings.siteName}.

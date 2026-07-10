@@ -309,7 +309,7 @@ export default function Navbar({
     <>
       {/* Top Header */}
       <header className="bg-surface border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="site-container">
           <div className="flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr] h-16 gap-4">
             {/* Search Bar — right side, wider */}
             <div className="hidden md:flex border border-border rounded-full bg-surface shadow-sm focus-within:ring-1 focus-within:ring-primary transition-shadow max-w-md">
@@ -1088,7 +1088,7 @@ export default function Navbar({
 
       {/* Navigation Bar */}
       <nav className="hidden md:block bg-surface border-b border-border relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="site-container">
           <div className="hidden md:flex items-center justify-between h-14">
             <div className="flex items-center gap-8">
               {/* Mega Menu Categories */}
