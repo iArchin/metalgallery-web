@@ -81,9 +81,12 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Featured spotlight — big, left on desktop */}
-          <div className="order-1 lg:order-2 lg:col-span-2 rounded-3xl border border-border bg-surface p-4 sm:p-6 shadow-sm">
-            <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+          {/* Featured spotlight — big, left on desktop. flex-col + flex-1 on the
+              inner grid make the image and details fill the card's full height:
+              the card is stretched by the taller rail beside it, so without this
+              the content sits at the top and leaves a gap at the bottom. */}
+          <div className="order-1 lg:order-2 lg:col-span-2 flex flex-col rounded-3xl border border-border bg-surface p-4 sm:p-6 shadow-sm">
+            <div className="grid sm:grid-cols-2 gap-5 sm:gap-6 flex-1">
               {/* Image. Square while stacked on mobile; once it sits beside the
                   details (sm+) the photo is absolutely positioned so it fills
                   whatever height the TEXT needs, instead of the text stretching
