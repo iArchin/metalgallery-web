@@ -17,12 +17,14 @@ in Cloudflare, and in your password manager.
           ┌─────────────┴───────────────┐
      mg_edge network              npm_default network
           │                             │
-        mg-web ── mg_data          inky-web, inky-api ── inky-db
+   mg-web ── mg-db ── mg_pgdata    inky-web, inky-api ── inky-db
      (this project)                 (unrelated project — isolated)
 ```
 
 - `mg-web` runs the standalone Next.js image and is reachable only on `mg_edge`.
   It publishes no host ports. NPM reaches it as `mg-web:3000`.
+- `mg-db` is Postgres 17. No published ports; only `mg-web` can reach it, as
+  `mg-db:5432`. The live data is the `mg_pgdata` volume.
 - metalgallery and `inky` share no network and cannot reach each other. Never put
   `mg-web` on `npm_default`.
 
@@ -31,11 +33,15 @@ in Cloudflare, and in your password manager.
 | Path | What |
 |---|---|
 | `compose.yml` | the stack. `image: ${MG_IMAGE:-…}` — CI sets `MG_IMAGE` in `.env`. Edited by hand; CI does **not** ship it. |
-| `.env` (0600) | `SESSION_SECRET`, `SMS_IR_*`, `ADMIN_HOST`, `NEXT_PUBLIC_SITE_URL`. The only home of the session secret. |
+| `.env` (0600) | `SESSION_SECRET`, `SMS_IR_*`, `ADMIN_HOST`, `NEXT_PUBLIC_SITE_URL`, `POSTGRES_*`, `DATABASE_URL`, `MG_IMAGE`. The only home of the session secret. |
 | `tls/cf-origin.{pem,key}` | Cloudflare Origin certificate + key (also uploaded into NPM). |
 | `ops/ci-deploy.sh` | forced-command target for the CI deploy key. |
-| `ops/backup.sh`, `ops/restore.sh` | hot backup / restore of `mg_data`. |
-| volume `mg_data` | the JSON database. Back this up. |
+| `ops/backup.sh`, `ops/restore.sh` | hot `pg_dump` / verified `pg_restore` of the Postgres database. |
+| volume `mg_pgdata` | **the database. Back this up.** |
+| volume `mg_data` | dormant legacy JSON, kept only as the cutover import source. |
+
+> `ops/*` are hand-placed copies. Like `compose.yml`, CI never ships them — when
+> you change one in the repo, `scp` it to the server yourself.
 
 ## Access — where each credential is (not the value)
 
@@ -62,8 +68,9 @@ in Cloudflare, and in your password manager.
 | Roll back | edit `MG_IMAGE=` in server `.env`, `docker compose up -d --wait`. |
 | Logs | `docker logs -f mg-web`. |
 | Backup now | `/opt/metalgallery/ops/backup.sh` (cron it; copy off-box). |
-| Restore | `/opt/metalgallery/ops/restore.sh <archive> --force`. |
-| Add/change admin | edit `data/users.json` in the `mg_data` volume (see `DEPLOY.md`). |
+| Restore | `/opt/metalgallery/ops/restore.sh <dump> --force`. Trial-restores first; refuses a bad dump. |
+| Add/change admin | `UPDATE`/`INSERT` on the `admin_users` table in Postgres. Editing `users.json` does nothing. |
+| Open a psql shell | `docker exec -it mg-db psql -U metalgallery -d metalgallery`. |
 | Rotate NPM password | NPM UI → top-right → Users, or reset via the container's DB. |
 
 Full first-run and troubleshooting: [DEPLOY.md](DEPLOY.md).

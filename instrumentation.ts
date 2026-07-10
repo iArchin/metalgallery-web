@@ -16,15 +16,25 @@ export async function register() {
 
     // First boot only: if the store is empty, import the existing JSON — the
     // live mg_data volume during cutover, or the baked data.seed for a fresh
-    // start. A no-op once products exist.
-    const { isDatabaseEmpty, pickImportDir, importFromDir } = await import(
-      "./lib/server/import-json"
-    );
-    if (await isDatabaseEmpty()) {
-      const dir = await pickImportDir();
-      if (dir) {
-        const counts = await importFromDir(dir);
-        console.log(`[boot] imported initial data from ${dir}:`, counts);
+    // start. A no-op once the database holds anything.
+    //
+    // MG_SKIP_IMPORT is the escape hatch ops/restore.sh uses for the one boot
+    // that follows a restore. isDatabaseEmpty() should already say "not empty"
+    // there, but a restore is exactly the moment you want a belt as well as
+    // braces: importing over recovered data is unrecoverable without another
+    // restore.
+    if (process.env.MG_SKIP_IMPORT === "1") {
+      console.log("[boot] MG_SKIP_IMPORT=1 — skipping the first-boot import");
+    } else {
+      const { isDatabaseEmpty, pickImportDir, importFromDir } = await import(
+        "./lib/server/import-json"
+      );
+      if (await isDatabaseEmpty()) {
+        const dir = await pickImportDir();
+        if (dir) {
+          const counts = await importFromDir(dir);
+          console.log(`[boot] imported initial data from ${dir}:`, counts);
+        }
       }
     }
   } catch (err) {

@@ -12,7 +12,7 @@
 # the only container on either side of the boundary:
 #
 #     npm ──┬── npm_default  ── inky-web, inky-api ── inky_inky-internal ── inky-db
-#           └── mg_edge      ── mg-web ── mg_data
+#           └── mg_edge      ── mg-web ── mg-db ── mg_pgdata
 #
 # Create it once, and attach the proxy to it:
 #     docker network create mg_edge
@@ -31,13 +31,15 @@
 #
 # Two facts drive this file and are not negotiable:
 #
-#   1. The JSON database serializes writes through an in-process queue, so
-#      exactly one process may ever write to mg_data. The fixed container_name
-#      makes Compose physically unable to run old and new containers at once
-#      (name collision), which is the guarantee we want. Never scale this
-#      service.
-#   2. NEXT_PUBLIC_SITE_URL is inlined into the browser bundle at BUILD time.
+#   1. NEXT_PUBLIC_SITE_URL is inlined into the browser bundle at BUILD time.
 #      Setting it here does nothing for the client. It is baked by deploy.sh.
+#   2. The db service must never read the whole .env. See the comment on its
+#      `environment:` block — env_file there recreates Postgres on every deploy.
+#
+# The fixed container_name on web is kept because NPM resolves the upstream by
+# that name, and because it makes Compose unable to run two web containers at
+# once. It is no longer a *correctness* requirement: the single-writer JSON
+# database is gone, and Postgres serializes writes itself.
 
 name: metalgallery
 
@@ -60,6 +62,12 @@ services:
     # ps|logs|down` work without --env-file.
     env_file:
       - .env
+
+    # Set only by ops/restore.sh, for the single boot that follows a restore:
+    #   MG_SKIP_IMPORT=1 docker compose up -d --wait web
+    # Unset otherwise, so an ordinary deploy never carries it.
+    environment:
+      MG_SKIP_IMPORT: ${MG_SKIP_IMPORT:-}
 
     # No `ports:`. Publishing 3000 would expose an unencrypted Next server to
     # the internet — Docker writes its NAT rules ahead of UFW, so `ufw default
@@ -115,10 +123,29 @@ services:
     image: postgres:17-alpine
     container_name: mg-db
     restart: unless-stopped
-    # POSTGRES_* come from .env (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB).
-    # DATABASE_URL on the web service must match these.
-    env_file:
-      - .env
+    # Only the keys Postgres actually consumes, interpolated from .env at parse
+    # time. Do NOT use `env_file: [.env]` here. That injects EVERY line of .env
+    # into this container — including MG_IMAGE, which ci-deploy.sh rewrites on
+    # every deploy. Compose folds a service's resolved environment into its
+    # config hash, so mg-db would be recreated on every push: the database
+    # bounced for a change that has nothing to do with it. These four keys are
+    # stable across deploys, so mg-db is left alone when only MG_IMAGE moves.
+    #
+    # Interpolation still works without env_file — it is the same mechanism that
+    # resolves `image: ${MG_IMAGE:-…}` above. TZ is listed because env_file used
+    # to supply it, and dropping it would quietly move this container's log
+    # timestamps to UTC. DATABASE_URL, SESSION_SECRET and SMS_IR_* are
+    # deliberately gone: Postgres never read them, and app secrets have no
+    # business sitting in the database container's environment.
+    #
+    # POSTGRES_PASSWORD is read by initdb on the FIRST boot only. Once the
+    # cluster exists the credential lives in pg_authid and editing it here
+    # changes nothing. Rotate with `ALTER USER … PASSWORD`, then DATABASE_URL.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      TZ: ${TZ:-Asia/Tehran}
     volumes:
       - mg_pgdata:/var/lib/postgresql/data
     networks:

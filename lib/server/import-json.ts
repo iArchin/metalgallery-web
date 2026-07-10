@@ -53,10 +53,27 @@ async function resyncSequence(table: string): Promise<void> {
   );
 }
 
-/** True if the store has never been populated (no products yet). */
+/**
+ * True if this database has never held real data.
+ *
+ * Emptiness cannot mean `count(products) === 0` alone. A restored dump whose
+ * catalog happens to be empty would look untouched, and the boot importer would
+ * re-import the legacy JSON on top of the orders and customers that restore just
+ * brought back — inserting explicit ids, colliding on the primary key, and
+ * killing the boot. Ask every table the importer writes to: if any of them holds
+ * a single row, this database has a history and must never be imported into.
+ */
 export async function isDatabaseEmpty(): Promise<boolean> {
-  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(products);
-  return (row?.n ?? 0) === 0;
+  const [row] = await db.execute(
+    sql.raw(
+      `SELECT (SELECT count(*) FROM products)
+             + (SELECT count(*) FROM orders)
+             + (SELECT count(*) FROM customers)
+             + (SELECT count(*) FROM admin_users)
+             + (SELECT count(*) FROM categories) AS n`
+    )
+  );
+  return Number(row?.n ?? 0) === 0;
 }
 
 /** Pick the import source: the live volume's JSON if present, else data.seed. */
