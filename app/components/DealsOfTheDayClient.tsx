@@ -198,7 +198,11 @@ export default function DealsOfTheDayClient({
             dragging ? "cursor-grabbing select-none" : "md:cursor-grab"
           }`}
         >
-          <div className="flex gap-4 sm:gap-6 pb-4 px-4 sm:px-6 md:px-0">
+          {/* w-max + mx-auto centers the row when the cards don't fill the
+              container (few deals on a wide screen) and lets it overflow-scroll
+              normally when they do. Unlike justify-center, this never clips the
+              leading cards once the row is wider than the viewport. */}
+          <div className="flex gap-4 sm:gap-6 pb-4 px-4 sm:px-6 md:px-0 md:w-max md:mx-auto">
             {products.map((product) => {
               const off = discountPercent(product);
               const added = addedId === product.id;
@@ -207,9 +211,9 @@ export default function DealsOfTheDayClient({
                 <Link
                   key={product.id}
                   href={`/product/${product.id}`}
-                  className="group shrink-0 snap-start w-56 sm:w-64 bg-surface border border-border rounded-2xl p-4 shadow-sm transition-colors block"
+                  className="group shrink-0 snap-start w-56 sm:w-64 3xl:w-72 4xl:w-80 bg-surface border border-border rounded-2xl p-4 shadow-sm transition-colors block"
                 >
-                  <div className="relative h-40 sm:h-48 w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
+                  <div className="relative h-40 sm:h-48 3xl:h-56 4xl:h-64 w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
                     <img
                       src={productImage(product)}
                       alt={product.name}
