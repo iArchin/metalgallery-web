@@ -32,12 +32,12 @@ export default function Categories({ categories }: { categories: Category[] }) {
 
   return (
     <section className="py-12 md:py-16 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="site-container">
         <div className="mb-8 sm:mb-10 text-center">
           <span className="inline-block rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary mb-3">
             دسته‌بندی‌ها
           </span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-content">
+          <h2 className="text-2xl sm:text-3xl 3xl:text-4xl font-extrabold text-content">
             دسته‌بندی‌های محبوب
           </h2>
           <p className="text-sm sm:text-base text-content-muted mt-2">
@@ -45,7 +45,7 @@ export default function Categories({ categories }: { categories: Category[] }) {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 gap-3 sm:gap-4 3xl:gap-5">
           {categories.map((cat, i) => {
             const img = cat.image?.trim();
             return (

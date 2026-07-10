@@ -73,8 +73,8 @@ export default function TopBrands({ brands }: { brands: Brand[] }) {
 
   return (
     <section className="py-12 md:py-16 bg-background overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-8 sm:mb-10">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-center mb-3 text-content">
+      <div className="site-container mb-8 sm:mb-10">
+        <h2 className="text-2xl sm:text-3xl 3xl:text-4xl font-extrabold text-center mb-3 text-content">
           برندهای محبوب
         </h2>
         <p className="text-center text-sm sm:text-base text-content-muted">

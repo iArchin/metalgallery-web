@@ -43,22 +43,22 @@ const ageGroups = [
 
 export default function ShopByAge() {
   return (
-    <section className="py-12 md:py-16 px-4 sm:px-6 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-center mb-3 text-content">
+    <section className="py-12 md:py-16 bg-background">
+      <div className="site-container">
+        <h2 className="text-2xl sm:text-3xl 3xl:text-4xl font-extrabold text-center mb-3 text-content">
           بر اساس سن خرید کنید
         </h2>
         <p className="text-center text-sm sm:text-base text-content-muted mb-8 md:mb-12">
           اسباب‌بازی مناسب هر گروه سنی را کشف کنید
         </p>
-        <div className="flex gap-5 sm:gap-8 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-4 justify-start sm:justify-center">
+        <div className="flex gap-5 sm:gap-8 3xl:gap-12 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-4 justify-start sm:justify-center">
           {ageGroups.map((group) => (
             <Link
               key={group.id}
               href="/products"
               className="shrink-0 snap-start flex flex-col items-center group"
             >
-              <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-surface-2 border-2 border-border group-hover:border-primary shadow-sm mb-3 sm:mb-4 transition-all">
+              <div className="relative w-24 h-24 sm:w-32 sm:h-32 3xl:w-40 3xl:h-40 rounded-full overflow-hidden bg-surface-2 border-2 border-border group-hover:border-primary shadow-sm mb-3 sm:mb-4 transition-all">
                 <img
                   src={group.image}
                   alt={group.alt}

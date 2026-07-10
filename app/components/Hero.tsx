@@ -75,7 +75,7 @@ export default async function Hero() {
     <section className="min-h-screen relative bg-background overflow-hidden flex flex-col justify-start pt-8 md:pt-12">
       {/* Toy doodle background */}
       <HeroBackground />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
+      <div className="site-container w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Large Banner — auto-rotating carousel of admin-managed slides.
               translateZ(0) puts the rounded clip on its own GPU layer so the

@@ -407,3 +407,62 @@ html {
     animation: none;
   }
 }
+
+/* ===========================================================================
+   Large-display scale — 1920px and up
+   ---------------------------------------------------------------------------
+   Tailwind's own scale stops at 2xl (96rem / 1536px), so on a 4K or ultrawide
+   panel the page rendered as a 1280px column stranded in empty gutters. These
+   three breakpoints extend the same `--breakpoint-*` namespace the framework
+   uses (verified against tailwindcss 4.1.17), which is what makes the `3xl:` /
+   `4xl:` variants available on every utility — grid columns included.
+
+   Deliberately a plain `@theme`, not `@theme inline`: these are build-time
+   media-query values, not CSS custom properties anything reads at runtime.
+
+   NOTE ON WHAT IS *NOT* HERE. No fluid `html { font-size }` and no `--text-*`
+   override. Both are tempting ("make everything bigger") and both are traps:
+   app/layout.tsx imports this file, so the admin panel would inherit them, and
+   a viewport-fluid type scale grows headings from ~490px upward — inflating the
+   1280–1536px range that most desktops actually use. Growth is gated on the
+   breakpoints below, so nothing below 1920px shifts by a single pixel.
+   =========================================================================== */
+@theme {
+  --breakpoint-3xl: 120rem; /* 1920px — FHD */
+  --breakpoint-4xl: 160rem; /* 2560px — QHD / ultrawide */
+  --breakpoint-5xl: 240rem; /* 3840px — 4K */
+}
+
+/* The one page container. Replaces the `max-w-7xl mx-auto px-4 sm:px-6` that was
+   copy-pasted across the storefront (and applied twice, section *and* wrapper,
+   in a few places).
+
+   Max-widths are in px on purpose. They are a hard ceiling on line length, and
+   a ceiling that silently rescales with the root font size is not a ceiling.
+
+   It stops well short of the screen edge at 4K. A row spanning 3840px forces the
+   eye across an absurd horizontal distance, and section headings end up floating
+   alone in a vast band. Prose is unaffected either way — article bodies keep
+   their own `max-w-3xl` measure, which is what keeps Persian copy near 70–80
+   characters per line no matter how wide this gets. */
+@utility site-container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  max-width: 1280px;
+
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 1920px) {
+    max-width: 1760px;
+    padding-inline: 2rem;
+  }
+  @media (width >= 2560px) {
+    max-width: 2304px;
+    padding-inline: 3rem;
+  }
+  @media (width >= 3840px) {
+    max-width: 2880px;
+  }
+}

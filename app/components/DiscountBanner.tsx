@@ -10,8 +10,8 @@ export default async function DiscountBanner() {
   if (!sale.enabled) return null;
 
   return (
-    <section className="py-12 md:py-16 px-4 sm:px-6 bg-background">
-      <div className="max-w-7xl mx-auto">
+    <section className="py-12 md:py-16 bg-background">
+      <div className="site-container">
         <div className="relative overflow-hidden rounded-3xl bg-primary p-6 sm:p-10 shadow-sm">
           {/* Very subtle dotted backdrop */}
           <div className="pointer-events-none absolute inset-0 bg-play-dots text-white/10" />

@@ -65,17 +65,17 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
 
   return (
     <section
-      className="py-12 md:py-16 px-4 sm:px-6 bg-background"
+      className="py-12 md:py-16 bg-background"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="site-container">
         {/* Header */}
         <div className="mb-8 text-center sm:text-right">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary">
             🔥 فروش داغ
           </span>
-          <h2 className="mt-3 text-2xl sm:text-3xl font-extrabold text-content">
+          <h2 className="mt-3 text-2xl sm:text-3xl 3xl:text-4xl font-extrabold text-content">
             تا <span className="text-primary">{toPersianNumber(50)}٪</span> تخفیف روی اسباب‌بازی‌های منتخب
           </h2>
         </div>

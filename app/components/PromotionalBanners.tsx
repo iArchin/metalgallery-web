@@ -32,8 +32,8 @@ const banners = [
 
 export default function PromotionalBanners() {
   return (
-    <section className="bg-background px-4 py-12 sm:px-6 md:py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section className="bg-background py-12 md:py-16">
+      <div className="site-container">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {banners.map((banner) => (
             <div

@@ -11,10 +11,10 @@ export default async function LatestNews() {
   if (latest.length === 0) return null;
 
   return (
-    <section className="py-12 md:py-16 px-4 sm:px-6 bg-background">
-      <div className="max-w-7xl mx-auto">
+    <section className="py-12 md:py-16 bg-background">
+      <div className="site-container">
         <div className="mb-8 md:mb-10 flex items-end justify-between gap-4">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-content">
+          <h2 className="text-2xl sm:text-3xl 3xl:text-4xl font-extrabold text-content">
             آخرین اخبار و مقالات ما
           </h2>
           <Link

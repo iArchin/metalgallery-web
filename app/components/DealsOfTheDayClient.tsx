@@ -124,13 +124,13 @@ export default function DealsOfTheDayClient({
   return (
     <>
     <section className="py-12 md:py-16 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="site-container">
         <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between mb-8 md:mb-10">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-4 py-1.5 text-sm font-bold text-primary mb-3">
               حراج ویژه
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-content">
+            <h2 className="text-2xl sm:text-3xl 3xl:text-4xl font-extrabold text-content">
               پیشنهادات روز
             </h2>
           </div>

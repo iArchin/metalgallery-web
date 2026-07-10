@@ -133,10 +133,10 @@ export default function FlashSaleClient({
   return (
     <>
       <section className="py-12 md:py-16 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="site-container">
           {/* Centered, stacked title + badge */}
           <div className="mb-8 flex flex-col items-center gap-3 text-center">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-content">
+            <h2 className="text-2xl sm:text-3xl 3xl:text-4xl font-extrabold text-content">
               فروش ویژه!
             </h2>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-sm font-bold text-primary">
