@@ -72,7 +72,7 @@ export default async function Hero() {
         ];
 
   return (
-    <section className="min-h-screen relative bg-background overflow-hidden flex flex-col justify-center py-8 md:py-12">
+    <section className="min-h-screen relative bg-background overflow-hidden flex flex-col justify-center pt-8 pb-24 md:pt-12 md:pb-36 3xl:pb-48">
       {/* Toy doodle background */}
       <HeroBackground />
       <div className="site-container w-full">
