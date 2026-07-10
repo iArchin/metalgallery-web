@@ -7,6 +7,7 @@ import { useCart } from "@/app/components/CartContext";
 import { productImage } from "@/app/utils/images";
 import { toPersianNumber, formatPersianNumber } from "@/app/utils/numbers";
 import { discountPercent, type Product } from "@/lib/types";
+import SpotlightReviews from "@/app/components/SpotlightReviews";
 
 const ROTATE_MS = 5000;
 
@@ -114,7 +115,7 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
               </div>
 
               {/* Details */}
-              <div key={`det-${p.id}`} className="animate-spotlight flex flex-col sm:justify-center">
+              <div key={`det-${p.id}`} className="animate-spotlight flex min-h-0 flex-col">
                 <span className="text-xs font-bold text-primary">پیشنهاد ویژه</span>
                 <Link href={`/product/${p.id}`} className="mt-1">
                   <h3 className="text-lg sm:text-xl font-extrabold text-content leading-snug hover:text-primary transition-colors line-clamp-2">
@@ -149,7 +150,10 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
                   ))}
                 </div>
 
-                <div className="mt-6">
+                {/* Rotating customer comments — fills the height beside the image */}
+                <SpotlightReviews />
+
+                <div className="mt-4">
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-extrabold text-content">
                       {formatPersianNumber(p.price)}
