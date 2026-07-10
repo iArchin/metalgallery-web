@@ -85,17 +85,18 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
           <div className="order-1 lg:order-2 lg:col-span-2 rounded-3xl border border-border bg-surface p-4 sm:p-6 shadow-sm">
             <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
               {/* Image. Square while stacked on mobile; once it sits beside the
-                  details (sm+) it drops the fixed ratio and stretches to the
-                  details' height, so a wide card can't blow the image up into a
-                  giant square that leaves a void beside the text. */}
+                  details (sm+) the photo is absolutely positioned so it fills
+                  whatever height the TEXT needs, instead of the text stretching
+                  to match a giant square. That keeps the card only as tall as its
+                  content — no towering image, no void, even padding all round. */}
               <div
                 key={`img-${p.id}`}
-                className="animate-spotlight relative aspect-square sm:aspect-auto sm:min-h-full overflow-hidden rounded-2xl bg-surface-2"
+                className="animate-spotlight relative aspect-square sm:aspect-auto overflow-hidden rounded-2xl bg-surface-2"
               >
                 <img
                   src={productImage(p, 600, 600)}
                   alt={p.name}
-                  className={`h-full w-full object-cover ${outOfStock ? "opacity-60 grayscale" : ""}`}
+                  className={`absolute inset-0 h-full w-full object-cover ${outOfStock ? "opacity-60 grayscale" : ""}`}
                 />
                 {off > 0 && (
                   <span className="absolute top-3 right-3 rounded-full bg-primary px-2.5 py-1 text-xs font-extrabold text-primary-content shadow-md">
@@ -110,7 +111,7 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
               </div>
 
               {/* Details */}
-              <div key={`det-${p.id}`} className="animate-spotlight flex flex-col">
+              <div key={`det-${p.id}`} className="animate-spotlight flex flex-col sm:justify-center">
                 <span className="text-xs font-bold text-primary">پیشنهاد ویژه</span>
                 <Link href={`/product/${p.id}`} className="mt-1">
                   <h3 className="text-lg sm:text-xl font-extrabold text-content leading-snug hover:text-primary transition-colors line-clamp-2">
@@ -145,7 +146,7 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
                   ))}
                 </div>
 
-                <div className="mt-auto pt-4">
+                <div className="mt-6">
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-extrabold text-content">
                       {formatPersianNumber(p.price)}
