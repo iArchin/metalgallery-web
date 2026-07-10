@@ -62,10 +62,57 @@ async function sendVerifySms(
   code: string
 ): Promise<{ ok: boolean; error?: string }> {
   const apiKey = process.env.SMS_IR_API_KEY;
+  if (!apiKey) {
+    return { ok: false, error: "سرویس پیامک پیکربندی نشده است" };
+  }
+
+  // Preferred path: send over a dedicated line as a plain message. SMS.ir routes
+  // /send/verify over a shared service line that delivers THIS account's OTPs in
+  // 1–10 minutes — far too slow, so the code often expires before it arrives. A
+  // dedicated line lands in seconds. (SMS.ir's delivery *report* still lags and
+  // may show "not delivered" for a while, but the SMS itself is fast — trust the
+  // handset, not the report.) Set SMS_IR_LINE_NUMBER to enable this; unset it to
+  // fall back to the verify template below.
+  //
+  // NOTE: the line must be a SERVICE line (خط خدماتی). On an advertising line,
+  // customers who opted out of promotional SMS would never receive the code.
+  const lineNumber = process.env.SMS_IR_LINE_NUMBER;
+  if (lineNumber) {
+    const template =
+      process.env.SMS_IR_OTP_MESSAGE || "کد ورود شما: {code}\nmetalgallery.ir";
+    const messageText = template.replace("{code}", code);
+    try {
+      const res = await fetch("https://api.sms.ir/v1/send/bulk", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "x-api-key": apiKey,
+        },
+        // Node sends this JSON as UTF-8, so the Persian text is not mangled.
+        body: JSON.stringify({
+          lineNumber: Number(lineNumber),
+          messageText,
+          mobiles: [mobile],
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const json = (await res.json().catch(() => null)) as { status?: number; message?: string } | null;
+      if (!res.ok || !json || json.status !== 1) {
+        console.error("[OTP] SMS.ir bulk error:", res.status, json);
+        return { ok: false, error: json?.message || `خطای سرویس پیامک (${res.status})` };
+      }
+      return { ok: true };
+    } catch (err) {
+      console.error("[OTP] SMS.ir bulk request failed:", err);
+      return { ok: false, error: "خطا در ارتباط با سرویس پیامک" };
+    }
+  }
+
+  // Fallback: the approved verify template on SMS.ir's shared service line.
   const templateId = Number(process.env.SMS_IR_TEMPLATE_ID);
   const paramName = process.env.SMS_IR_PARAM_NAME || "Code";
-
-  if (!apiKey || !Number.isFinite(templateId) || templateId <= 0) {
+  if (!Number.isFinite(templateId) || templateId <= 0) {
     return { ok: false, error: "سرویس پیامک پیکربندی نشده است" };
   }
 
