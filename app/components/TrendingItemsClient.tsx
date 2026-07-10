@@ -84,10 +84,13 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
           {/* Featured spotlight — big, left on desktop */}
           <div className="order-1 lg:order-2 lg:col-span-2 rounded-3xl border border-border bg-surface p-4 sm:p-6 shadow-sm">
             <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-              {/* Image */}
+              {/* Image. Square while stacked on mobile; once it sits beside the
+                  details (sm+) it drops the fixed ratio and stretches to the
+                  details' height, so a wide card can't blow the image up into a
+                  giant square that leaves a void beside the text. */}
               <div
                 key={`img-${p.id}`}
-                className="animate-spotlight relative aspect-square overflow-hidden rounded-2xl bg-surface-2"
+                className="animate-spotlight relative aspect-square sm:aspect-auto sm:min-h-full overflow-hidden rounded-2xl bg-surface-2"
               >
                 <img
                   src={productImage(p, 600, 600)}
