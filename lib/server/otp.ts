@@ -15,7 +15,7 @@ import { SESSION_SECRET as SECRET } from "./secret";
  */
 
 const OTP_TTL_MS = 2 * 60 * 1000; // code valid for 2 minutes
-const RESEND_COOLDOWN_MS = 60 * 1000; // one code per phone per minute
+const RESEND_COOLDOWN_MS = 120 * 1000; // one code per phone per 2 minutes
 const MAX_ATTEMPTS = 5; // wrong tries before a code is burned
 const CODE_LENGTH = 5;
 
