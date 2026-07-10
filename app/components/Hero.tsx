@@ -72,7 +72,7 @@ export default async function Hero() {
         ];
 
   return (
-    <section className="min-h-screen relative bg-background overflow-hidden flex flex-col justify-start pt-8 md:pt-12">
+    <section className="min-h-screen relative bg-background overflow-hidden flex flex-col justify-center py-8 md:py-12">
       {/* Toy doodle background */}
       <HeroBackground />
       <div className="site-container w-full">
@@ -80,13 +80,13 @@ export default async function Hero() {
           {/* Large Banner — auto-rotating carousel of admin-managed slides.
               translateZ(0) puts the rounded clip on its own GPU layer so the
               inner Ken-Burns zoom composites smoothly (no per-frame re-clip). */}
-          <div className="md:col-span-2 relative overflow-hidden rounded-2xl h-[300px] sm:h-[360px] md:h-[420px] bg-surface-2 border border-border shadow-sm transition-colors transform-[translateZ(0)]">
+          <div className="md:col-span-2 relative overflow-hidden rounded-2xl h-[300px] sm:h-[360px] md:h-[420px] 3xl:h-[520px] 4xl:h-[600px] bg-surface-2 border border-border shadow-sm transition-colors transform-[translateZ(0)]">
             <HeroCarousel slides={slides} />
           </div>
 
           {/* Smaller Banner — full-bleed image with overlaid text, like the
               carousel slides but static (single image, no rotation). */}
-          <div className="group relative overflow-hidden rounded-2xl h-[300px] sm:h-[360px] md:h-[420px] bg-surface-2 border border-border shadow-sm transition-colors">
+          <div className="group relative overflow-hidden rounded-2xl h-[300px] sm:h-[360px] md:h-[420px] 3xl:h-[520px] 4xl:h-[600px] bg-surface-2 border border-border shadow-sm transition-colors">
             <img
               src="/images/toy-kids-1.jpg"
               alt={hero.sideTitle}
