@@ -240,71 +240,80 @@ export default function Navbar({
     { label: "تماس با ما", href: "/contact" },
   ];
 
-  const megaMenuData = {
-    toys: {
-      playType: {
-        title: "نوع بازی",
-        items: [
-          "اکشن فیگور",
-          "عروسک و پولیشی",
-          "ماشین و کنترلی",
-          "لگو و ساختنی",
-          "بازی فکری",
-          "پازل",
-          "رومیزی",
-          "فضای باز",
-        ],
-      },
-      brands: {
-        title: "برندها",
-        items: [
-          "لگو",
-          "پلی‌موبیل",
-          "هاسبرو",
-          "متل",
-          "فیشر پرایس",
-          "بندای",
-        ],
-      },
-    },
-    ageAndPrice: {
-      age: {
-        title: "رده سنی",
-        items: ["۰-۲ سال", "۳-۵ سال", "۶-۸ سال", "۹-۱۲ سال", "نوجوان"],
-      },
-      price: {
-        title: "قیمت",
-        items: [
-          "زیر ۲۰۰ هزار",
-          "۲۰۰-۵۰۰ هزار",
-          "۵۰۰ هزار تا ۱ میلیون",
-          "بالای ۱ میلیون",
-        ],
-      },
-    },
-    themes: {
-      characters: {
-        title: "شخصیت‌ها و تم",
-        items: [
-          "سوپرقهرمان",
-          "دایناسور",
-          "حیوانات",
-          "ماشین‌ها",
-          "فضایی",
-          "پرنسسی",
-        ],
-      },
-      special: {
-        title: "ویژه",
-        items: [
-          "پرفروش‌ترین‌ها",
-          "جدیدترین‌ها",
-          "تخفیف‌دار",
-          "پیشنهاد ویژه",
-        ],
-      },
-    },
+  // --- Mega-menu model --------------------------------------------------
+  // Every item resolves to a REAL /products URL that returns results against the
+  // live catalogue. Params ProductListing consumes: category(int), q(string),
+  // age(numeric range like "0-2"/"12-99", overlap-matched), price(index 0-4),
+  // sort, deal=1, trending=1. Sections that had no data path (brands — products
+  // carry no brandId; the dead theme labels; empty categories 7-12) are omitted
+  // rather than shown as dead links; `categories` is already filtered by the
+  // layout to those that actually have products.
+  const qHref = (s: string) => `/products?q=${encodeURIComponent(s)}`;
+
+  const categorySection = {
+    title: "دسته‌بندی‌ها",
+    items: categories.map((c) => ({
+      label: c.name,
+      href: `/products?category=${c.id}`,
+    })),
   };
+  const ageSection = {
+    title: "رده سنی",
+    items: [
+      { label: "۰ تا ۲ سال", href: "/products?age=0-2" },
+      { label: "۳ تا ۵ سال", href: "/products?age=3-5" },
+      { label: "۶ تا ۸ سال", href: "/products?age=6-8" },
+      { label: "۹ تا ۱۲ سال", href: "/products?age=9-12" },
+      { label: "۱۲ سال به بالا", href: "/products?age=12-99" },
+    ],
+  };
+  const priceSection = {
+    title: "قیمت",
+    items: [
+      { label: "زیر ۵۰۰ هزار تومان", href: "/products?price=1" },
+      { label: "۵۰۰ هزار تا ۱ میلیون", href: "/products?price=2" },
+      { label: "۱ تا ۲ میلیون تومان", href: "/products?price=3" },
+      { label: "بالای ۲ میلیون تومان", href: "/products?price=4" },
+    ],
+  };
+  const specialSection = {
+    title: "پیشنهادها",
+    items: [
+      { label: "پرفروش‌ترین‌ها", href: "/products?sort=rating" },
+      { label: "جدیدترین‌ها", href: "/products?sort=newest" },
+      { label: "تخفیف‌دار", href: "/products?deal=1" },
+      { label: "پیشنهاد ویژه", href: "/products?trending=1" },
+    ],
+  };
+  // Curated to terms that actually match a product name (verified against the
+  // catalogue); free-text search links.
+  const themeSection = {
+    title: "جستجوهای محبوب",
+    items: [
+      { label: "سوپرقهرمان", href: qHref("سوپرقهرمان") },
+      { label: "دایناسور", href: qHref("دایناسور") },
+    ],
+  };
+
+  // One renderer for desktop AND mobile; closing both menus covers either surface.
+  const renderMenuLinks = (
+    items: { label: string; href: string }[],
+    extra = ""
+  ) =>
+    items.map((item) => (
+      <Link
+        key={item.label + item.href}
+        href={item.href}
+        onClick={() => {
+          setActiveMegaMenu(null);
+          setMobileOpen(false);
+        }}
+        className={`flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group ${extra}`}
+      >
+        <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
+        {item.label}
+      </Link>
+    ));
   return (
     <>
       {/* Top Header */}
@@ -954,78 +963,22 @@ export default function Navbar({
               </button>
               {mobileExpanded === "categories" && (
                 <div className="px-4 pb-4 space-y-3">
-                  {/* اسباب‌بازی‌ها */}
-                  <div>
-                    <h4 className="text-xs font-bold text-content-subtle mb-2">نوع بازی</h4>
-                    <div className="grid grid-cols-2 gap-1">
-                      {megaMenuData.toys.playType.items.map((item, i) => (
-                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
-                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
-                        </Link>
-                      ))}
+                  {[
+                    categorySection,
+                    ageSection,
+                    priceSection,
+                    specialSection,
+                    themeSection,
+                  ].map((section) => (
+                    <div key={section.title}>
+                      <h4 className="text-xs font-bold text-content-subtle mb-2">
+                        {section.title}
+                      </h4>
+                      <div className="grid grid-cols-2 gap-1">
+                        {renderMenuLinks(section.items)}
+                      </div>
                     </div>
-                  </div>
-                  {/* برندها */}
-                  <div>
-                    <h4 className="text-xs font-bold text-content-subtle mb-2">برندها</h4>
-                    <div className="grid grid-cols-2 gap-1">
-                      {megaMenuData.toys.brands.items.map((item, i) => (
-                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
-                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                  {/* رده سنی */}
-                  <div>
-                    <h4 className="text-xs font-bold text-content-subtle mb-2">رده سنی</h4>
-                    <div className="grid grid-cols-2 gap-1">
-                      {megaMenuData.ageAndPrice.age.items.map((item, i) => (
-                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
-                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                  {/* قیمت */}
-                  <div>
-                    <h4 className="text-xs font-bold text-content-subtle mb-2">قیمت</h4>
-                    <div className="grid grid-cols-2 gap-1">
-                      {megaMenuData.ageAndPrice.price.items.map((item, i) => (
-                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
-                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                  {/* شخصیت‌ها */}
-                  <div>
-                    <h4 className="text-xs font-bold text-content-subtle mb-2">شخصیت‌ها و تم</h4>
-                    <div className="grid grid-cols-2 gap-1">
-                      {megaMenuData.themes.characters.items.map((item, i) => (
-                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
-                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                  {/* ویژه */}
-                  <div>
-                    <h4 className="text-xs font-bold text-content-subtle mb-2">ویژه</h4>
-                    <div className="grid grid-cols-2 gap-1">
-                      {megaMenuData.themes.special.items.map((item, i) => (
-                        <Link key={i} href="/products" onClick={() => setMobileOpen(false)}
-                          className="text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-content-subtle shrink-0" />{item}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -1218,7 +1171,7 @@ export default function Navbar({
               onMouseLeave={() => setActiveMegaMenu(null)}
             >
               <div className="relative grid grid-cols-1 md:grid-cols-3 divide-x divide-border p-4 sm:p-6 bg-dots-fade">
-                {/* اسباب‌بازی‌ها Column */}
+                {/* Column 1 — real categories (each filters the shop) */}
                 <div className="px-5">
                   <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
                     <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
@@ -1226,29 +1179,13 @@ export default function Navbar({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
                     </span>
-                    اسباب‌بازی‌ها
+                    {categorySection.title}
                   </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {Object.entries(megaMenuData.toys).map(([key, section]) => (
-                      <div key={key}>
-                        <h4 className="text-xs font-bold text-content-subtle mb-2">{section.title}</h4>
-                        <div className="space-y-0.5">
-                          {section.items.map((item, index) => (
-                            <Link
-                              key={index}
-                              href="/products"
-                              className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group"
-                            >
-                              <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
-                              {item}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                    {renderMenuLinks(categorySection.items)}
                   </div>
                 </div>
-                {/* رده سنی و قیمت Column */}
+                {/* Column 2 — age & price */}
                 <div className="px-5">
                   <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
                     <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
@@ -1259,26 +1196,15 @@ export default function Navbar({
                     رده سنی و قیمت
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {Object.entries(megaMenuData.ageAndPrice).map(([key, section]) => (
-                      <div key={key}>
+                    {[ageSection, priceSection].map((section) => (
+                      <div key={section.title}>
                         <h4 className="text-xs font-bold text-content-subtle mb-2">{section.title}</h4>
-                        <div className="space-y-0.5">
-                          {section.items.map((item, index) => (
-                            <Link
-                              key={index}
-                              href="/products"
-                              className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group"
-                            >
-                              <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
-                              {item}
-                            </Link>
-                          ))}
-                        </div>
+                        <div className="space-y-0.5">{renderMenuLinks(section.items)}</div>
                       </div>
                     ))}
                   </div>
                 </div>
-                {/* شخصیت‌ها و تم Column */}
+                {/* Column 3 — offers & popular searches */}
                 <div className="px-5">
                   <h3 className="text-sm font-bold text-content mb-3 flex items-center gap-2">
                     <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft text-primary">
@@ -1286,24 +1212,13 @@ export default function Navbar({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                       </svg>
                     </span>
-                    شخصیت‌ها و تم
+                    پیشنهادها و جستجو
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {Object.entries(megaMenuData.themes).map(([key, section]) => (
-                      <div key={key}>
+                    {[specialSection, themeSection].map((section) => (
+                      <div key={section.title}>
                         <h4 className="text-xs font-bold text-content-subtle mb-2">{section.title}</h4>
-                        <div className="space-y-0.5">
-                          {section.items.map((item, index) => (
-                            <Link
-                              key={index}
-                              href="/products"
-                              className="flex items-center gap-2 text-sm text-content-muted hover:text-primary hover:bg-surface-2 px-2 py-1.5 rounded-lg transition-colors group"
-                            >
-                              <span className="w-1 h-1 rounded-full bg-content-subtle group-hover:bg-primary transition-colors shrink-0" />
-                              {item}
-                            </Link>
-                          ))}
-                        </div>
+                        <div className="space-y-0.5">{renderMenuLinks(section.items)}</div>
                       </div>
                     ))}
                   </div>

@@ -22,6 +22,58 @@ const priceRanges = [
 
 const ratingFilters = [5, 4, 3, 2, 1];
 
+const SORT_OPTIONS: SortOption[] = [
+  "newest",
+  "price-low",
+  "price-high",
+  "rating",
+  "name",
+];
+
+/** Map a URL `sort` value onto a SortOption, tolerating a few menu aliases. */
+function coerceSort(raw: string | null): SortOption | null {
+  if (!raw) return null;
+  if ((SORT_OPTIONS as string[]).includes(raw)) return raw as SortOption;
+  if (raw === "best-selling" || raw === "bestselling" || raw === "popular")
+    return "rating"; // پرفروش‌ترین‌ها -> highest rated (no sales metric today)
+  return null;
+}
+
+/** A URL flag is "on" unless it is absent / "0" / "false". */
+function isTruthyParam(raw: string | null): boolean {
+  return raw !== null && raw !== "0" && raw !== "false";
+}
+
+/** Latin-ise Persian/Arabic-Indic digits, then read the numeric [min,max] out of
+ *  an age label like "3-8 سال", "۹-۱۲ سال", "12+ سال", "0-2" or "12-". A trailing
+ *  "+"/"-" (and "12+ سال") means "and up" -> max = Infinity. */
+function parseAgeBounds(
+  raw: string | null | undefined
+): { min: number; max: number } | null {
+  if (!raw) return null;
+  const latin = raw
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  const nums = latin.match(/\d+/g);
+  if (!nums || nums.length === 0) return null;
+  const openEnded = /\+/.test(latin) || /-\s*$/.test(latin.trim());
+  const min = parseInt(nums[0], 10);
+  const max = openEnded ? Infinity : parseInt(nums[1] ?? nums[0], 10);
+  return { min, max };
+}
+
+/** Normalise Persian text for substring search: unify Arabic/Persian Yeh & Kaf,
+ *  drop the ZWNJ (نیم‌فاصله), collapse whitespace, lower-case any Latin. */
+function normalizeFa(s: string): string {
+  return s
+    .replace(/‌/g, " ")
+    .replace(/ي/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 interface ProductListingProps {
   products: Product[];
   categories: Category[];
@@ -33,15 +85,36 @@ export default function ProductListing({
 }: ProductListingProps) {
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category");
+  const qFromUrl = searchParams.get("q");
+  const ageFromUrl = searchParams.get("age");
+  const sortFromUrl = searchParams.get("sort");
+  const dealFromUrl = searchParams.get("deal");
+  const trendingFromUrl = searchParams.get("trending");
+  const priceFromUrl = searchParams.get("price");
   const { add } = useCart();
 
   const [selectedCategory, setSelectedCategory] = useState<number | null>(
     categoryFromUrl ? parseInt(categoryFromUrl) : null
   );
-  const [selectedPriceRange, setSelectedPriceRange] = useState<number>(0);
+  const [selectedPriceRange, setSelectedPriceRange] = useState<number>(
+    priceFromUrl ? Math.min(Math.max(parseInt(priceFromUrl) || 0, 0), priceRanges.length - 1) : 0
+  );
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  // URL / mega-menu driven age filter (numeric range overlap) — kept SEPARATE
+  // from the sidebar's exact-match selectedAgeGroup; the two are reconciled to be
+  // mutually exclusive (see the age sync + the sidebar onChange edits).
+  const [ageRange, setAgeRange] = useState<{ min: number; max: number } | null>(
+    parseAgeBounds(ageFromUrl)
+  );
+  const [searchQuery, setSearchQuery] = useState(qFromUrl ?? "");
+  const [dealOnly, setDealOnly] = useState<boolean>(isTruthyParam(dealFromUrl));
+  const [trendingOnly, setTrendingOnly] = useState<boolean>(
+    isTruthyParam(trendingFromUrl)
+  );
+  const [sortBy, setSortBy] = useState<SortOption>(
+    coerceSort(sortFromUrl) ?? "newest"
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [addedIds, setAddedIds] = useState<Record<number, boolean>>({});
@@ -52,12 +125,62 @@ export default function ProductListing({
   // navigation keeps this component mounted). Adjusting state during render is
   // React's recommended alternative to a setState-in-effect.
   // https://react.dev/learn/you-might-not-need-an-effect
+  // Every mega-menu link is a fresh filter: each param reflects the URL exactly
+  // and clears when it leaves the URL, and any change snaps pagination to page 1.
+  // Adjusting state during render (guarded by a prev!==current check that also
+  // updates prev, so it never loops) is React's alternative to setState-in-effect.
   const [prevCategoryFromUrl, setPrevCategoryFromUrl] = useState(categoryFromUrl);
   if (categoryFromUrl !== prevCategoryFromUrl) {
     setPrevCategoryFromUrl(categoryFromUrl);
-    if (categoryFromUrl) {
-      setSelectedCategory(parseInt(categoryFromUrl));
-    }
+    setSelectedCategory(categoryFromUrl ? parseInt(categoryFromUrl) : null);
+    setCurrentPage(1);
+  }
+
+  const [prevQFromUrl, setPrevQFromUrl] = useState(qFromUrl);
+  if (qFromUrl !== prevQFromUrl) {
+    setPrevQFromUrl(qFromUrl);
+    setSearchQuery(qFromUrl ?? "");
+    setCurrentPage(1);
+  }
+
+  const [prevAgeFromUrl, setPrevAgeFromUrl] = useState(ageFromUrl);
+  if (ageFromUrl !== prevAgeFromUrl) {
+    setPrevAgeFromUrl(ageFromUrl);
+    setAgeRange(parseAgeBounds(ageFromUrl));
+    setSelectedAgeGroup(null); // URL range supersedes the sidebar exact-match
+    setCurrentPage(1);
+  }
+
+  const [prevSortFromUrl, setPrevSortFromUrl] = useState(sortFromUrl);
+  if (sortFromUrl !== prevSortFromUrl) {
+    setPrevSortFromUrl(sortFromUrl);
+    const coerced = coerceSort(sortFromUrl);
+    if (coerced) setSortBy(coerced);
+    setCurrentPage(1);
+  }
+
+  const [prevDealFromUrl, setPrevDealFromUrl] = useState(dealFromUrl);
+  if (dealFromUrl !== prevDealFromUrl) {
+    setPrevDealFromUrl(dealFromUrl);
+    setDealOnly(isTruthyParam(dealFromUrl));
+    setCurrentPage(1);
+  }
+
+  const [prevTrendingFromUrl, setPrevTrendingFromUrl] = useState(trendingFromUrl);
+  if (trendingFromUrl !== prevTrendingFromUrl) {
+    setPrevTrendingFromUrl(trendingFromUrl);
+    setTrendingOnly(isTruthyParam(trendingFromUrl));
+    setCurrentPage(1);
+  }
+
+  const [prevPriceFromUrl, setPrevPriceFromUrl] = useState(priceFromUrl);
+  if (priceFromUrl !== prevPriceFromUrl) {
+    setPrevPriceFromUrl(priceFromUrl);
+    const idx = priceFromUrl ? parseInt(priceFromUrl) : 0;
+    setSelectedPriceRange(
+      Number.isFinite(idx) ? Math.min(Math.max(idx, 0), priceRanges.length - 1) : 0
+    );
+    setCurrentPage(1);
   }
 
   // Distinct age groups actually present in the catalogue.
@@ -71,6 +194,14 @@ export default function ProductListing({
     return distinct;
   }, [products]);
 
+  // Normalised category names by id — lets the `q` search also match on the
+  // product's category name.
+  const categoryNameById = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const c of categories) m.set(c.id, normalizeFa(c.name));
+    return m;
+  }, [categories]);
+
   // Filter products
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
@@ -78,6 +209,27 @@ export default function ProductListing({
     // Filter by category
     if (selectedCategory) {
       filtered = filtered.filter((p) => p.categoryId === selectedCategory);
+    }
+
+    // Free-text search (q) over name + description + category name.
+    const q = normalizeFa(searchQuery);
+    if (q) {
+      filtered = filtered.filter(
+        (p) =>
+          normalizeFa(p.name).includes(q) ||
+          normalizeFa(p.description).includes(q) ||
+          (categoryNameById.get(p.categoryId) ?? "").includes(q)
+      );
+    }
+
+    // Deals only (تخفیف‌دار).
+    if (dealOnly) {
+      filtered = filtered.filter((p) => p.isDeal);
+    }
+
+    // Trending / featured only (پیشنهاد ویژه).
+    if (trendingOnly) {
+      filtered = filtered.filter((p) => p.isTrending);
     }
 
     // Filter by price range
@@ -93,9 +245,19 @@ export default function ProductListing({
       filtered = filtered.filter((p) => p.rating >= selectedRating);
     }
 
-    // Filter by age group
+    // Filter by age group (sidebar exact-match)
     if (selectedAgeGroup) {
       filtered = filtered.filter((p) => p.ageGroup === selectedAgeGroup);
+    }
+
+    // Filter by age range (URL / mega-menu). A product matches when its declared
+    // range overlaps the requested one, so `age=3-5` still catches a product
+    // tagged "2-6 سال" or "0-3 سال".
+    if (ageRange) {
+      filtered = filtered.filter((p) => {
+        const b = parseAgeBounds(p.ageGroup);
+        return b !== null && b.min <= ageRange.max && b.max >= ageRange.min;
+      });
     }
 
     // Sort products
@@ -122,6 +284,11 @@ export default function ProductListing({
     selectedPriceRange,
     selectedRating,
     selectedAgeGroup,
+    ageRange,
+    searchQuery,
+    dealOnly,
+    trendingOnly,
+    categoryNameById,
     sortBy,
   ]);
 
@@ -138,6 +305,10 @@ export default function ProductListing({
     setSelectedPriceRange(0);
     setSelectedRating(null);
     setSelectedAgeGroup(null);
+    setAgeRange(null);
+    setDealOnly(false);
+    setTrendingOnly(false);
+    setSearchQuery("");
     setCurrentPage(1);
   };
 
@@ -165,7 +336,11 @@ export default function ProductListing({
     selectedCategory ||
     selectedPriceRange > 0 ||
     selectedRating ||
-    selectedAgeGroup;
+    selectedAgeGroup ||
+    ageRange ||
+    dealOnly ||
+    trendingOnly ||
+    searchQuery.trim().length > 0;
 
   return (
     <>
@@ -334,7 +509,10 @@ export default function ProductListing({
                         type="radio"
                         name="age"
                         checked={selectedAgeGroup === null}
-                        onChange={() => setSelectedAgeGroup(null)}
+                        onChange={() => {
+                          setSelectedAgeGroup(null);
+                          setAgeRange(null);
+                        }}
                         className="w-4 h-4 accent-primary"
                       />
                       <span className="text-content-muted">همه</span>
@@ -350,6 +528,7 @@ export default function ProductListing({
                           checked={selectedAgeGroup === age}
                           onChange={() => {
                             setSelectedAgeGroup(age);
+                            setAgeRange(null);
                             setCurrentPage(1);
                           }}
                           className="w-4 h-4 accent-primary"

@@ -2,7 +2,7 @@ import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import FloatingActions from "@/app/components/FloatingActions";
 import { CartProvider } from "@/app/components/CartContext";
-import { getSettings, categoriesRepo } from "@/lib/server/repos";
+import { getSettings, categoriesRepo, listProducts } from "@/lib/server/repos";
 
 // This layout reads the database (settings + categories for the chrome), so the
 // whole (site) segment renders per request, not at build time. Keeps any static
@@ -16,9 +16,16 @@ export const dynamic = "force-dynamic";
 export default async function SiteLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [s, allCategories] = await Promise.all([getSettings(), categoriesRepo.list()]);
+  const [s, allCategories, products] = await Promise.all([
+    getSettings(),
+    categoriesRepo.list(),
+    listProducts(),
+  ]);
+  // Only surface categories that actually have products, so no mega-menu link
+  // lands on an empty listing.
+  const usedCategoryIds = new Set(products.map((p) => p.categoryId));
   const categories = allCategories
-    .filter((c) => c.active)
+    .filter((c) => c.active && usedCategoryIds.has(c.id))
     .map((c) => ({ id: c.id, name: c.name }));
   return (
     <CartProvider>
