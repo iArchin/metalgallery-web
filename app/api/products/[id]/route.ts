@@ -5,6 +5,7 @@ import {
   type ProductInput,
 } from "@/lib/server/repos";
 import { requireAdminApi } from "@/lib/server/auth";
+import { parseProductImages, isUploadedProductImage } from "@/lib/server/uploads";
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
@@ -61,17 +62,34 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     patch.imageKeyword = kw;
   }
 
-  // image: local path under /images/; explicit empty clears it (falls back
-  // to the internet keyword photo)
+  // image: local path under /images/ or an uploaded photo; explicit empty
+  // clears it (falls back to the internet keyword photo)
   if ("image" in body) {
     const raw = body.image;
     if (raw === null || raw === undefined || raw === "") {
       patch.image = undefined;
-    } else if (typeof raw === "string" && raw.startsWith("/images/")) {
+    } else if (
+      typeof raw === "string" &&
+      (raw.startsWith("/images/") || isUploadedProductImage(raw))
+    ) {
       patch.image = raw;
     } else {
       return Response.json({ ok: false, error: "آدرس تصویر نامعتبر است" }, { status: 400 });
     }
+  }
+
+  // images: the uploaded gallery (1..6). The main photo mirrors entry 0 —
+  // set after the `image` block above so the sync always wins.
+  if (body.images !== undefined) {
+    const images = parseProductImages(body.images);
+    if (!images) {
+      return Response.json(
+        { ok: false, error: "بین ۱ تا ۶ تصویر برای محصول بارگذاری کنید" },
+        { status: 400 }
+      );
+    }
+    patch.images = images;
+    patch.image = images[0];
   }
 
   // ---- numbers

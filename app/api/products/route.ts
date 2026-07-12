@@ -1,5 +1,6 @@
 import { listProducts, createProduct, type ProductInput } from "@/lib/server/repos";
 import { requireAdminApi } from "@/lib/server/auth";
+import { parseProductImages } from "@/lib/server/uploads";
 
 export async function GET(req: Request) {
   try {
@@ -35,8 +36,7 @@ export async function POST(req: Request) {
   const price = Number(body.price);
   const categoryId = Number(body.categoryId);
   const stock = Number(body.stock);
-  const imageKeyword = typeof body.imageKeyword === "string" ? body.imageKeyword.trim() : "";
-  const imageLock = Number(body.imageLock);
+  const images = parseProductImages(body.images);
 
   if (!name) {
     return Response.json({ ok: false, error: "نام محصول الزامی است" }, { status: 400 });
@@ -50,11 +50,11 @@ export async function POST(req: Request) {
   if (!Number.isFinite(stock) || stock < 0) {
     return Response.json({ ok: false, error: "موجودی محصول نامعتبر است" }, { status: 400 });
   }
-  if (!imageKeyword) {
-    return Response.json({ ok: false, error: "کلیدواژه تصویر الزامی است" }, { status: 400 });
-  }
-  if (!Number.isFinite(imageLock)) {
-    return Response.json({ ok: false, error: "شناسه تصویر نامعتبر است" }, { status: 400 });
+  if (!images) {
+    return Response.json(
+      { ok: false, error: "بین ۱ تا ۶ تصویر برای محصول بارگذاری کنید" },
+      { status: 400 }
+    );
   }
 
   const originalPriceRaw = body.originalPrice;
@@ -72,14 +72,6 @@ export async function POST(req: Request) {
     for (const [k, v] of Object.entries(body.specifications as Record<string, unknown>)) {
       specifications[k] = String(v);
     }
-  }
-
-  let image: string | undefined;
-  if (typeof body.image === "string" && body.image) {
-    if (!body.image.startsWith("/images/")) {
-      return Response.json({ ok: false, error: "آدرس تصویر نامعتبر است" }, { status: 400 });
-    }
-    image = body.image;
   }
 
   // rating / reviewCount come from the create form; default 5 / 0 when absent
@@ -110,9 +102,12 @@ export async function POST(req: Request) {
     stock: Math.floor(stock),
     rating,
     reviewCount,
-    image,
-    imageKeyword,
-    imageLock: Math.floor(imageLock),
+    // `image` mirrors the main photo — order snapshots, OG tags and the cart
+    // read it without knowing about the images array.
+    image: images[0],
+    images,
+    imageKeyword: typeof body.imageKeyword === "string" ? body.imageKeyword.trim() : "",
+    imageLock: Number.isFinite(Number(body.imageLock)) ? Math.floor(Number(body.imageLock)) : 0,
     isDeal: body.isDeal === true,
     isFlashSale: body.isFlashSale === true,
     isTrending: body.isTrending === true,

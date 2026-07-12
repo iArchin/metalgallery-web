@@ -60,14 +60,16 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
   const inStock = product.stock > 0;
   const discount = discountPercent(product);
 
-  // With a local product photo there is exactly one real image — showing it
-  // four times as fake "angles" would be dead UI. The multi-angle switcher
-  // only exists for the internet-photo fallback.
-  const galleryImages = product.image
-    ? [product.image]
-    : [0, 1, 2, 3].map((i) =>
-        toyImage(product.imageKeyword, product.imageLock * 100 + i)
-      );
+  // Admin-uploaded photos are the real gallery. Products from before uploads
+  // carry at most one local photo; with neither, fall back to keyword photos
+  // (four variants so the switcher isn't dead UI).
+  const galleryImages = product.images.length
+    ? product.images
+    : product.image
+      ? [product.image]
+      : [0, 1, 2, 3].map((i) =>
+          toyImage(product.imageKeyword, product.imageLock * 100 + i)
+        );
 
   const clampQuantity = (q: number) =>
     Math.min(Math.max(1, q), Math.max(1, product.stock));
@@ -79,7 +81,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
         id: product.id,
         name: product.name,
         price: product.price,
-        image: product.image,
+        image: product.images[0] ?? product.image,
         imageKeyword: product.imageKeyword,
         imageLock: product.imageLock,
         stock: product.stock,

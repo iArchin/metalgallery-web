@@ -115,13 +115,14 @@ export const PRODUCT_IMAGES = [
 
 /**
  * Resolve the display image for anything product-shaped (products, cart
- * items, order lines). A local `image` path wins; otherwise fall back to the
- * Unsplash toy photo.
+ * items, order lines). The first uploaded photo wins, then a local `image`
+ * path; otherwise fall back to the keyword toy photo (products that predate
+ * uploads).
  */
 export function productImage(
-  p: { image?: string; imageKeyword: string; imageLock: number },
+  p: { image?: string; images?: string[]; imageKeyword: string; imageLock: number },
   width = 600,
   height = 600
 ): string {
-  return p.image || toyImage(p.imageKeyword, p.imageLock, width, height);
+  return p.images?.[0] || p.image || toyImage(p.imageKeyword, p.imageLock, width, height);
 }

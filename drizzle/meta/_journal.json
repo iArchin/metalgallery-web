@@ -15,6 +15,13 @@
       "when": 1783852713380,
       "tag": "0001_otp-prev-code",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783871541652,
+      "tag": "0002_product-images",
+      "breakpoints": true
     }
   ]
 }

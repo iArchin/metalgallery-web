@@ -27,6 +27,14 @@ export async function apiSend<T>(
   return json.data as T;
 }
 
+/** Multipart POST (file uploads); same {ok, data|error} envelope as apiSend. */
+export async function apiUpload<T>(url: string, form: FormData): Promise<T> {
+  const res = await fetch(url, { method: "POST", body: form });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error ?? "خطای سرور");
+  return json.data as T;
+}
+
 /* ------------------------------------------------------------ primitives */
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {

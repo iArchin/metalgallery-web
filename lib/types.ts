@@ -18,6 +18,10 @@ export interface Product {
   reviewCount: number;
   /** Local image path (e.g. "/images/products/p1.jpg"). Takes precedence. */
   image?: string;
+  /** Admin-uploaded photos, 1..6 paths under /api/uploads/products/. The first
+   *  entry is the main photo shown in lists; `image` mirrors it. Empty only
+   *  for products created before uploads existed. */
+  images: string[];
   imageKeyword: string; // fallback: real-photo search keywords for toyImage()
   imageLock: number; // pinned photo id
   isDeal: boolean; // shown in "پیشنهادات روز"

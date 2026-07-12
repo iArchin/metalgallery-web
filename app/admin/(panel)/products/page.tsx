@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { discountPercent, type Category, type Product } from "@/lib/types";
-import { productImage, toyImage, PRODUCT_IMAGES } from "@/app/utils/images";
+import { productImage } from "@/app/utils/images";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
 import Button from "@/app/components/Button";
 import {
   apiGet,
   apiSend,
+  apiUpload,
   Badge,
   ConfirmButton,
   EmptyState,
@@ -26,6 +27,9 @@ import {
 
 /* --------------------------------------------------------------- form state */
 
+/** Panel-side cap; the API enforces the same bound. */
+const MAX_IMAGES = 6;
+
 interface ProductForm {
   name: string;
   description: string;
@@ -34,9 +38,7 @@ interface ProductForm {
   categoryId: string;
   ageGroup: string;
   stock: string;
-  image: string;
-  imageKeyword: string;
-  imageLock: string;
+  images: string[]; // uploaded photo URLs; the first is the main photo
   rating: string;
   reviewCount: string;
   isDeal: boolean;
@@ -54,9 +56,7 @@ const EMPTY_FORM: ProductForm = {
   categoryId: "",
   ageGroup: "",
   stock: "",
-  image: "",
-  imageKeyword: "",
-  imageLock: "",
+  images: [],
   rating: "4",
   reviewCount: "0",
   isDeal: false,
@@ -95,9 +95,8 @@ function toForm(p: Product): ProductForm {
     categoryId: String(p.categoryId),
     ageGroup: p.ageGroup,
     stock: String(p.stock),
-    image: p.image ?? "",
-    imageKeyword: p.imageKeyword,
-    imageLock: String(p.imageLock),
+    // Products saved before uploads existed carry a single `image` path.
+    images: p.images.length ? p.images : p.image ? [p.image] : [],
     rating: String(p.rating),
     reviewCount: String(p.reviewCount),
     isDeal: p.isDeal,
@@ -191,13 +190,51 @@ export default function AdminProductsPage() {
     originalPrice: form.originalPrice.trim() ? Number(form.originalPrice) : undefined,
   });
 
-  const previewSrc =
-    form.image || toyImage(form.imageKeyword.trim() || "toys", Number(form.imageLock) || 1, 200, 200);
+  /* --------------------------------------------------------- image uploads */
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFiles = async (e: ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const picked = Array.from(input.files ?? []);
+    input.value = ""; // allow re-picking the same file after a remove
+    if (picked.length === 0) return;
+
+    const room = MAX_IMAGES - form.images.length;
+    if (room <= 0) return;
+    if (picked.length > room) {
+      show(`حداکثر ${toPersianNumber(MAX_IMAGES)} تصویر مجاز است`, "error");
+    }
+
+    const fd = new FormData();
+    for (const file of picked.slice(0, room)) fd.append("files", file);
+
+    setUploading(true);
+    try {
+      const urls = await apiUpload<string[]>("/api/admin/uploads", fd);
+      setForm((f) => ({ ...f, images: [...f.images, ...urls].slice(0, MAX_IMAGES) }));
+    } catch (err) {
+      show(err instanceof Error ? err.message : "خطا در بارگذاری تصویر", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (index: number) =>
+    setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== index) }));
+
+  const makeMainImage = (index: number) =>
+    setForm((f) => ({
+      ...f,
+      images: [f.images[index], ...f.images.filter((_, i) => i !== index)],
+    }));
 
   const submit = async () => {
     if (!form.name.trim()) return show("نام محصول را وارد کنید", "error");
     if (!(Number(form.price) > 0)) return show("قیمت معتبر وارد کنید", "error");
     if (!form.categoryId) return show("دسته‌بندی را انتخاب کنید", "error");
+    if (form.images.length === 0) return show("حداقل یک تصویر برای محصول بارگذاری کنید", "error");
 
     const payload = {
       name: form.name.trim(),
@@ -209,9 +246,7 @@ export default function AdminProductsPage() {
       stock: Number(form.stock) || 0,
       rating: Math.min(5, Math.max(0, Number(form.rating) || 0)),
       reviewCount: Number(form.reviewCount) || 0,
-      image: form.image,
-      imageKeyword: form.imageKeyword.trim() || "toys",
-      imageLock: Number(form.imageLock) || 1,
+      images: form.images,
       isDeal: form.isDeal,
       isFlashSale: form.isFlashSale,
       isTrending: form.isTrending,
@@ -463,67 +498,72 @@ export default function AdminProductsPage() {
           </div>
 
           <div className="sm:col-span-2">
-            <span className="block text-sm font-bold text-content mb-1.5">تصویر محصول</span>
-            <div className="flex flex-wrap items-center gap-2">
-              {PRODUCT_IMAGES.map((src) => (
-                <button
+            <span className="block text-sm font-bold text-content mb-1.5">
+              تصاویر محصول ({toPersianNumber(form.images.length)} از {toPersianNumber(MAX_IMAGES)})
+            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              {form.images.map((src, index) => (
+                <div
                   key={src}
-                  type="button"
-                  onClick={() => set("image", src)}
-                  aria-pressed={form.image === src}
-                  className={`shrink-0 rounded-xl overflow-hidden bg-surface-2 border border-border transition-shadow ${
-                    form.image === src ? "ring-2 ring-primary" : ""
-                  }`}
+                  className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-2"
                 >
-                  <img src={src} alt="تصویر محلی محصول" loading="lazy" className="w-16 h-16 rounded-xl object-cover" />
-                </button>
+                  <img
+                    src={src}
+                    alt={`تصویر ${toPersianNumber(index + 1)} محصول`}
+                    className="h-full w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    aria-label="حذف تصویر"
+                    className="absolute top-1 left-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-sm leading-none text-white transition-colors hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                  {index === 0 ? (
+                    <span className="absolute inset-x-0 bottom-0 bg-primary/90 py-0.5 text-center text-[10px] font-bold text-primary-content">
+                      تصویر اصلی
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => makeMainImage(index)}
+                      className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-center text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                    >
+                      انتخاب به‌عنوان اصلی
+                    </button>
+                  )}
+                </div>
               ))}
-              <button
-                type="button"
-                onClick={() => set("image", "")}
-                aria-pressed={form.image === ""}
-                className={`shrink-0 w-16 h-16 rounded-xl bg-surface-2 border border-border text-xs font-bold text-content-muted transition-shadow ${
-                  form.image === "" ? "ring-2 ring-primary" : ""
-                }`}
-              >
-                اینترنتی
-              </button>
+              {form.images.length < MAX_IMAGES && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-xs font-bold text-content-muted transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+                >
+                  {uploading ? (
+                    "در حال بارگذاری…"
+                  ) : (
+                    <>
+                      <span className="text-2xl leading-none">+</span>
+                      بارگذاری تصویر
+                    </>
+                  )}
+                </button>
+              )}
             </div>
-          </div>
-
-          <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-start">
-            <div className="grid gap-4">
-              <span className="block text-sm font-bold text-content -mb-2">
-                تصویر جایگزین اینترنتی (وقتی تصویر محلی انتخاب نشده)
-              </span>
-              <Field label="کلیدواژه تصویر" hint="کلمات انگلیسی جدا شده با فاصله، مثلاً teddy bear">
-                <Input
-                  value={form.imageKeyword}
-                  onChange={(e) => set("imageKeyword", e.target.value)}
-                  placeholder="teddy bear"
-                  dir="ltr"
-                />
-              </Field>
-              <Field label="شناسه تصویر (lock)" hint="عدد را تغییر دهید تا عکس دیگری انتخاب شود">
-                <Input
-                  type="number"
-                  min={1}
-                  value={form.imageLock}
-                  onChange={(e) => set("imageLock", e.target.value)}
-                  placeholder="1"
-                  dir="ltr"
-                />
-              </Field>
-            </div>
-            <div className="h-32 w-32 rounded-2xl bg-surface-2 overflow-hidden border border-border justify-self-center sm:justify-self-auto">
-              <img
-                key={previewSrc}
-                src={previewSrc}
-                alt="پیش‌نمایش تصویر محصول"
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            </div>
+            <p className="mt-1.5 text-xs text-content-subtle">
+              حداقل ۱ و حداکثر ۶ تصویر — JPG، PNG یا WebP، هر کدام تا ۵ مگابایت. تصویر اصلی در فهرست فروشگاه نمایش داده می‌شود.
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              hidden
+              onChange={(e) => void handleFiles(e)}
+            />
           </div>
 
           <div className="sm:col-span-2">

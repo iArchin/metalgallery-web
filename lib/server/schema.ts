@@ -44,6 +44,10 @@ export const products = pgTable(
     rating: real("rating").notNull().default(0),
     reviewCount: integer("review_count").notNull().default(0),
     image: text("image"),
+    // Admin-uploaded photos (1..6 paths under /api/uploads/products/). The
+    // first entry is the main photo; `image` is kept in sync with it so order
+    // snapshots and OG tags keep working for products created before uploads.
+    images: jsonb("images").$type<string[]>().notNull().default([]),
     imageKeyword: text("image_keyword").notNull().default(""),
     imageLock: integer("image_lock").notNull().default(0),
     isDeal: boolean("is_deal").notNull().default(false),

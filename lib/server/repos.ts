@@ -48,6 +48,7 @@ function toProduct(r: ProductRow): Product {
     rating: r.rating,
     reviewCount: r.reviewCount,
     image: r.image ?? undefined,
+    images: r.images ?? [],
     imageKeyword: r.imageKeyword,
     imageLock: r.imageLock,
     isDeal: r.isDeal,
