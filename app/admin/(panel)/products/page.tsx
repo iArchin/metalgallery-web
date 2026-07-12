@@ -39,8 +39,6 @@ interface ProductForm {
   ageGroup: string;
   stock: string;
   images: string[]; // uploaded photo URLs; the first is the main photo
-  rating: string;
-  reviewCount: string;
   isDeal: boolean;
   isFlashSale: boolean;
   isTrending: boolean;
@@ -57,8 +55,6 @@ const EMPTY_FORM: ProductForm = {
   ageGroup: "",
   stock: "",
   images: [],
-  rating: "4",
-  reviewCount: "0",
   isDeal: false,
   isFlashSale: false,
   isTrending: false,
@@ -97,8 +93,6 @@ function toForm(p: Product): ProductForm {
     stock: String(p.stock),
     // Products saved before uploads existed carry a single `image` path.
     images: p.images.length ? p.images : p.image ? [p.image] : [],
-    rating: String(p.rating),
-    reviewCount: String(p.reviewCount),
     isDeal: p.isDeal,
     isFlashSale: p.isFlashSale,
     isTrending: p.isTrending,
@@ -244,8 +238,8 @@ export default function AdminProductsPage() {
       categoryId: Number(form.categoryId),
       ageGroup: form.ageGroup.trim(),
       stock: Number(form.stock) || 0,
-      rating: Math.min(5, Math.max(0, Number(form.rating) || 0)),
-      reviewCount: Number(form.reviewCount) || 0,
+      // rating / reviewCount are no longer edited in the panel: the API keeps a
+      // product's existing values on update and defaults them on create.
       images: form.images,
       isDeal: form.isDeal,
       isFlashSale: form.isFlashSale,
@@ -475,27 +469,6 @@ export default function AdminProductsPage() {
           <Field label="موجودی">
             <Input type="number" min={0} value={form.stock} onChange={(e) => set("stock", e.target.value)} placeholder="10" />
           </Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="امتیاز (۱ تا ۵)">
-              <Input
-                type="number"
-                min={1}
-                max={5}
-                step={0.1}
-                value={form.rating}
-                onChange={(e) => set("rating", e.target.value)}
-              />
-            </Field>
-            <Field label="تعداد نظرات">
-              <Input
-                type="number"
-                min={0}
-                value={form.reviewCount}
-                onChange={(e) => set("reviewCount", e.target.value)}
-              />
-            </Field>
-          </div>
 
           <div className="sm:col-span-2">
             <span className="block text-sm font-bold text-content mb-1.5">
