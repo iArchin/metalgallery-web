@@ -189,7 +189,7 @@ export default function AdminShell({
           </div>
         </header>
 
-        <main className="p-4 sm:p-6 max-w-6xl">{children}</main>
+        <main className="p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );
