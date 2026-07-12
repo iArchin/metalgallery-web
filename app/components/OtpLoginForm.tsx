@@ -56,7 +56,9 @@ export default function OtpLoginForm({
         return;
       }
       setStep("code");
-      setCooldown(60);
+      // Must match RESEND_COOLDOWN_MS in lib/server/otp.ts — a shorter value
+      // re-enables the button only for the server to answer 429.
+      setCooldown(120);
       if (json.data?.devCode) {
         setInfo(`کد پیامک (حالت آزمایشی): ${json.data.devCode}`);
       }

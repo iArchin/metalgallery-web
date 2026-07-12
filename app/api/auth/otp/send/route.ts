@@ -1,8 +1,9 @@
 import { requestOtp } from "@/lib/server/otp";
 import { clientIp, rateLimit, tooManyRequests } from "@/lib/server/rate-limit";
 
-// Each send costs a real SMS. otp.ts already enforces a 60s cooldown per phone,
-// but a caller can rotate phone numbers freely, so cap by origin IP too.
+// Each send costs real SMS (one per configured delivery path). otp.ts already
+// enforces a 120s cooldown per phone, but a caller can rotate phone numbers
+// freely, so cap by origin IP too.
 const SEND_LIMIT = 5;
 const SEND_WINDOW_MS = 10 * 60 * 1000;
 

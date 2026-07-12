@@ -210,12 +210,20 @@ export const customers = pgTable(
 // --------------------------------------------------------------------- otps
 // One row per phone (the JSON version was keyed by phone). Codes are stored
 // hashed with a short TTL, a resend cooldown and an attempt cap.
+//
+// prev_* keep the previous code alive through a resend: the verify SMS path
+// can take minutes to deliver, so the SMS from the previous request is often
+// still in flight when the user asks for a new code. Without this, that SMS
+// arrives carrying a code the resend already overwrote. verifyOtp accepts
+// either code while its own expiry holds.
 export const otps = pgTable("otps", {
   phone: text("phone").primaryKey(),
   codeHash: text("code_hash").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   attempts: integer("attempts").notNull().default(0),
   lastSentAt: timestamp("last_sent_at", { withTimezone: true }).notNull().defaultNow(),
+  prevCodeHash: text("prev_code_hash"),
+  prevExpiresAt: timestamp("prev_expires_at", { withTimezone: true }),
 });
 
 // --------------------------------------------------------------- support chat
