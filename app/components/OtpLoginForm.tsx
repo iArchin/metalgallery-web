@@ -156,7 +156,7 @@ export default function OtpLoginForm({
               dir="ltr"
               inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={6}
+              maxLength={12}
               required
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}

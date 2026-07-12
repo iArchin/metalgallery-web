@@ -296,11 +296,40 @@ export interface VerifyOtpResult {
   error?: string;
 }
 
+/**
+ * TEMPORARY static-code bypass — remove once SMS.ir can reach opted-out
+ * numbers again (service-line upgrade or verify rerouting; see sendViaLine).
+ *
+ * When OTP_STATIC_CODE and OTP_STATIC_PHONES are BOTH set in the server env,
+ * the listed phones may log in with that fixed code — no SMS, no DB row. The
+ * values live only in the server's .env, never in this repo; unset them and
+ * restart to turn it off, then delete this function and its call site.
+ *
+ * Guardrails: the code must be 8+ digits (the login form accepts up to 12;
+ * ordinary codes stay 5), refuse anything shorter; phones not on the list fall
+ * through to the normal flow; the admin scope still requires the phone to be
+ * registered on an admin account; the verify route's per-IP rate limit applies.
+ */
+function staticCodeMatches(phone: string, code: string): boolean {
+  const staticCode = process.env.OTP_STATIC_CODE?.trim();
+  const staticPhones = process.env.OTP_STATIC_PHONES;
+  if (!staticCode || !staticPhones) return false;
+  if (!/^\d{8,}$/.test(staticCode)) return false; // refuse weak or malformed configs
+  if (!staticPhones.split(",").map((p) => normalizePhone(p)).includes(phone)) return false;
+  const a = createHash("sha256").update(code).digest();
+  const b = createHash("sha256").update(staticCode).digest();
+  return timingSafeEqual(a, b);
+}
+
 export async function verifyOtp(rawPhone: unknown, rawCode: unknown): Promise<VerifyOtpResult> {
   const phone = normalizePhone(rawPhone);
   if (!phone) return { ok: false, error: "شماره موبایل معتبر نیست" };
   const code = toAsciiDigits(String(rawCode ?? "")).replace(/\D/g, "");
   if (!code) return { ok: false, error: "کد تایید را وارد کنید" };
+
+  // TEMPORARY: env-configured static code for specific phones while SMS
+  // delivery to opted-out numbers is broken — see staticCodeMatches.
+  if (staticCodeMatches(phone, code)) return { ok: true, phone };
 
   // One transaction with the row locked FOR UPDATE, so two concurrent verify
   // attempts can't both slip past the attempt cap.
