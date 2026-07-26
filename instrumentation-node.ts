@@ -1,0 +1,53 @@
+/**
+ * Node.js-only boot work, imported by instrumentation.ts exclusively under the
+ * Node runtime. It must never reach the Edge bundle: it calls process.exit and
+ * pulls in the database layer, neither of which the Edge Runtime supports.
+ * Living in a separate, dynamically-imported module is what keeps process.exit
+ * out of the Edge bundle — otherwise Next statically flags it and prints
+ * "a Node.js API is used (process.exit) ... not supported in the Edge Runtime"
+ * on every request that passes through middleware.
+ */
+export async function boot() {
+  const { assertSessionSecret } = await import("./lib/server/secret");
+  const { runMigrations } = await import("./lib/server/migrate");
+
+  try {
+    assertSessionSecret();
+    // Apply any pending DB migrations before serving. Idempotent; a no-op once
+    // the schema is current. Fails the boot loudly if the database is
+    // unreachable, which is what we want — better than 500ing every request.
+    await runMigrations();
+
+    // First boot only: if the store is empty, import the existing JSON — the
+    // live mg_data volume during cutover, or the baked data.seed for a fresh
+    // start. A no-op once the database holds anything.
+    //
+    // MG_SKIP_IMPORT is the escape hatch ops/restore.sh uses for the one boot
+    // that follows a restore. isDatabaseEmpty() should already say "not empty"
+    // there, but a restore is exactly the moment you want a belt as well as
+    // braces: importing over recovered data is unrecoverable without another
+    // restore.
+    if (process.env.MG_SKIP_IMPORT === "1") {
+      console.log("[boot] MG_SKIP_IMPORT=1 — skipping the first-boot import");
+    } else {
+      const { isDatabaseEmpty, pickImportDir, importFromDir } = await import(
+        "./lib/server/import-json"
+      );
+      if (await isDatabaseEmpty()) {
+        const dir = await pickImportDir();
+        if (dir) {
+          const counts = await importFromDir(dir);
+          console.log(`[boot] imported initial data from ${dir}:`, counts);
+        }
+      }
+    }
+  } catch (err) {
+    // Next catches whatever register() throws and leaves the process listening,
+    // 500ing every route. That already fails closed — but a container that
+    // exits is far easier to diagnose than one that sits "unhealthy":
+    // `docker compose up --wait` fails immediately and `docker logs` shows one
+    // line instead of a stack trace.
+    console.error(`\n[boot] ${(err as Error).message}\n`);
+    process.exit(1);
+  }
+}

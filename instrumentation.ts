@@ -1,49 +1,17 @@
 /**
- * Next calls register() once, before the first request is served.
+ * Next calls register() once, before the first request is served — in BOTH the
+ * Node.js and Edge runtimes (middleware runs on Edge). This file must therefore
+ * stay free of Node-only APIs.
+ *
+ * The real boot work — session-secret assertion, migrations, first-boot import,
+ * and a process.exit on failure — lives in ./instrumentation-node, imported
+ * only under the Node runtime. Keeping its process.exit out of this module is
+ * what stops Next from warning "a Node.js API is used (process.exit) ... not
+ * supported in the Edge Runtime" on every request that passes through
+ * middleware (the support-chat poll hits it every few seconds).
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-
-  const { assertSessionSecret } = await import("./lib/server/secret");
-  const { runMigrations } = await import("./lib/server/migrate");
-
-  try {
-    assertSessionSecret();
-    // Apply any pending DB migrations before serving. Idempotent; a no-op once
-    // the schema is current. Fails the boot loudly if the database is
-    // unreachable, which is what we want — better than 500ing every request.
-    await runMigrations();
-
-    // First boot only: if the store is empty, import the existing JSON — the
-    // live mg_data volume during cutover, or the baked data.seed for a fresh
-    // start. A no-op once the database holds anything.
-    //
-    // MG_SKIP_IMPORT is the escape hatch ops/restore.sh uses for the one boot
-    // that follows a restore. isDatabaseEmpty() should already say "not empty"
-    // there, but a restore is exactly the moment you want a belt as well as
-    // braces: importing over recovered data is unrecoverable without another
-    // restore.
-    if (process.env.MG_SKIP_IMPORT === "1") {
-      console.log("[boot] MG_SKIP_IMPORT=1 — skipping the first-boot import");
-    } else {
-      const { isDatabaseEmpty, pickImportDir, importFromDir } = await import(
-        "./lib/server/import-json"
-      );
-      if (await isDatabaseEmpty()) {
-        const dir = await pickImportDir();
-        if (dir) {
-          const counts = await importFromDir(dir);
-          console.log(`[boot] imported initial data from ${dir}:`, counts);
-        }
-      }
-    }
-  } catch (err) {
-    // Next catches whatever register() throws and leaves the process listening,
-    // 500ing every route. That already fails closed — but a container that
-    // exits is far easier to diagnose than one that sits "unhealthy":
-    // `docker compose up --wait` fails immediately and `docker logs` shows one
-    // line instead of a stack trace.
-    console.error(`\n[boot] ${(err as Error).message}\n`);
-    process.exit(1);
-  }
+  const { boot } = await import("./instrumentation-node");
+  await boot();
 }
