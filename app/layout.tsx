@@ -60,6 +60,11 @@ export const metadata: Metadata = {
   verification: {
     google: "google-site-verification-code", // Replace with actual code
   },
+  // Enamad (اینماد) trust-seal ownership check: renders
+  // <meta name="enamad" content="21753082"/> in the home page <head>.
+  other: {
+    enamad: "21753082",
+  },
 };
 
 export default function RootLayout({
