@@ -14,6 +14,25 @@ export async function GET() {
   }
 }
 
+const str = (v: unknown) =>
+  typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim();
+
+/**
+ * A link the panel supplies may point at an internal path or an http(s)
+ * address. Anything else — notably `javascript:` and `data:` — is replaced
+ * rather than stored: these values are rendered straight into an anchor's
+ * href, and the panel is not the right place to trust.
+ *
+ * Shared by the hero slides and the showcase cards so the two cannot end up
+ * accepting different things.
+ */
+const safeHref = (v: unknown) => {
+  const h = str(v);
+  if (h.startsWith("/") && !h.startsWith("//")) return h;
+  if (/^https?:\/\//i.test(h)) return h;
+  return "/products";
+};
+
 export async function PUT(req: Request) {
   const denied = await requireAdminApi();
   if (denied) return denied;
@@ -86,20 +105,6 @@ export async function PUT(req: Request) {
         { status: 400 }
       );
     }
-    const str = (v: unknown) =>
-      typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim();
-    /**
-     * A slide button may point at an internal path or an http(s) address.
-     * Anything else — notably `javascript:` and `data:` — is replaced rather
-     * than stored: the value is rendered straight into an anchor's href, and
-     * the panel is not the right place to trust.
-     */
-    const href = (v: unknown) => {
-      const h = str(v);
-      if (h.startsWith("/") && !h.startsWith("//")) return h;
-      if (/^https?:\/\//i.test(h)) return h;
-      return "/products";
-    };
     // Sanitize every slide and reassign sequential ids so keys stay unique.
     patch.heroSlides = patch.heroSlides.map((raw, i): SiteSettings["heroSlides"][number] => {
       const s = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
@@ -109,7 +114,7 @@ export async function PUT(req: Request) {
         title: str(s.title),
         subtitle: str(s.subtitle),
         ctaText: str(s.ctaText),
-        ctaHref: href(s.ctaHref),
+        ctaHref: safeHref(s.ctaHref),
         image: str(s.image),
         active: s.active === undefined ? true : Boolean(s.active),
       };
@@ -183,6 +188,34 @@ export async function PUT(req: Request) {
         return true;
       })
       .slice(0, 60);
+  }
+
+  // Home showcase rows. Same treatment as heroSlides: ids reassigned so React
+  // keys stay unique, empty cards dropped, links passed through safeHref.
+  for (const key of ["showcaseTop", "showcaseBottom"] as const) {
+    const raw = patch[key];
+    if (raw === undefined) continue;
+    if (!Array.isArray(raw)) {
+      return Response.json(
+        { ok: false, error: "اطلاعات بخش نمایش نامعتبر است" },
+        { status: 400 }
+      );
+    }
+    patch[key] = raw
+      .map((v) => (v && typeof v === "object" ? (v as unknown as Record<string, unknown>) : {}))
+      .map((c) => ({
+        id: 0,
+        title: str(c.title).slice(0, 120),
+        subtitle: str(c.subtitle).slice(0, 160),
+        image: str(c.image),
+        href: safeHref(c.href),
+        cta: str(c.cta).slice(0, 40),
+        tag: str(c.tag).slice(0, 40),
+      }))
+      // A card with no picture is a blank tile — there is nothing to show.
+      .filter((c) => c.image)
+      .slice(0, 12)
+      .map((c, i) => ({ ...c, id: i + 1 }));
   }
 
   try {

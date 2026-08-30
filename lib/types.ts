@@ -199,6 +199,24 @@ export interface SiteAddress {
   value: string;
 }
 
+/**
+ * One card in the home showcase. The same shape serves both rows — they differ
+ * only in how large they are rendered.
+ */
+export interface ShowcaseCard {
+  id: number;
+  title: string;
+  /** The line beside the button on the wide row. */
+  subtitle: string;
+  image: string;
+  /** Where the card goes, e.g. "/category/3" or a full https:// URL. */
+  href: string;
+  /** Pill label, e.g. "مشاهده محصول". */
+  cta: string;
+  /** Optional corner tag, e.g. "۲۰٪ تخفیف". */
+  tag: string;
+}
+
 export interface SiteSettings {
   siteName: string;
   tagline: string;
@@ -231,6 +249,14 @@ export interface SiteSettings {
   /** Model scales the admin has saved, e.g. ["1:6", "1:12", "1:18"]. Offered as
    *  a picker on the product form. Absent on settings written before this. */
   scales?: string[];
+  /** Heading above the home showcase. */
+  showcaseHeading?: string;
+  /** Home showcase, wide row. Empty or absent falls back to the automatic
+   *  selection (deals, then trending, then newest) so the section is never
+   *  blank on a shop that has not curated it. */
+  showcaseTop?: ShowcaseCard[];
+  /** Home showcase, narrow row. Falls back to the active categories. */
+  showcaseBottom?: ShowcaseCard[];
   /** The wide sale campaign band on the home page */
   saleCampaign: {
     enabled: boolean;

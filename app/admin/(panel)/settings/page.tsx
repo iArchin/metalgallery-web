@@ -6,6 +6,7 @@ import {
   PHONE_KIND_LABELS,
   guessPhoneKind,
   type PhoneKind,
+  type ShowcaseCard,
   type SiteAddress,
   type SitePhone,
   type SiteSettings,
@@ -120,6 +121,9 @@ interface SettingsForm {
     sideCtaText: string;
   };
   heroSlides: HeroSlideForm[];
+  showcaseHeading: string;
+  showcaseTop: ShowcaseCard[];
+  showcaseBottom: ShowcaseCard[];
   phones: SitePhone[];
   addresses: SiteAddress[];
   saleEnabled: boolean;
@@ -141,6 +145,9 @@ function toForm(s: SiteSettings): SettingsForm {
     workingHours: s.workingHours,
     hero: { ...s.hero },
     heroSlides: (s.heroSlides ?? []).map((sl) => ({ ...sl })),
+    showcaseHeading: s.showcaseHeading ?? "",
+    showcaseTop: (s.showcaseTop ?? []).map((c) => ({ ...c })),
+    showcaseBottom: (s.showcaseBottom ?? []).map((c) => ({ ...c })),
     // Settings saved before these lists existed have only the scalars — seed
     // the editor from them so the first save does not wipe the old number.
     phones:
@@ -298,18 +305,27 @@ export default function AdminSettingsPage() {
   // fields, and rendering all of them for every slide turned a five-slide
   // banner into a page nobody could scan.
   const [openSlide, setOpenSlide] = useState<number | null>(null);
+  /** Which showcase card is expanded, as "list:id". */
+  const [openCard, setOpenCard] = useState<string | null>(null);
 
-  // One hidden input serves every slide; `uploadForSlide` remembers which row
-  // opened the picker so the result lands on the right slide.
+  /**
+   * One hidden file input serves every image on this page — hero slides and
+   * both showcase rows. `uploadTarget` remembers which list and which row asked
+   * for it, so the result lands where it was requested from.
+   */
   const slideFileRef = useRef<HTMLInputElement>(null);
-  const [uploadForSlide, setUploadForSlide] = useState<number | null>(null);
+  type UploadTarget = { list: "slide" | "showcaseTop" | "showcaseBottom"; id: number };
+  const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(null);
   // A set, not a scalar: the file dialog is modal but the POST after it is not,
-  // so two slides can be uploading at once and a scalar would let each clear
-  // the other's spinner and re-enable a button mid-flight.
-  const [uploadingSlides, setUploadingSlides] = useState<number[]>([]);
+  // so two rows can be uploading at once and a scalar would let each clear the
+  // other's spinner and re-enable a button mid-flight.
+  const [uploadingIds, setUploadingIds] = useState<string[]>([]);
+  const uploadKey = (t: UploadTarget) => `${t.list}:${t.id}`;
+  const isUploading = (list: UploadTarget["list"], id: number) =>
+    uploadingIds.includes(`${list}:${id}`);
 
-  function pickSlideImage(id: number) {
-    setUploadForSlide(id);
+  function pickImage(list: UploadTarget["list"], id: number) {
+    setUploadTarget({ list, id });
     slideFileRef.current?.click();
   }
 
@@ -317,21 +333,63 @@ export default function AdminSettingsPage() {
     const input = e.target;
     const file = input.files?.[0];
     input.value = ""; // allow re-picking the same file after a failed upload
-    const id = uploadForSlide;
-    setUploadForSlide(null);
-    if (!file || id === null) return;
+    const target = uploadTarget;
+    setUploadTarget(null);
+    if (!file || !target) return;
 
     const fd = new FormData();
     fd.append("files", file); // the field name /api/admin/uploads expects
-    setUploadingSlides((s) => [...s, id]);
+    const key = uploadKey(target);
+    setUploadingIds((s) => [...s, key]);
     try {
       const urls = await apiUpload<string[]>("/api/admin/uploads", fd);
-      if (urls[0]) patchSlide(id, { image: urls[0] });
+      if (urls[0]) {
+        if (target.list === "slide") patchSlide(target.id, { image: urls[0] });
+        else patchCard(target.list, target.id, { image: urls[0] });
+      }
     } catch (err) {
       show(err instanceof Error ? err.message : "خطا در بارگذاری تصویر", "error");
     } finally {
-      setUploadingSlides((s) => s.filter((x) => x !== id));
+      setUploadingIds((s) => s.filter((x) => x !== key));
     }
+  }
+
+  /* ------------------------------------------------- home showcase rows */
+
+  type CardList = "showcaseTop" | "showcaseBottom";
+
+  function patchCard(list: CardList, id: number, p: Partial<ShowcaseCard>) {
+    setForm((f) =>
+      f ? { ...f, [list]: f[list].map((c) => (c.id === id ? { ...c, ...p } : c)) } : f
+    );
+  }
+  function addCard(list: CardList) {
+    setForm((f) => {
+      if (!f) return f;
+      const id = f[list].reduce((m, c) => Math.max(m, c.id), 0) + 1;
+      setOpenCard(`${list}:${id}`);
+      return {
+        ...f,
+        [list]: [
+          ...f[list],
+          { id, title: "", subtitle: "", image: "", href: "/products", cta: "مشاهده", tag: "" },
+        ],
+      };
+    });
+  }
+  function removeCard(list: CardList, id: number) {
+    setForm((f) => (f ? { ...f, [list]: f[list].filter((c) => c.id !== id) } : f));
+  }
+  function moveCard(list: CardList, id: number, dir: -1 | 1) {
+    setForm((f) => {
+      if (!f) return f;
+      const arr = [...f[list]];
+      const i = arr.findIndex((c) => c.id === id);
+      const j = i + dir;
+      if (i === -1 || j < 0 || j >= arr.length) return f;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      return { ...f, [list]: arr };
+    });
   }
 
   function moveSlide(id: number, dir: -1 | 1) {
@@ -386,6 +444,9 @@ export default function AdminSettingsPage() {
           sideText: form.hero.sideText.trim(),
           sideCtaText: form.hero.sideCtaText.trim(),
         },
+        showcaseHeading: form.showcaseHeading.trim(),
+        showcaseTop: form.showcaseTop,
+        showcaseBottom: form.showcaseBottom,
         heroSlides: form.heroSlides.map((s, i) => ({
           id: i + 1,
           badgeText: s.badgeText.trim(),
@@ -759,11 +820,11 @@ export default function AdminSettingsPage() {
                     <div className="space-y-3">
                       <button
                         type="button"
-                        onClick={() => pickSlideImage(slide.id)}
-                        disabled={uploadingSlides.includes(slide.id)}
+                        onClick={() => pickImage("slide", slide.id)}
+                        disabled={isUploading("slide", slide.id)}
                         className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-bold text-content transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                       >
-                        {uploadingSlides.includes(slide.id) ? (
+                        {isUploading("slide", slide.id) ? (
                           <>
                             <Spinner />
                             در حال بارگذاری…
@@ -855,6 +916,179 @@ export default function AdminSettingsPage() {
             here too — editing something invisible is worse than not editing it.
             hero.sideTitle/sideText/sideCtaText stay in the settings blob,
             saved untouched, so nothing is destroyed if it ever comes back. */}
+
+        {/* -------------------------------------------- بخش نمایش صفحه نخست */}
+        <Card className="p-5">
+          <div className="mb-4">
+            <h2 className="font-extrabold text-content">بخش نمایش صفحه نخست</h2>
+            <p className="text-sm text-content-muted mt-1">
+              دو ردیف کارت زیر بنر اصلی. ردیف بالا بزرگ‌تر است. اگر هیچ کارتی
+              اضافه نکنید، به‌صورت خودکار از محصولات ویژه و دسته‌بندی‌ها پر می‌شود.
+            </p>
+          </div>
+
+          <div className="mb-5 sm:max-w-md">
+            <Field label="عنوان بخش">
+              <Input
+                value={form.showcaseHeading}
+                onChange={(e) => patch({ showcaseHeading: e.target.value })}
+                placeholder="سرگرمی بی‌پایان"
+              />
+            </Field>
+          </div>
+
+          {(["showcaseTop", "showcaseBottom"] as const).map((list) => {
+            const rows = form[list];
+            const heading = list === "showcaseTop" ? "ردیف بالا (بزرگ)" : "ردیف پایین (کوچک)";
+            return (
+              <div key={list} className="mb-6 last:mb-0">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-bold text-content">
+                    {heading}
+                    <span className="mr-2 font-normal text-content-subtle">
+                      ({toPersianNumber(rows.length)})
+                    </span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => addCard(list)}
+                    className="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-content transition-colors hover:bg-primary-hover"
+                  >
+                    + افزودن کارت
+                  </button>
+                </div>
+
+                {rows.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-content-muted">
+                    خالی — این ردیف به‌صورت خودکار پر می‌شود.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {rows.map((card, i) => {
+                      const open = openCard === `${list}:${card.id}`;
+                      return (
+                        <div
+                          key={card.id}
+                          className="rounded-2xl border border-border bg-surface-2/50 p-3 sm:p-4"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary text-xs font-extrabold">
+                              {toPersianNumber(i + 1)}
+                            </span>
+                            <SlideThumb slide={{ image: card.image } as HeroSlideForm} />
+                            <button
+                              type="button"
+                              onClick={() => setOpenCard(open ? null : `${list}:${card.id}`)}
+                              aria-expanded={open}
+                              className="min-w-0 flex-1 text-right"
+                            >
+                              <span className="block truncate text-sm font-bold text-content">
+                                {card.title.trim() || "بدون عنوان"}
+                              </span>
+                              <span className="block truncate text-xs text-content-subtle" dir="ltr">
+                                {card.href || "—"}
+                              </span>
+                            </button>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <RowMoveButtons
+                                onUp={() => moveCard(list, card.id, -1)}
+                                onDown={() => moveCard(list, card.id, 1)}
+                                disableUp={i === 0}
+                                disableDown={i === rows.length - 1}
+                              />
+                              <ConfirmButton onConfirm={() => removeCard(list, card.id)} />
+                            </div>
+                          </div>
+
+                          {open && (
+                            <div className="mt-4 space-y-4 border-t border-border pt-4">
+                              <div>
+                                <span className="block text-sm font-semibold text-content mb-1.5">
+                                  تصویر کارت
+                                </span>
+                                <p className="text-xs text-content-subtle mb-2">
+                                  تصویر افقی (۱۶:۹) بهترین نتیجه را می‌دهد.
+                                </p>
+                                <div className="space-y-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => pickImage(list, card.id)}
+                                    disabled={isUploading(list, card.id)}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-bold text-content transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                                  >
+                                    {isUploading(list, card.id) ? (
+                                      <>
+                                        <Spinner />
+                                        در حال بارگذاری…
+                                      </>
+                                    ) : (
+                                      card.image ? "تغییر تصویر" : "بارگذاری تصویر"
+                                    )}
+                                  </button>
+                                  <Input
+                                    value={card.image}
+                                    onChange={(e) => patchCard(list, card.id, { image: e.target.value })}
+                                    dir="ltr"
+                                    placeholder="/api/uploads/products/…"
+                                    aria-label="مسیر تصویر کارت"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Field label="عنوان">
+                                  <Input
+                                    value={card.title}
+                                    onChange={(e) => patchCard(list, card.id, { title: e.target.value })}
+                                    placeholder="عنوان کارت"
+                                  />
+                                </Field>
+                                <Field label="متن دکمه">
+                                  <Input
+                                    value={card.cta}
+                                    onChange={(e) => patchCard(list, card.id, { cta: e.target.value })}
+                                    placeholder="مشاهده"
+                                  />
+                                </Field>
+                                <Field label="زیرعنوان (اختیاری)">
+                                  <Input
+                                    value={card.subtitle}
+                                    onChange={(e) => patchCard(list, card.id, { subtitle: e.target.value })}
+                                    placeholder="توضیح کوتاه کنار دکمه"
+                                  />
+                                </Field>
+                                <Field label="برچسب گوشه (اختیاری)">
+                                  <Input
+                                    value={card.tag}
+                                    onChange={(e) => patchCard(list, card.id, { tag: e.target.value })}
+                                    placeholder="مثلاً ۲۰٪ تخفیف"
+                                  />
+                                </Field>
+                                <div className="sm:col-span-2">
+                                  <Field
+                                    label="لینک کارت"
+                                    hint="مثلاً /category/3 یا /product/12 — یا یک آدرس کامل https://…"
+                                  >
+                                    <Input
+                                      value={card.href}
+                                      onChange={(e) => patchCard(list, card.id, { href: e.target.value })}
+                                      dir="ltr"
+                                      placeholder="/products"
+                                    />
+                                  </Field>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </Card>
 
         {/* -------------------------------------------------- کمپین تخفیف */}
         <Card className="p-5">

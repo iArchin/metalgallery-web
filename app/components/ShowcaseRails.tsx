@@ -58,30 +58,40 @@ export default function ShowcaseRails({
     };
   }, []);
 
-  /** Move both rows to the position matching `i` on the wide row. */
-  const show = useCallback(
+  /**
+   * Both rows advance by one card together.
+   *
+   * Stepping rather than seeking is what makes the pair look like one
+   * component: each row moves exactly one of ITS cards, so the wide row and the
+   * narrow row travel different pixel distances but stay in step, and neither
+   * runs out — the tracks loop.
+   */
+  const stepBoth = useCallback((direction: 1 | -1) => {
+    top.current?.step(direction);
+    bottom.current?.step(direction);
+  }, []);
+
+  const jumpBoth = useCallback(
     (i: number) => {
-      top.current?.goTo(i);
-      if (categories.length > 0 && count > 1) {
-        // Proportional, not identical: the rows are different lengths.
-        const share = i / (count - 1);
-        bottom.current?.goTo(Math.round(share * (categories.length - 1)));
-      }
+      top.current?.jumpTo(i);
+      // The rows hold different numbers of cards, so a dot maps proportionally
+      // rather than to the same ordinal.
+      const share = count > 1 ? i / count : 0;
+      bottom.current?.jumpTo(Math.round(share * Math.max(categories.length, 1)));
     },
     [categories.length, count]
   );
-
-  useEffect(() => {
-    show(index);
-  }, [index, show]);
 
   const running = playing && !hovered && !hidden && !reduced && count > 1;
 
   useEffect(() => {
     if (!running) return;
-    const id = setTimeout(() => setIndex((i) => (i + 1) % count), DWELL_MS);
+    const id = setTimeout(() => {
+      stepBoth(1);
+      setIndex((i) => (i + 1) % count);
+    }, DWELL_MS);
     return () => clearTimeout(id);
-  }, [running, index, count]);
+  }, [running, index, count, stepBoth]);
 
   return (
     <div
@@ -106,7 +116,10 @@ export default function ShowcaseRails({
             <button
               key={item.key}
               type="button"
-              onClick={() => setIndex(i)}
+              onClick={() => {
+                jumpBoth(i);
+                setIndex(i);
+              }}
               aria-label={`رفتن به ${toPersianNumber(i + 1)}`}
               aria-current={i === index}
               className={`h-2 rounded-full transition-all ${

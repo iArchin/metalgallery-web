@@ -48,10 +48,10 @@ export interface RailItem {
 }
 
 export interface RailHandle {
-  /** Centre item `i` in the viewport. */
-  goTo: (i: number) => void;
-  /** Nearest item to the current scroll position, for syncing the dots. */
-  nearest: () => number;
+  /** Advance one card, wrapping seamlessly. */
+  step: (direction: 1 | -1) => void;
+  /** Jump to a logical card (0..items.length-1) in the nearest copy. */
+  jumpTo: (logical: number) => void;
 }
 
 const ShowcaseRail = forwardRef<
@@ -60,6 +60,8 @@ const ShowcaseRail = forwardRef<
 >(function ShowcaseRail({ items, size, label, onSettle }, ref) {
   const trackRef = useRef<HTMLDivElement>(null);
   const raf = useRef<number | null>(null);
+  /** Index into the tripled list. Starts in the middle copy. */
+  const slotRef = useRef(items.length);
 
   /**
    * The scrollLeft that centres card `i`.
@@ -88,8 +90,8 @@ const ShowcaseRail = forwardRef<
       : Math.max(0, Math.min(target, max));
   }, []);
 
-  const goTo = useCallback(
-    (i: number) => {
+  const glideTo = useCallback(
+    (i: number, onDone?: () => void) => {
       const el = trackRef.current;
       if (!el) return;
       const to = offsetFor(i);
@@ -110,6 +112,7 @@ const ShowcaseRail = forwardRef<
         if (t < 1) raf.current = requestAnimationFrame(frame);
         else {
           el.style.scrollSnapType = snap;
+          onDone?.();
           onSettle?.();
         }
       };
@@ -118,31 +121,75 @@ const ShowcaseRail = forwardRef<
     [offsetFor, onSettle]
   );
 
-  const nearest = useCallback(() => {
+  /**
+   * Put the track back in the middle copy without animating.
+   *
+   * The loop is three copies of the list wide, and playback lives in the middle
+   * one. Once a move lands in an outer copy, the slot is shifted by one list
+   * length and the scroll position is set — not glided — to the identical card
+   * in the middle. Same pixels on screen, so the jump is invisible, and the
+   * track always has a full copy of runway in both directions.
+   */
+  const recentre = useCallback(() => {
     const el = trackRef.current;
-    if (!el) return 0;
-    // Both sides are now real scrollLeft values, signs included, so compare
-    // them directly rather than on magnitude.
-    const pos = el.scrollLeft;
-    let best = 0;
-    let bestD = Infinity;
-    for (let i = 0; i < el.children.length; i++) {
-      const o = offsetFor(i);
-      if (o === null) continue;
-      const d = Math.abs(o - pos);
-      if (d < bestD) {
-        bestD = d;
-        best = i;
-      }
-    }
-    return best;
-  }, [offsetFor]);
+    const n = items.length;
+    if (!el || n === 0) return;
+    let slot = slotRef.current;
+    if (slot >= 2 * n) slot -= n;
+    else if (slot < n) slot += n;
+    else return;
+    slotRef.current = slot;
+    const to = offsetFor(slot);
+    if (to !== null) el.scrollLeft = to;
+  }, [items.length, offsetFor]);
 
-  useImperativeHandle(ref, () => ({ goTo, nearest }), [goTo, nearest]);
+  const step = useCallback(
+    (direction: 1 | -1) => {
+      slotRef.current += direction;
+      glideTo(slotRef.current, recentre);
+    },
+    [glideTo, recentre]
+  );
+
+  const jumpTo = useCallback(
+    (logical: number) => {
+      const n = items.length;
+      if (n === 0) return;
+      slotRef.current = n + ((logical % n) + n) % n;
+      glideTo(slotRef.current, recentre);
+    },
+    [glideTo, recentre, items.length]
+  );
+
+  useImperativeHandle(ref, () => ({ step, jumpTo }), [step, jumpTo]);
 
   useEffect(() => () => {
     if (raf.current) cancelAnimationFrame(raf.current);
   }, []);
+
+  /**
+   * Start in the middle copy, without animation.
+   *
+   * Layout has to have happened for offsetLeft to mean anything, so this runs
+   * after paint; a rAF tick is enough and avoids a visible jump from 0.
+   */
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || items.length === 0) return;
+    const place = () => {
+      slotRef.current = items.length;
+      const to = offsetFor(items.length);
+      if (to !== null) el.scrollLeft = to;
+    };
+    const id = requestAnimationFrame(place);
+    // Re-seat on resize: every offset is measured in pixels that just changed.
+    const ro = new ResizeObserver(() => place());
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(id);
+      ro.disconnect();
+    };
+  }, [items.length, offsetFor]);
 
   const big = size === "lg";
   // Roughly Apple's proportions: the wide row about half the viewport, the row
@@ -153,6 +200,12 @@ const ShowcaseRail = forwardRef<
 
   if (items.length === 0) return null;
 
+  // Three copies: one on screen, one of runway ahead, one behind — so a step
+  // in either direction always has somewhere to go before the silent re-seat.
+  const loop = [0, 1, 2].flatMap((copy) =>
+    items.map((item) => ({ item, key: `${item.key}-c${copy}` }))
+  );
+
   return (
     <div
       ref={trackRef}
@@ -160,9 +213,9 @@ const ShowcaseRail = forwardRef<
       aria-label={label}
       className="no-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto overscroll-x-contain"
     >
-      {items.map((item) => (
+      {loop.map(({ item, key }) => (
         <Link
-          key={item.key}
+          key={key}
           href={item.href}
           className={`group/card relative aspect-16/9 shrink-0 snap-center overflow-hidden rounded-xl bg-surface-2 ${card}`}
         >
