@@ -341,6 +341,55 @@ html {
   }
 }
 
+/* ---- Generating aura (panel image tool) -----------------------------------
+   The waiting state for a two-minute AI image job. Three stacked layers, all
+   transform/opacity only so the whole thing composites on the GPU and the
+   panel stays responsive while a request is in flight:
+     • a conic-gradient ring, rotating
+     • a soft blurred halo, breathing
+     • a sweep across the progress rail
+   Reduced motion stops all three; the static ring still reads as "busy". */
+@keyframes aura-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes aura-breathe {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.9;
+  }
+}
+@keyframes aura-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+.animate-aura-spin {
+  animation: aura-spin 3.2s linear infinite;
+}
+.animate-aura-breathe {
+  animation: aura-breathe 2.6s ease-in-out infinite;
+}
+.animate-aura-sweep {
+  animation: aura-sweep 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-aura-spin,
+  .animate-aura-breathe,
+  .animate-aura-sweep {
+    animation: none;
+  }
+}
+
 /* ---- Categories curved marquee (legacy — no longer used) ------------------
    The horizontal scroll runs on the compositor (smooth under main-thread
    load); JS only reads this animation's clock to place the U-curve. */

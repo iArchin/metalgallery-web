@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import Button from "@/app/components/Button";
+import GeneratingOverlay from "@/app/admin/_components/GeneratingOverlay";
 import {
   ErrorBlock,
   Field,
@@ -25,9 +26,14 @@ import {
 
 const PRESETS = [
   {
-    key: "in-hands",
-    label: "در دست یک نفر",
-    hint: "محصول در دست یک نفر، برای نشان دادن اندازه واقعی",
+    key: "held-in-hand",
+    label: "گرفته‌شده در یک دست",
+    hint: "با یک دست گرفته شده، روی پس‌زمینه سفید",
+  },
+  {
+    key: "on-back-of-hand",
+    label: "روی پشت دست",
+    hint: "روی سطح پشت یک دستِ باز قرار گرفته، روی پس‌زمینه سفید",
   },
   {
     key: "white-bg",
@@ -52,7 +58,7 @@ export default function ImageToolPage() {
   const { show, node: toastNode } = useToast();
 
   const [source, setSource] = useState<string | null>(null);
-  const [preset, setPreset] = useState<PresetKey>("in-hands");
+  const [preset, setPreset] = useState<PresetKey>("held-in-hand");
   const [extra, setExtra] = useState("");
   const [note, setNote] = useState("");
 
@@ -233,19 +239,11 @@ export default function ImageToolPage() {
           <div>
             <span className="mb-1.5 block text-sm font-bold text-content">نتیجه</span>
             <div className="relative grid aspect-square w-full place-items-center overflow-hidden rounded-2xl border border-border bg-product-canvas">
-              {phase === "working" && (
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <Spinner />
-                  <p className="text-xs text-content-muted">در حال ساخت تصویر…</p>
-                  {/* Elapsed seconds, so a two-minute wait never looks hung. */}
-                  <p className="text-[11px] text-content-subtle">{elapsed} ثانیه</p>
-                </div>
-              )}
               {phase === "done" && result && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={result} alt="" className="h-full w-full object-contain p-3" />
               )}
-              {phase === "idle" && (
+              {phase !== "done" && (
                 <p className="px-6 text-center text-xs text-content-subtle">
                   هنوز تصویری ساخته نشده است
                 </p>
@@ -365,6 +363,17 @@ export default function ImageToolPage() {
           </p>
         </div>
       </div>
+
+      <GeneratingOverlay
+        open={phase === "working"}
+        elapsed={elapsed}
+        onCancel={() => {
+          // Abandons the poll loop rather than the provider's job — the run
+          // keeps billing either way, but the panel stops waiting on it.
+          alive.current = false;
+          setPhase("idle");
+        }}
+      />
 
       {toastNode}
     </div>

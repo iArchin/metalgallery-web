@@ -11,11 +11,17 @@ import "server-only";
  * per preset rather than assumed.
  */
 
-export const IMAGE_PRESETS = ["in-hands", "white-bg", "lifestyle"] as const;
+export const IMAGE_PRESETS = [
+  "held-in-hand",
+  "on-back-of-hand",
+  "white-bg",
+  "lifestyle",
+] as const;
 export type ImagePreset = (typeof IMAGE_PRESETS)[number];
 
 export const PRESET_LABELS: Record<ImagePreset, string> = {
-  "in-hands": "در دست یک نفر",
+  "held-in-hand": "گرفته‌شده در یک دست",
+  "on-back-of-hand": "روی پشت دست",
   "white-bg": "پس‌زمینه سفید",
   lifestyle: "در محیط واقعی",
 };
@@ -39,16 +45,36 @@ const OUTPUT_RULES = [
   "A single product, shown once, fully inside the frame with comfortable margins and nothing cropped at the edges.",
 ].join(" ");
 
+/**
+ * Shared by both hand shots. A single hand and a white background are fixed
+ * here rather than left to the model: two hands read as a person presenting the
+ * item instead of a scale reference, and any background at all makes the shot
+ * unusable next to the white-background photos in the same listing grid.
+ */
+const HAND_RULES = [
+  "Exactly ONE adult hand — a single hand only. Never two hands, never a second hand entering the frame.",
+  "The hand is bare, natural and well-groomed, with realistic skin texture and neutral short nails; no jewellery, no nail polish, no tattoos, no watch, no sleeve cuff.",
+  "Show the hand and at most the wrist — no face, no arm past the wrist, no torso, no other body part.",
+  "PURE WHITE seamless background (#FFFFFF), uniform edge to edge behind both the hand and the product; no room, no furniture, no surface texture, no gradient, no vignette.",
+  "Bright, soft, even studio lighting; a gentle natural shadow under the hand only, never a dark or dramatic one.",
+  "The point of the shot is to let a shopper judge the product's real size, so the relationship between hand and product must be believable.",
+].join(" ");
+
 const PRESET_BODY: Record<ImagePreset, string> = {
-  "in-hands":
+  "held-in-hand":
     [
-      "Show this product held in a person's bare hands, photographed for an online shop listing.",
-      "The hands are adult, natural, well-groomed, with realistic skin texture and neutral short nails; no jewellery, no nail polish, no tattoos, no watch.",
-      "Show the hands and forearms only — no face, no torso, no full body.",
-      "Hold the product so its front, its most recognisable side, faces the camera and stays fully visible; fingers must not cover any important detail, printed text or the product's face.",
-      "The grip must be plausible for the object's real weight and balance.",
-      "Soft, diffused studio light from the front-left, gentle contact shadow, plain softly blurred neutral background in light grey or off-white.",
-      "The purpose is to communicate the product's real size in the hand.",
+      "Show this product held in one hand, photographed for an online shop listing.",
+      "The fingers grip the product naturally, in a way that suits its real weight and balance.",
+      "Turn it so its front — its most recognisable side — faces the camera and stays fully visible; fingers must not cover the product's face, any important sculpted detail, or any printed text.",
+      HAND_RULES,
+    ].join(" "),
+  "on-back-of-hand":
+    [
+      "Show this product resting on the BACK of one open hand, photographed for an online shop listing.",
+      "The hand is held out flat and level, palm facing down, fingers relaxed and together, so the product sits balanced on the flat upper surface of the hand.",
+      "The product is placed on the hand, not gripped: no fingers curl around it and nothing holds it in place.",
+      "Shoot slightly above eye level looking down at the back of the hand so both the hand's surface and the whole product are clearly visible, with the product's front turned toward the camera.",
+      HAND_RULES,
     ].join(" "),
   "white-bg":
     [
@@ -119,11 +145,11 @@ export function buildImagePrompt(
         "Render it at exactly this real-world scale relative to everything else in the frame — " +
         "a viewer must be able to judge its true size from the photograph."
     );
-  } else if (preset === "in-hands") {
+  } else if (preset === "held-in-hand" || preset === "on-back-of-hand") {
     // No measurements on file: say so, rather than letting the model default to
     // a flattering (and misleading) size.
     parts.push(
-      "Judge the product's size from the reference photograph and keep it consistent and believable against the hands; do not exaggerate its scale."
+      "Judge the product's size from the reference photograph and keep it consistent and believable against the hand; do not exaggerate its scale."
     );
   }
 
