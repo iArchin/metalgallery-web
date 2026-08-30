@@ -93,24 +93,24 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                   : undefined
               }
             />
-            {/* A soft sky-to-white wash over the photo. It sits directly on
-                the image and UNDER the scrims below — over them it would lift
-                the dark that the white copy depends on. Kept at low alpha so it
-                tints rather than covers. */}
+            {/* Sky-to-white wash on the photo, and now the only thing
+                covering the upper frame. */}
             <div
-              className="absolute inset-0 bg-linear-to-b from-[#AEDCEC]/45 via-[#AEDCEC]/20 to-white/45"
+              className="absolute inset-0 bg-linear-to-b from-[#AEDCEC]/80 via-[#AEDCEC]/45 to-white/35"
               aria-hidden
             />
-            {/* Two scrims. The horizontal one carries the text side; the
-                bottom one keeps the progress bars legible over a bright photo.
-                Below md the copy spans the full width, so the horizontal ramp
-                never reaches transparent there. */}
+            {/*
+              Legibility scrim — bottom half only.
+
+              There used to be a second, full-frame `inset-0` black ramp for
+              copy that was vertically centred. The copy is anchored to the
+              bottom now, so that ramp darkened every pixel of the wash above
+              to protect text that is no longer there — which is exactly why
+              the blue barely read. Darkening only where the words actually sit
+              leaves the top of the frame as pure wash.
+            */}
             <div
-              className="absolute inset-0 bg-linear-to-l from-black/85 via-black/55 to-black/20 md:from-black/80 md:via-black/40 md:to-transparent"
-              aria-hidden
-            />
-            <div
-              className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/70 via-black/35 to-transparent"
+              className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/75 via-black/35 to-transparent"
               aria-hidden
             />
             {/* Copy sits on the site's own measure rather than the image edge,
