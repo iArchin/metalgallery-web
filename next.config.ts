@@ -27,6 +27,13 @@ const nextConfig: NextConfig = {
    *
    * `/api` and `/_next` are excluded, and `/admin` is excluded so the prefix can
    * never be applied twice (middleware redirects it away first).
+   *
+   * So is anything containing a dot. `beforeFiles` runs ahead of the filesystem,
+   * so without that exclusion every file in `public/` was rewritten into the
+   * panel and 404'd on the admin host — the logo, the hero-banner picker in
+   * settings, and every product/brand/category thumbnail. It is invisible in
+   * dev, where ADMIN_HOST is unset and this rewrite never matches. No panel
+   * route contains a dot, so the rule costs nothing.
    */
   async rewrites() {
     const onAdminHost = [{ type: "host" as const, value: "admin\\..*" }];
@@ -34,7 +41,7 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         { source: "/", has: onAdminHost, destination: "/admin" },
         {
-          source: "/:path((?!api|_next|admin).*)",
+          source: "/:path((?!api|_next|admin)(?!.*\\.).*)",
           has: onAdminHost,
           destination: "/admin/:path",
         },
