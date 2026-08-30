@@ -99,7 +99,10 @@ export async function startImageEdit(opts: {
       model: ATLAS_EDIT_MODEL,
       prompt: opts.prompt,
       images: [opts.imageUrl],
-      size: opts.size || "1024x1024",
+      // The largest square the model offers. These are catalogue photographs
+      // the admin may also print or crop, so detail is worth the bytes; JPEG
+      // below keeps a 2048px frame comfortably inside the upload cap.
+      size: opts.size || "2048x2048",
       quality: "high",
       // JPEG, not PNG. A high-quality 1024px PNG came back at 1.2 MB in
       // testing; the same shot as JPEG is a fraction of that. These become

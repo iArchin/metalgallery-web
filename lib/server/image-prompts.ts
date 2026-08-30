@@ -13,7 +13,7 @@ import "server-only";
 
 export const IMAGE_PRESETS = [
   "held-in-hand",
-  "on-back-of-hand",
+  "on-open-palm",
   "white-bg",
   "lifestyle",
 ] as const;
@@ -21,7 +21,7 @@ export type ImagePreset = (typeof IMAGE_PRESETS)[number];
 
 export const PRESET_LABELS: Record<ImagePreset, string> = {
   "held-in-hand": "گرفته‌شده در یک دست",
-  "on-back-of-hand": "روی پشت دست",
+  "on-open-palm": "روی کف دست باز",
   "white-bg": "پس‌زمینه سفید",
   lifestyle: "در محیط واقعی",
 };
@@ -68,12 +68,12 @@ const PRESET_BODY: Record<ImagePreset, string> = {
       "Turn it so its front — its most recognisable side — faces the camera and stays fully visible; fingers must not cover the product's face, any important sculpted detail, or any printed text.",
       HAND_RULES,
     ].join(" "),
-  "on-back-of-hand":
+  "on-open-palm":
     [
-      "Show this product resting on the BACK of one open hand, photographed for an online shop listing.",
-      "The hand is held out flat and level, palm facing down, fingers relaxed and together, so the product sits balanced on the flat upper surface of the hand.",
-      "The product is placed on the hand, not gripped: no fingers curl around it and nothing holds it in place.",
-      "Shoot slightly above eye level looking down at the back of the hand so both the hand's surface and the whole product are clearly visible, with the product's front turned toward the camera.",
+      "Show this product resting on the OPEN PALM of one hand, photographed for an online shop listing.",
+      "The hand is held out flat and level with the PALM FACING UP — the inner surface of the hand, the side with the palm lines — fingers relaxed, open and slightly apart, so the product sits balanced in the middle of the palm.",
+      "The product is simply placed there, not gripped: no fingers curl over it and nothing holds it in place.",
+      "Shoot from slightly above, looking down into the open palm, so the palm's surface and the whole product are both clearly visible, with the product's front turned toward the camera.",
       HAND_RULES,
     ].join(" "),
   "white-bg":
@@ -145,7 +145,7 @@ export function buildImagePrompt(
         "Render it at exactly this real-world scale relative to everything else in the frame — " +
         "a viewer must be able to judge its true size from the photograph."
     );
-  } else if (preset === "held-in-hand" || preset === "on-back-of-hand") {
+  } else if (preset === "held-in-hand" || preset === "on-open-palm") {
     // No measurements on file: say so, rather than letting the model default to
     // a flattering (and misleading) size.
     parts.push(

@@ -75,7 +75,7 @@ export default function GeneratingOverlay({
 
         <h2 className="mb-1.5 text-lg font-extrabold text-content">در حال ساخت تصویر</h2>
         <p className="mb-5 text-sm text-content-muted leading-relaxed">
-          این کار معمولاً حدود دو دقیقه طول می‌کشد. این صفحه را نبندید.
+          ساخت تصویر با بالاترین کیفیت چند دقیقه طول می‌کشد. این صفحه را نبندید.
         </p>
 
         {/* An indeterminate rail: the provider reports no percentage, so a

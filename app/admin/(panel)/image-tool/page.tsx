@@ -6,6 +6,7 @@ import GeneratingOverlay from "@/app/admin/_components/GeneratingOverlay";
 import {
   ErrorBlock,
   Field,
+  Modal,
   PageHeader,
   Spinner,
   Textarea,
@@ -16,12 +17,13 @@ import {
 } from "@/app/admin/_components/ui";
 
 /**
- * A standalone image workbench: give it any picture, get an edited one back,
- * then take that image wherever you want it.
+ * A standalone image workbench: give it a picture, get an edited one back, then
+ * take that image wherever you want it.
  *
- * Deliberately not tied to a product. The output is stored on our own uploads
- * volume and handed back as a permanent URL — the provider serves results from
- * a signed CDN path that expires, so a link straight to it would rot.
+ * Results are copied onto our own uploads volume the moment they are ready —
+ * the provider serves them from a signed CDN path that expires, so a link
+ * straight to it would rot within the day and could not be "an image you use
+ * wherever you want".
  */
 
 const PRESETS = [
@@ -31,9 +33,9 @@ const PRESETS = [
     hint: "با یک دست گرفته شده، روی پس‌زمینه سفید",
   },
   {
-    key: "on-back-of-hand",
-    label: "روی پشت دست",
-    hint: "روی سطح پشت یک دستِ باز قرار گرفته، روی پس‌زمینه سفید",
+    key: "on-open-palm",
+    label: "روی کف دست باز",
+    hint: "روی کف دستِ باز و رو به بالا قرار گرفته، روی پس‌زمینه سفید",
   },
   {
     key: "white-bg",
@@ -48,11 +50,46 @@ const PRESETS = [
 ] as const;
 
 type PresetKey = (typeof PRESETS)[number]["key"];
-type Phase = "idle" | "working" | "done";
 
-/** Poll cadence and ceiling. Two minutes is normal; four is a stuck job. */
+interface HistoryItem {
+  url: string;
+  preset: PresetKey;
+  /** Epoch ms, for ordering and for the caption. */
+  at: number;
+}
+
+/**
+ * History lives in this browser, not the database.
+ *
+ * The images themselves are on the server and permanent; this is only the list
+ * of which ones this tool made. A per-browser list is the honest scope for a
+ * scratchpad — and it means no schema change for a feature whose value is the
+ * files, not the index. Trade-off: it does not follow the admin to another
+ * device, and clearing site data clears it.
+ */
+const HISTORY_KEY = "mg_admin_image_history_v1";
+const HISTORY_MAX = 24;
+
+function loadHistory(): HistoryItem[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? (parsed as HistoryItem[]).filter((h) => h?.url) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Poll cadence and ceiling.
+ *
+ * A 1024px edit came back in about two minutes; 2048px — what this tool now
+ * asks for — runs materially longer. The ceiling is generous rather than tight
+ * because hitting it throws away a job that is still billing either way, and
+ * the operator can cancel at any point from the overlay.
+ */
 const POLL_MS = 3000;
-const MAX_WAIT_MS = 4 * 60 * 1000;
+const MAX_WAIT_MS = 10 * 60 * 1000;
 
 export default function ImageToolPage() {
   const { show, node: toastNode } = useToast();
@@ -62,11 +99,13 @@ export default function ImageToolPage() {
   const [extra, setExtra] = useState("");
   const [note, setNote] = useState("");
 
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [uploading, setUploading] = useState(false);
+
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [preview, setPreview] = useState<HistoryItem | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
   // Cleared on unmount so a poll loop that outlives the page stops setting state.
@@ -77,6 +116,32 @@ export default function ImageToolPage() {
       alive.current = false;
     };
   }, []);
+
+  // Read once on mount: localStorage is unavailable during SSR.
+  useEffect(() => {
+    setHistory(loadHistory());
+  }, []);
+
+  const remember = useCallback((item: HistoryItem) => {
+    setHistory((prev) => {
+      const next = [item, ...prev.filter((h) => h.url !== item.url)].slice(0, HISTORY_MAX);
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+      } catch {
+        // A full or blocked store must not lose the image that was just made.
+      }
+      return next;
+    });
+  }, []);
+
+  const clearHistory = () => {
+    setHistory([]);
+    try {
+      localStorage.removeItem(HISTORY_KEY);
+    } catch {
+      /* nothing to do */
+    }
+  };
 
   const pickFile = useCallback(() => fileRef.current?.click(), []);
 
@@ -92,11 +157,7 @@ export default function ImageToolPage() {
     setError(null);
     try {
       const urls = await apiUpload<string[]>("/api/admin/uploads", fd);
-      if (urls[0]) {
-        setSource(urls[0]);
-        setResult(null);
-        setPhase("idle");
-      }
+      if (urls[0]) setSource(urls[0]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطا در بارگذاری تصویر");
     } finally {
@@ -107,9 +168,8 @@ export default function ImageToolPage() {
   async function generate() {
     if (!source) return;
     alive.current = true;
-    setPhase("working");
+    setWorking(true);
     setError(null);
-    setResult(null);
     setElapsed(0);
 
     const started = Date.now();
@@ -139,34 +199,31 @@ export default function ImageToolPage() {
         if (res.status === "failed") throw new Error(res.error || "ساخت تصویر ناموفق بود");
         if (res.status !== "completed") continue;
 
-        // Copy it onto our own volume straight away: the provider's URL is a
-        // signed path that expires, so it is no use as "an image you can use
-        // wherever you want".
         const stored = await apiSend<string>("/api/admin/image-edit/save", "POST", { id });
         if (!alive.current) return;
-        setResult(stored);
-        setPhase("done");
+        const item: HistoryItem = { url: stored, preset, at: Date.now() };
+        remember(item);
+        setWorking(false);
+        // Straight into the preview: the result is the point of the wait, and
+        // the history strip alone would bury it among older thumbnails.
+        setPreview(item);
         return;
       }
     } catch (e) {
       if (!alive.current) return;
       setError(e instanceof Error ? e.message : "خطا در ساخت تصویر");
-      setPhase("idle");
+      setWorking(false);
     } finally {
       clearInterval(tick);
     }
   }
 
-  async function copyLink() {
-    if (!result) return;
-    const absolute = `${window.location.origin}${result}`;
+  async function copyLink(url: string) {
     try {
-      await navigator.clipboard.writeText(absolute);
+      await navigator.clipboard.writeText(`${window.location.origin}${url}`);
       show("لینک تصویر کپی شد");
     } catch {
-      // Clipboard access can be refused (permissions, insecure context) — say
-      // so rather than silently doing nothing.
-      show("کپی نشد؛ لینک را از نوار پایین بردارید", "error");
+      show("کپی نشد؛ لینک را از کادر پایین بردارید", "error");
     }
   }
 
@@ -192,105 +249,50 @@ export default function ImageToolPage() {
       )}
 
       <div className="grid gap-5 lg:grid-cols-2">
-        {/* ------------------------------------------------ source + result */}
-        <div className="space-y-4">
-          <div>
-            <span className="mb-1.5 block text-sm font-bold text-content">تصویر اصلی</span>
-            <div className="relative grid aspect-square w-full place-items-center overflow-hidden rounded-2xl border border-border bg-product-canvas">
-              {source ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={source} alt="" className="h-full w-full object-contain p-3" />
-              ) : (
-                <button
-                  type="button"
-                  onClick={pickFile}
-                  disabled={uploading}
-                  className="flex h-full w-full flex-col items-center justify-center gap-2 text-sm font-bold text-content-muted transition-colors hover:text-primary disabled:opacity-60"
-                >
-                  {uploading ? (
-                    <>
-                      <Spinner />
-                      در حال بارگذاری…
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-4xl leading-none">+</span>
-                      انتخاب تصویر
-                      <span className="text-xs font-normal text-content-subtle">
-                        JPG، PNG یا WebP — حداکثر ۵ مگابایت
-                      </span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-            {source && (
+        {/* ------------------------------------------------------- source */}
+        <div>
+          <span className="mb-1.5 block text-sm font-bold text-content">تصویر اصلی</span>
+          <div className="relative grid aspect-square w-full place-items-center overflow-hidden rounded-2xl border border-border bg-product-canvas">
+            {source ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={source} alt="" className="h-full w-full object-contain p-3" />
+            ) : (
               <button
                 type="button"
                 onClick={pickFile}
-                disabled={uploading || phase === "working"}
-                className="mt-2 text-xs font-bold text-content-muted transition-colors hover:text-primary disabled:opacity-50"
+                disabled={uploading}
+                className="flex h-full w-full flex-col items-center justify-center gap-2 text-sm font-bold text-content-muted transition-colors hover:text-primary disabled:opacity-60"
               >
-                انتخاب تصویر دیگر
+                {uploading ? (
+                  <>
+                    <Spinner />
+                    در حال بارگذاری…
+                  </>
+                ) : (
+                  <>
+                    <span className="text-4xl leading-none">+</span>
+                    انتخاب تصویر
+                    <span className="text-xs font-normal text-content-subtle">
+                      JPG، PNG یا WebP — حداکثر ۵ مگابایت
+                    </span>
+                  </>
+                )}
               </button>
             )}
           </div>
-
-          <div>
-            <span className="mb-1.5 block text-sm font-bold text-content">نتیجه</span>
-            <div className="relative grid aspect-square w-full place-items-center overflow-hidden rounded-2xl border border-border bg-product-canvas">
-              {phase === "done" && result && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={result} alt="" className="h-full w-full object-contain p-3" />
-              )}
-              {phase !== "done" && (
-                <p className="px-6 text-center text-xs text-content-subtle">
-                  هنوز تصویری ساخته نشده است
-                </p>
-              )}
-            </div>
-
-            {phase === "done" && result && (
-              <div className="mt-3 space-y-2">
-                <div className="flex flex-wrap gap-2">
-                  {/* Same-origin, so the download attribute is honoured. */}
-                  <a
-                    href={result}
-                    download
-                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-content transition-colors hover:bg-primary-hover"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4" />
-                    </svg>
-                    دانلود تصویر
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => void copyLink()}
-                    className="rounded-xl border border-border px-4 py-2.5 text-sm font-bold text-content transition-colors hover:border-primary hover:text-primary"
-                  >
-                    کپی لینک
-                  </button>
-                  <a
-                    href={result}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-xl border border-border px-4 py-2.5 text-sm font-bold text-content transition-colors hover:border-primary hover:text-primary"
-                  >
-                    باز کردن در تب جدید
-                  </a>
-                </div>
-                {/* The literal URL, so the link is recoverable even if the
-                    clipboard is unavailable. */}
-                <p className="rounded-lg bg-surface-2 px-3 py-2 text-[11px] text-content-muted" dir="ltr">
-                  {result}
-                </p>
-              </div>
-            )}
-          </div>
+          {source && (
+            <button
+              type="button"
+              onClick={pickFile}
+              disabled={uploading || working}
+              className="mt-2 text-xs font-bold text-content-muted transition-colors hover:text-primary disabled:opacity-50"
+            >
+              انتخاب تصویر دیگر
+            </button>
+          )}
         </div>
 
-        {/* ------------------------------------------------------- controls */}
+        {/* ----------------------------------------------------- controls */}
         <div className="space-y-4">
           <div>
             <span className="mb-2 block text-sm font-bold text-content">نوع ویرایش</span>
@@ -301,7 +303,7 @@ export default function ImageToolPage() {
                   type="button"
                   onClick={() => setPreset(p.key)}
                   aria-pressed={preset === p.key}
-                  disabled={phase === "working"}
+                  disabled={working}
                   className={`block w-full rounded-xl border p-3 text-right transition-colors disabled:opacity-50 ${
                     preset === p.key
                       ? "border-primary bg-primary-soft"
@@ -323,7 +325,7 @@ export default function ImageToolPage() {
               rows={2}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              disabled={phase === "working"}
+              disabled={working}
               maxLength={200}
               placeholder="اکشن فیگور ۱۸ سانتی‌متری"
             />
@@ -337,19 +339,15 @@ export default function ImageToolPage() {
               rows={4}
               value={extra}
               onChange={(e) => setExtra(e.target.value)}
-              disabled={phase === "working"}
+              disabled={working}
               maxLength={600}
               placeholder="مثلاً: نور گرم‌تر باشد و تصویر کمی مایل گرفته شود"
             />
           </Field>
 
           <div className="flex items-center gap-2">
-            <Button onClick={() => void generate()} disabled={!source || phase === "working"}>
-              {phase === "working"
-                ? "در حال ساخت…"
-                : result
-                  ? "ساخت دوباره"
-                  : "ساخت تصویر"}
+            <Button onClick={() => void generate()} disabled={!source || working}>
+              ساخت تصویر
             </Button>
             {!source && (
               <span className="text-xs text-content-subtle">ابتدا یک تصویر انتخاب کنید</span>
@@ -357,21 +355,122 @@ export default function ImageToolPage() {
           </div>
 
           <p className="text-xs text-content-subtle leading-relaxed">
-            ساخت هر تصویر حدود دو دقیقه طول می‌کشد. تصویر ساخته‌شده روی همین سرور
-            ذخیره می‌شود، پس لینک آن همیشه معتبر می‌ماند و می‌توانید در محصولات،
-            بنرها یا هر جای دیگری از آن استفاده کنید.
+            ساخت هر تصویر حدود دو دقیقه طول می‌کشد و خروجی با بالاترین کیفیت
+            (۲۰۴۸×۲۰۴۸) ساخته می‌شود. تصویرها روی همین سرور ذخیره می‌شوند، پس
+            لینکشان همیشه معتبر است.
           </p>
         </div>
       </div>
 
+      {/* --------------------------------------------------------- history */}
+      <div className="mt-8">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-content">
+            تصاویر ساخته‌شده
+            {history.length > 0 && (
+              <span className="mr-2 font-normal text-content-subtle">({history.length})</span>
+            )}
+          </h2>
+          {history.length > 0 && (
+            <button
+              type="button"
+              onClick={clearHistory}
+              className="text-xs font-bold text-content-muted transition-colors hover:text-primary"
+            >
+              پاک کردن فهرست
+            </button>
+          )}
+        </div>
+
+        {history.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border py-10 text-center text-sm text-content-muted">
+            هنوز تصویری ساخته نشده است.
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 3xl:grid-cols-8">
+              {history.map((h) => (
+                <button
+                  key={h.url}
+                  type="button"
+                  onClick={() => setPreview(h)}
+                  title={PRESETS.find((p) => p.key === h.preset)?.label}
+                  className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-product-canvas transition-colors hover:border-primary"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={h.url}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-contain p-1.5"
+                  />
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-content-subtle">
+              این فهرست فقط روی همین مرورگر نگهداری می‌شود؛ خود تصویرها روی سرور
+              باقی می‌مانند و لینکشان معتبر است.
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* --------------------------------------------------------- preview */}
+      <Modal
+        open={preview !== null}
+        onClose={() => setPreview(null)}
+        title="تصویر ساخته‌شده"
+        wide
+      >
+        {preview && (
+          <div className="space-y-4">
+            <div className="grid aspect-square w-full place-items-center overflow-hidden rounded-2xl border border-border bg-product-canvas">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preview.url} alt="" className="h-full w-full object-contain p-3" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {/* Same-origin, so the download attribute is honoured. */}
+              <a
+                href={preview.url}
+                download
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-content transition-colors hover:bg-primary-hover"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4" />
+                </svg>
+                دانلود تصویر
+              </a>
+              <button
+                type="button"
+                onClick={() => void copyLink(preview.url)}
+                className="rounded-xl border border-border px-4 py-2.5 text-sm font-bold text-content transition-colors hover:border-primary hover:text-primary"
+              >
+                کپی لینک
+              </button>
+              <a
+                href={preview.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-border px-4 py-2.5 text-sm font-bold text-content transition-colors hover:border-primary hover:text-primary"
+              >
+                باز کردن در تب جدید
+              </a>
+            </div>
+            <p className="rounded-lg bg-surface-2 px-3 py-2 text-[11px] text-content-muted" dir="ltr">
+              {preview.url}
+            </p>
+          </div>
+        )}
+      </Modal>
+
       <GeneratingOverlay
-        open={phase === "working"}
+        open={working}
         elapsed={elapsed}
         onCancel={() => {
           // Abandons the poll loop rather than the provider's job — the run
           // keeps billing either way, but the panel stops waiting on it.
           alive.current = false;
-          setPhase("idle");
+          setWorking(false);
         }}
       />
 
