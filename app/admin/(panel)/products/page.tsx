@@ -39,6 +39,18 @@ import { useAdminBase } from "@/app/admin/_components/useAdminBase";
 /** Panel-side cap; the API enforces the same bound. */
 const MAX_IMAGES = 6;
 
+/**
+ * A stored ISO instant as the local wall-clock string datetime-local expects.
+ * Going through the Date's own local getters keeps the admin's timezone rather
+ * than shifting the displayed hour by the UTC offset.
+ */
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 /** Rows per page in the products table. */
 const PAGE_SIZE = 20;
 
@@ -47,6 +59,7 @@ interface ProductForm {
   description: string;
   price: string;
   originalPrice: string;
+  discountEndsAt: string;
   categoryId: string;
   brandId: string;
   scale: string;
@@ -68,6 +81,7 @@ const EMPTY_FORM: ProductForm = {
   description: "",
   price: "",
   originalPrice: "",
+  discountEndsAt: "",
   categoryId: "",
   brandId: "",
   scale: "",
@@ -110,6 +124,9 @@ function toForm(p: Product): ProductForm {
     description: p.description,
     price: String(p.price),
     originalPrice: p.originalPrice ? String(p.originalPrice) : "",
+    // <input type="datetime-local"> wants local wall-clock "YYYY-MM-DDTHH:mm",
+    // never the stored UTC ISO string — pasting that in shows the wrong hour.
+    discountEndsAt: p.discountEndsAt ? toLocalInput(p.discountEndsAt) : "",
     categoryId: String(p.categoryId),
     brandId: p.brandId ? String(p.brandId) : "",
     scale: p.scale ?? "",
@@ -313,6 +330,10 @@ export default function AdminProductsPage() {
       description: form.description.trim(),
       price: Number(form.price),
       originalPrice: form.originalPrice.trim() ? Number(form.originalPrice) : null,
+      // The input is local time; send an absolute instant.
+      discountEndsAt: form.discountEndsAt
+        ? new Date(form.discountEndsAt).toISOString()
+        : null,
       categoryId: Number(form.categoryId),
       // Empty means "not set" — the API turns that into NULL rather than 0.
       brandId: form.brandId ? Number(form.brandId) : null,
@@ -573,6 +594,23 @@ export default function AdminProductsPage() {
               value={form.originalPrice}
               onChange={(e) => set("originalPrice", e.target.value)}
               placeholder="—"
+            />
+          </Field>
+
+          <Field
+            label="پایان تخفیف"
+            hint={
+              form.originalPrice.trim()
+                ? "شمارش معکوس تا این زمان روی محصول نمایش داده می‌شود. خالی بگذارید اگر تخفیف زمان پایان ندارد."
+                : "ابتدا قیمت قبل از تخفیف را وارد کنید."
+            }
+          >
+            <Input
+              type="datetime-local"
+              value={form.discountEndsAt}
+              onChange={(e) => set("discountEndsAt", e.target.value)}
+              disabled={!form.originalPrice.trim()}
+              dir="ltr"
             />
           </Field>
 

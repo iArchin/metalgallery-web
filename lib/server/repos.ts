@@ -56,6 +56,7 @@ function toProduct(r: ProductRow): Product {
     sizeCm: r.sizeCm ?? undefined,
     material: r.material,
     color: r.color,
+    discountEndsAt: r.discountEndsAt ? r.discountEndsAt.toISOString() : undefined,
     isDeal: r.isDeal,
     isFlashSale: r.isFlashSale,
     isTrending: r.isTrending,
@@ -127,6 +128,10 @@ function productValues(input: Partial<ProductInput>) {
   // "undefined" — and "unset it" has to be expressible, not just "leave it".
   if ("brandId" in input) v.brandId = input.brandId ?? null;
   if ("sizeCm" in input) v.sizeCm = input.sizeCm ?? null;
+  // Stored as a real timestamp, so the ISO string from the API becomes a Date.
+  if ("discountEndsAt" in input) {
+    v.discountEndsAt = input.discountEndsAt ? new Date(input.discountEndsAt) : null;
+  }
   return v;
 }
 

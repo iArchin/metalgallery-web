@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import Button from "@/app/components/Button";
 import ProductGallery from "@/app/components/ProductGallery";
+import DiscountCountdown from "@/app/components/DiscountCountdown";
 import { productImage, toyImage } from "@/app/utils/images";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
 import { useCart } from "@/app/components/CartContext";
-import { discountPercent, type Product } from "@/lib/types";
+import { discountPercent, isDiscountActive, type Product } from "@/lib/types";
 
 interface ProductDetailProps {
   product: Product;
@@ -64,7 +65,9 @@ export default function ProductDetail({
   const [addedMessage, setAddedMessage] = useState(false);
 
   const inStock = product.stock > 0;
-  const discount = discountPercent(product);
+  // Expired offers stop being advertised — the badge, the strikethrough and the
+  // ring all hang off this one value.
+  const discount = isDiscountActive(product) ? discountPercent(product) : 0;
 
   // Admin-uploaded photos are the real gallery. Products from before uploads
   // carry at most one local photo; with neither, fall back to keyword photos
@@ -202,6 +205,22 @@ export default function ProductDetail({
                   </>
                 )}
               </div>
+
+              {/* The deadline, spelled out. On a card the ring alone is enough;
+                  here there is room to say what it counts down to. */}
+              {discount > 0 && product.discountEndsAt && (
+                <div className="mt-4 flex items-center gap-4 rounded-2xl border border-primary/30 bg-primary-soft/60 p-4">
+                  <DiscountCountdown endsAt={product.discountEndsAt} size="md" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-extrabold text-content">
+                      پایان این تخفیف نزدیک است
+                    </p>
+                    <p className="mt-1 text-xs text-content-muted leading-relaxed">
+                      پس از پایان زمان، این قیمت ویژه برداشته می‌شود.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Stock Status */}

@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "discount_ends_at" timestamp with time zone;

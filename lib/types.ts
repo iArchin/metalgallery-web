@@ -35,6 +35,8 @@ export interface Product {
   sizeCm?: number;
   material?: string;
   color?: string;
+  /** ISO timestamp when the discount ends. Undefined = no announced end. */
+  discountEndsAt?: string;
   isDeal: boolean; // shown in "پیشنهادات روز"
   isFlashSale: boolean; // shown in "فروش ویژه"
   isTrending: boolean; // shown in "پرطرفدارها"
@@ -389,6 +391,26 @@ export type ApiErr = { ok: false; error: string };
 export type ApiResult<T> = ApiOk<T> | ApiErr;
 
 /** Derived helper — off percentage from price pair. */
+/**
+ * Is the product's discount still running?
+ *
+ * A discount with no end date runs until the admin changes the price. One with
+ * an end date in the past is over — the storefront then presents the product as
+ * an ordinary item at its current price. It does NOT revert to the original
+ * price: the stored `price` is what the cart and the order actually charge, so
+ * showing anything else would quote a number the shop will not honour. The
+ * effect of an expired timer is therefore "stop advertising it as a deal",
+ * which can never overcharge anyone.
+ */
+export function isDiscountActive(
+  p: { discountEndsAt?: string },
+  now: number = Date.now()
+): boolean {
+  if (!p.discountEndsAt) return true;
+  const ends = Date.parse(p.discountEndsAt);
+  return !Number.isFinite(ends) || ends > now;
+}
+
 export function discountPercent(p: { price: number; originalPrice?: number }): number {
   if (!p.originalPrice || p.originalPrice <= p.price) return 0;
   return Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100);

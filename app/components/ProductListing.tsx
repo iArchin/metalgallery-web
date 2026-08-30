@@ -7,8 +7,14 @@ import Button from "@/app/components/Button";
 import { useCart } from "@/app/components/CartContext";
 import { productImage } from "@/app/utils/images";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
-import { discountPercent, type Category, type Product } from "@/lib/types";
+import {
+  discountPercent,
+  isDiscountActive,
+  type Category,
+  type Product,
+} from "@/lib/types";
 import QuickLookModal from "@/app/components/QuickLookModal";
+import DiscountCountdown from "@/app/components/DiscountCountdown";
 
 type SortOption = "newest" | "price-low" | "price-high" | "rating" | "name";
 
@@ -666,7 +672,7 @@ export default function ProductListing({
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-8">
                   {paginatedProducts.map((product) => {
-                    const off = discountPercent(product);
+                    const off = isDiscountActive(product) ? discountPercent(product) : 0;
                     const outOfStock = product.stock <= 0;
                     const added = !!addedIds[product.id];
                     return (
@@ -734,14 +740,22 @@ export default function ProductListing({
                             ({toPersianNumber(product.reviewCount.toString())})
                           </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-3 sm:mb-4">
-                          <span className="text-sm sm:text-lg font-bold text-content">
-                            {formatPersianNumber(product.price)} تومان
-                          </span>
-                          {product.originalPrice && (
-                            <span className="text-xs sm:text-sm text-content-subtle line-through">
-                              {formatPersianNumber(product.originalPrice)} تومان
+                        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="text-sm sm:text-lg font-bold text-content">
+                              {formatPersianNumber(product.price)} تومان
                             </span>
+                            {product.originalPrice && (
+                              <span className="text-xs sm:text-sm text-content-subtle line-through">
+                                {formatPersianNumber(product.originalPrice)} تومان
+                              </span>
+                            )}
+                          </div>
+                          {/* Only for a live, dated discount — `off` is already
+                              gated on the deadline, so an expired offer drops
+                              the ring and the badge together. */}
+                          {off > 0 && product.discountEndsAt && (
+                            <DiscountCountdown endsAt={product.discountEndsAt} size="sm" />
                           )}
                         </div>
                         <div

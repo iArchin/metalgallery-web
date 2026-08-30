@@ -57,6 +57,9 @@ export const products = pgTable(
     sizeCm: real("size_cm"), // longest real dimension, in centimetres
     material: text("material").notNull().default(""),
     color: text("color").notNull().default(""),
+    // When the current discount stops. NULL means the discount, if any, has no
+    // announced end. Only meaningful alongside original_price.
+    discountEndsAt: timestamp("discount_ends_at", { withTimezone: true }),
     isDeal: boolean("is_deal").notNull().default(false),
     isFlashSale: boolean("is_flash_sale").notNull().default(false),
     isTrending: boolean("is_trending").notNull().default(false),

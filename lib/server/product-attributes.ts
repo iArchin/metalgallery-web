@@ -18,6 +18,7 @@ export interface ProductAttributes {
   sizeCm?: number;
   material?: string;
   color?: string;
+  discountEndsAt?: string;
 }
 
 function text(v: unknown): string {
@@ -58,6 +59,17 @@ export function parseProductAttributes(
         return { error: "اندازه باید عددی بین ۱ تا ۵۰۰ سانتی‌متر باشد" };
       }
       out.sizeCm = n;
+    }
+  }
+
+  if (!partial || body.discountEndsAt !== undefined) {
+    const raw = body.discountEndsAt;
+    if (raw === null || raw === "" || raw === undefined) {
+      out.discountEndsAt = undefined;
+    } else {
+      const t = Date.parse(String(raw));
+      if (!Number.isFinite(t)) return { error: "تاریخ پایان تخفیف نامعتبر است" };
+      out.discountEndsAt = new Date(t).toISOString();
     }
   }
 
