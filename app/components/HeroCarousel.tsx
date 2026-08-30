@@ -110,15 +110,19 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               aria-hidden
             />
             <div
-              className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/60 to-transparent"
+              className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/70 via-black/35 to-transparent"
               aria-hidden
             />
             {/* Copy sits on the site's own measure rather than the image edge,
                 so it stays aligned with every section below it — and does not
                 drift to the far corner of an ultrawide screen. */}
-            <div className="relative z-10 flex h-full items-center">
+            <div className="relative z-10 flex h-full items-end">
               <div className="site-container">
-                <div className="max-w-xl pb-12 md:max-w-2xl lg:max-w-3xl 3xl:max-w-4xl text-white">
+                {/* pb clears the progress bars pinned at bottom-4 as well as
+                    giving the block its own breathing room; the inline padding
+                    comes from site-container, so the copy keeps the same right
+                    margin as every section below the hero. */}
+                <div className="max-w-xl pb-20 sm:pb-24 3xl:pb-28 md:max-w-2xl lg:max-w-3xl 3xl:max-w-4xl text-white">
                   {slide.badgeText && (
                     <span className="mb-4 3xl:mb-6 inline-flex w-fit items-center rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-content sm:text-sm md:px-5 md:py-2 md:text-base 3xl:text-lg">
                       {toPersianNumber(slide.badgeText)}
