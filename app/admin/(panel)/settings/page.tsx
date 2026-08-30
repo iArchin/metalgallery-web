@@ -86,63 +86,33 @@ function RowMoveButtons({
 }
 
 /**
- * A miniature of how the slide actually renders on the home page — the same
- * image fit, gradient and conditional badge/subtitle/button as HeroCarousel.
+ * The slide's own image at list size. The editor is a list of slides, not a
+ * gallery, so a full-width mock of the banner buried every row's controls under
+ * a picture — this shows which image a row carries and nothing more.
  *
- * This is what makes the CURRENT image visible: the swatch grid below can only
- * highlight one of the ready-made banners, so an uploaded (or hand-typed) image
- * used to leave the editor showing nothing selected and no way to tell what the
- * slide would look like.
+ * Still `object-cover`: hero banners are landscape by design and that is how
+ * HeroCarousel renders them, so a letterbox here would misrepresent the result.
  */
-function SlidePreview({ slide }: { slide: HeroSlideForm }) {
+function SlideThumb({
+  slide,
+  className = "h-12 w-20",
+}: {
+  slide: HeroSlideForm;
+  className?: string;
+}) {
   return (
-    <div className="relative aspect-[2/1] w-full overflow-hidden rounded-xl border border-border bg-surface-2">
+    <span
+      className={`relative shrink-0 overflow-hidden rounded-lg border border-border bg-surface-2 ${className}`}
+    >
       {slide.image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={slide.image}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <img src={slide.image} alt="" className="h-full w-full object-cover" />
       ) : (
-        <div className="absolute inset-0 grid place-items-center text-sm text-content-subtle">
-          هنوز تصویری انتخاب نشده است
-        </div>
-      )}
-      <div
-        className="absolute inset-0 bg-linear-to-l from-black/75 via-black/45 to-transparent"
-        aria-hidden
-      />
-      <div className="relative z-10 flex h-full max-w-[75%] flex-col justify-center gap-1.5 p-4 sm:p-6 text-white">
-        {/* Mirrors HeroCarousel exactly: badge and subtitle are digit-converted,
-            title and button label are not, and each is hidden when empty. */}
-        {slide.badgeText && (
-          <span className="inline-flex w-fit items-center rounded-full bg-primary px-3 py-1 text-[11px] font-bold text-primary-content">
-            {toPersianNumber(slide.badgeText)}
-          </span>
-        )}
-        <p className="text-base sm:text-xl font-extrabold leading-snug line-clamp-2">
-          {slide.title || (
-            <span className="text-white/50">عنوان اسلاید</span>
-          )}
-        </p>
-        {slide.subtitle && (
-          <p className="text-[11px] sm:text-sm font-semibold leading-relaxed text-white/85 line-clamp-2">
-            {toPersianNumber(slide.subtitle)}
-          </p>
-        )}
-        {slide.ctaText && (
-          <span className="mt-1 inline-flex w-fit items-center rounded-full border border-border bg-surface px-4 py-1.5 text-xs font-bold text-content">
-            {slide.ctaText}
-          </span>
-        )}
-      </div>
-      {!slide.active && (
-        <span className="absolute top-2 left-2 z-20 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-bold text-white">
-          غیرفعال — در سایت نمایش داده نمی‌شود
+        <span className="grid h-full w-full place-items-center text-[10px] text-content-subtle">
+          بدون تصویر
         </span>
       )}
-    </div>
+    </span>
   );
 }
 
@@ -230,9 +200,6 @@ export default function AdminSettingsPage() {
     setForm((f) => (f ? { ...f, ...p } : f));
   }
 
-  function patchHero(p: Partial<SettingsForm["hero"]>) {
-    setForm((f) => (f ? { ...f, hero: { ...f.hero, ...p } } : f));
-  }
 
   function patchSocials(p: Partial<SettingsForm["socials"]>) {
     setForm((f) => (f ? { ...f, socials: { ...f.socials, ...p } } : f));
@@ -262,6 +229,9 @@ export default function AdminSettingsPage() {
         image: HERO_IMAGES[0],
         active: true,
       };
+      // Open it: a slide added collapsed is an empty row the admin then has to
+      // hunt for, and it cannot be saved until it has a title.
+      setOpenSlide(nextId);
       return { ...f, heroSlides: [...f.heroSlides, slide] };
     });
   }
@@ -337,6 +307,11 @@ export default function AdminSettingsPage() {
 
   /* --------------------------------------------- slide image uploads */
 
+  // Which row is expanded. The list is the primary view — a slide carries six
+  // fields, and rendering all of them for every slide turned a five-slide
+  // banner into a page nobody could scan.
+  const [openSlide, setOpenSlide] = useState<number | null>(null);
+
   // One hidden input serves every slide; `uploadForSlide` remembers which row
   // opened the picker so the result lands on the right slide.
   const slideFileRef = useRef<HTMLInputElement>(null);
@@ -392,7 +367,10 @@ export default function AdminSettingsPage() {
     }
     const badSlide = form.heroSlides.findIndex((s) => !s.title.trim() || !s.image);
     if (badSlide !== -1) {
-      show(`اسلاید ${badSlide + 1}: عنوان و تصویر الزامی است`, "error");
+      // Expand the row the message names — collapsed, the admin would be told
+      // which slide is wrong but shown none of it.
+      setOpenSlide(form.heroSlides[badSlide].id);
+      show(`اسلاید ${toPersianNumber(badSlide + 1)}: عنوان و تصویر الزامی است`, "error");
       return;
     }
     setSaving(true);
@@ -705,16 +683,44 @@ export default function AdminSettingsPage() {
               {form.heroSlides.map((slide, i) => (
                 <div
                   key={slide.id}
-                  className="rounded-2xl border border-border bg-surface-2/50 p-4 space-y-4"
+                  className="rounded-2xl border border-border bg-surface-2/50 p-3 sm:p-4"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-2 text-sm font-extrabold text-content">
-                      <span className="grid h-6 w-6 place-items-center rounded-lg bg-primary-soft text-primary text-xs">
-                        {i + 1}
-                      </span>
-                      اسلاید {i + 1}
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary text-xs font-extrabold">
+                      {toPersianNumber(i + 1)}
                     </span>
-                    <div className="flex items-center gap-1">
+                    <SlideThumb slide={slide} />
+                    {/* The row itself opens the editor, so the whole strip is
+                        the hit target rather than a lone pencil icon. */}
+                    <button
+                      type="button"
+                      onClick={() => setOpenSlide(openSlide === slide.id ? null : slide.id)}
+                      aria-expanded={openSlide === slide.id}
+                      className="min-w-0 flex-1 text-right"
+                    >
+                      <span className="block truncate text-sm font-bold text-content">
+                        {slide.title.trim() || "بدون عنوان"}
+                      </span>
+                      <span className="block truncate text-xs text-content-subtle">
+                        {slide.subtitle.trim() || slide.ctaHref || "—"}
+                      </span>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSlide(openSlide === slide.id ? null : slide.id)}
+                        aria-label={openSlide === slide.id ? "بستن" : "ویرایش"}
+                        className="rounded-lg p-1.5 text-content-muted transition-colors hover:bg-surface hover:text-primary"
+                      >
+                        <svg
+                          className={`h-4 w-4 transition-transform ${openSlide === slide.id ? "rotate-180" : ""}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
                       <button
                         type="button"
                         onClick={() => moveSlide(slide.id, -1)}
@@ -748,10 +754,8 @@ export default function AdminSettingsPage() {
                     </div>
                   </div>
 
-                  {/* Live preview first: it answers "what does this slide
-                      currently look like?" whatever the image path is. */}
-                  <SlidePreview slide={slide} />
-
+                  {openSlide === slide.id && (
+                  <div className="mt-4 space-y-4 border-t border-border pt-4">
                   {/* Deliberately NOT <Field>: that renders a bare <label>, and
                       a click anywhere on its text would activate the first
                       labelable descendant — here the upload button — popping the
@@ -786,7 +790,9 @@ export default function AdminSettingsPage() {
                         )}
                       </button>
 
-                      <div className="flex flex-wrap gap-2">
+                      {/* One scrolling row of small swatches, not a grid of
+                          large ones — these are a shortcut, not the subject. */}
+                      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
                         {HERO_IMAGES.map((src) => (
                           <button
                             type="button"
@@ -794,7 +800,7 @@ export default function AdminSettingsPage() {
                             onClick={() => patchSlide(slide.id, { image: src })}
                             aria-pressed={slide.image === src}
                             aria-label={`انتخاب تصویر ${src}`}
-                            className={`relative h-14 w-20 overflow-hidden rounded-lg border-2 transition-all ${
+                            className={`relative h-10 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                               slide.image === src
                                 ? "border-primary ring-2 ring-primary/30"
                                 : "border-border hover:border-border-strong"
@@ -859,6 +865,8 @@ export default function AdminSettingsPage() {
                       />
                     </Field>
                   </div>
+                  </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -874,32 +882,11 @@ export default function AdminSettingsPage() {
           />
         </Card>
 
-        {/* ------------------------------------------- کارت کناری بنر */}
-        <Card className="p-5">
-          <h2 className="font-extrabold text-content mb-4">کارت کناری بنر اصلی</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="عنوان کارت کناری">
-              <Input
-                value={form.hero.sideTitle}
-                onChange={(e) => patchHero({ sideTitle: e.target.value })}
-              />
-            </Field>
-            <Field label="متن دکمه کارت کناری">
-              <Input
-                value={form.hero.sideCtaText}
-                onChange={(e) => patchHero({ sideCtaText: e.target.value })}
-              />
-            </Field>
-            <div className="sm:col-span-2">
-              <Field label="متن کارت کناری">
-                <Input
-                  value={form.hero.sideText}
-                  onChange={(e) => patchHero({ sideText: e.target.value })}
-                />
-              </Field>
-            </div>
-          </div>
-        </Card>
+        {/* The banner's side card was removed when the hero became a single
+            full-height slideshow, so the fields that drove it are gone from
+            here too — editing something invisible is worse than not editing it.
+            hero.sideTitle/sideText/sideCtaText stay in the settings blob,
+            saved untouched, so nothing is destroyed if it ever comes back. */}
 
         {/* -------------------------------------------------- کمپین تخفیف */}
         <Card className="p-5">
