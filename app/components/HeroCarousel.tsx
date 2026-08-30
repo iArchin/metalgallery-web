@@ -93,10 +93,12 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                   : undefined
               }
             />
-            {/* Sky-to-white wash on the photo, and now the only thing
-                covering the upper frame. */}
+            {/* Sky-to-white wash on the photo. Kept light: it was briefly run
+                at 80% to punch through a full-frame black scrim, and once that
+                scrim was deleted the same alpha simply bleached the photo. With
+                nothing above it, this much blue already reads clearly. */}
             <div
-              className="absolute inset-0 bg-linear-to-b from-[#AEDCEC]/80 via-[#AEDCEC]/45 to-white/35"
+              className="absolute inset-0 bg-linear-to-b from-[#AEDCEC]/40 via-[#AEDCEC]/16 to-white/22"
               aria-hidden
             />
             {/*
@@ -110,7 +112,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               leaves the top of the frame as pure wash.
             */}
             <div
-              className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/75 via-black/35 to-transparent"
+              className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/70 via-black/30 to-transparent"
               aria-hidden
             />
             {/* Copy sits on the site's own measure rather than the image edge,
