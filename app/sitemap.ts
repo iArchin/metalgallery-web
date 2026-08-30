@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { listProducts, articlesRepo } from "@/lib/server/repos";
+import { listProducts, articlesRepo, categoriesRepo } from "@/lib/server/repos";
 
 const BASE_URL = "https://metalgallery.ir";
 
@@ -34,6 +34,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }));
   } catch {}
 
+  // Category routes — one indexable URL per active category.
+  let categoryRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const categories = await categoriesRepo.list();
+    categoryRoutes = categories
+      .filter((c) => c.active)
+      .map((c) => ({
+        url: `${BASE_URL}/category/${c.id}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      }));
+  } catch {}
+
   // Blog routes
   let blogRoutes: MetadataRoute.Sitemap = [];
   try {
@@ -51,5 +65,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // News routes (listing only — no individual news detail pages exist)
   // The /news page itself is already listed as a static route above.
 
-  return [...staticRoutes, ...productRoutes, ...blogRoutes];
+  return [...staticRoutes, ...categoryRoutes, ...productRoutes, ...blogRoutes];
 }

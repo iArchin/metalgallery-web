@@ -51,7 +51,7 @@ export default function Categories({ categories }: { categories: Category[] }) {
             return (
               <Link
                 key={cat.id}
-                href={`/products?category=${cat.id}`}
+                href={`/category/${cat.id}`}
                 aria-label={cat.name}
                 className="group animate-tile-pop relative h-32 sm:h-36 overflow-hidden rounded-3xl border border-border bg-surface-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 style={{ animationDelay: `${i * 45}ms` } as CSSProperties}

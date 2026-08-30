@@ -8,10 +8,19 @@ import ThemeToggle from "./ThemeToggle";
 import { toyImage, productImage } from "../utils/images";
 import { toPersianNumber, formatPersianNumber } from "../utils/numbers";
 import { useCart } from "@/app/components/CartContext";
-import type { Product } from "@/lib/types";
+import {
+  phoneHref,
+  type PhoneKind,
+  type Product,
+  type SitePhone,
+} from "@/lib/types";
+import ContactIcon from "@/app/components/ContactIcon";
 
 interface NavbarSettings {
   phone?: string;
+  /** Full list when the settings carry one; the bar shows the first entry,
+   *  which is the only one it has room for. */
+  phones?: SitePhone[];
   siteName?: string;
 }
 
@@ -171,8 +180,12 @@ export default function Navbar({
   }, [pathname]);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const megaMenuRef = useRef<HTMLDivElement>(null);
-  const servicesMenuRef = useRef<HTMLDivElement>(null);
+  // A mega menu is TWO elements: the trigger button and the panel, which are
+  // siblings rather than nested. "Outside" has to mean outside every one of
+  // them — see the click-outside handler below.
+  const megaMenuRef = useRef<HTMLDivElement>(null); // categories trigger
+  const megaPanelRef = useRef<HTMLDivElement>(null); // categories panel
+  const servicesMenuRef = useRef<HTMLDivElement>(null); // services panel
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const basketDropdownRef = useRef<HTMLDivElement>(null);
   const favoritesDropdownRef = useRef<HTMLDivElement>(null);
@@ -180,21 +193,21 @@ export default function Navbar({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsDropdownOpen(false);
       }
-      if (
-        megaMenuRef.current &&
-        !megaMenuRef.current.contains(event.target as Node) &&
-        servicesMenuRef.current &&
-        !servicesMenuRef.current.contains(event.target as Node)
-      ) {
+      // This runs on mousedown, so closing the menu here also decides whether a
+      // click ever happens: hiding the panel between mousedown and mouseup makes
+      // the browser fire the click on a *different* element, and the link never
+      // navigates. The panel therefore has to count as "inside" — leaving
+      // megaPanelRef out of this list is what stopped category links working.
+      const insideAMegaMenu = [megaMenuRef, megaPanelRef, servicesMenuRef].some(
+        (ref) => ref.current?.contains(target)
+      );
+      if (!insideAMegaMenu) {
         setActiveMegaMenu(null);
       }
-      const target = event.target as Node;
       if (
         openDropdown === "profile" &&
         profileDropdownRef.current &&
@@ -226,6 +239,19 @@ export default function Navbar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [openDropdown]);
 
+  // The bar has room for exactly one number: the first of the admin's list, or
+  // the legacy scalar for settings saved before the list existed. Its `kind`
+  // picks the icon, so a mobile-only shop no longer shows a landline handset.
+  const primaryPhone: SitePhone | null = (() => {
+    const first = settings?.phones?.find((p) => p.value?.trim());
+    if (first) return first;
+    const legacy = settings?.phone?.trim();
+    if (!legacy) return null;
+    const digits = legacy.replace(/\D/g, "");
+    const kind: PhoneKind = /^(09|989)/.test(digits) ? "mobile" : "landline";
+    return { id: 0, label: "", value: legacy, kind };
+  })();
+
   // Real, admin-managed categories (passed from the server layout), plus the
   // "all" option. Selecting one navigates to the filtered shop.
   const categoryOptions = [{ id: 0, name: "همه دسته‌بندی‌ها" }, ...categories];
@@ -250,11 +276,13 @@ export default function Navbar({
   // layout to those that actually have products.
   const qHref = (s: string) => `/products?q=${encodeURIComponent(s)}`;
 
+  // Each category has its own page. /products?category=<id> still works for
+  // anyone holding an old link, but nothing advertises it any more.
   const categorySection = {
     title: "دسته‌بندی‌ها",
     items: categories.map((c) => ({
       label: c.name,
-      href: `/products?category=${c.id}`,
+      href: `/category/${c.id}`,
     })),
   };
   const ageSection = {
@@ -359,7 +387,7 @@ export default function Navbar({
                             router.push(
                               category.id === 0
                                 ? "/products"
-                                : `/products?category=${category.id}`
+                                : `/category/${category.id}`
                             );
                           }}
                           className="w-full text-right px-4 py-2 text-sm text-content rounded-xl hover:bg-surface-2 hover:text-primary transition-colors"
@@ -443,24 +471,15 @@ export default function Navbar({
 
             {/* Right Icons */}
             <div className="flex items-center gap-2.5 sm:gap-3 justify-end">
-              <div className="hidden lg:flex items-center gap-2 text-content-muted ml-4 border-l border-border pl-4">
-                <span className="text-sm">
-                  {settings?.phone ? toPersianNumber(settings.phone) : "۰۲۱-۱۲۳۴۵۶۷۸"}
-                </span>
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {primaryPhone && (
+                <a
+                  href={phoneHref(primaryPhone)}
+                  className="hidden lg:flex items-center gap-2 text-content-muted ml-4 border-l border-border pl-4 transition-colors hover:text-primary"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                  />
-                </svg>
-              </div>
+                  <span className="text-sm">{toPersianNumber(primaryPhone.value)}</span>
+                  <ContactIcon name={primaryPhone.kind} />
+                </a>
+              )}
 
               {/* Theme Toggle */}
               <ThemeToggle />
@@ -649,7 +668,7 @@ export default function Navbar({
                                 src={productImage(item)}
                                 alt={item.name}
                                 loading="lazy"
-                                className="h-full w-full object-cover"
+                                className="h-full w-full object-contain p-1"
                               />
                             </div>
                             <div className="flex-1 text-right">
@@ -1162,6 +1181,7 @@ export default function Navbar({
 
             {/* Categories Mega Menu Dropdown */}
             <div
+              ref={megaPanelRef}
               className={`absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-7xl bg-surface shadow-2xl rounded-3xl border border-border text-content z-50 transition-all duration-300 ease-out overflow-hidden ${
                 activeMegaMenu === "categories"
                   ? "opacity-100 translate-y-0 scale-100"

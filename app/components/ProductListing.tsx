@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useState, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/app/components/Button";
 import { useCart } from "@/app/components/CartContext";
@@ -77,13 +77,37 @@ function normalizeFa(s: string): string {
 interface ProductListingProps {
   products: Product[];
   categories: Category[];
+  /** Page title. Defaults to the shop's "همه محصولات". */
+  heading?: string;
+  /**
+   * Set on a dedicated category page (/category/<id>), where `products` is
+   * already scoped to that category server-side. The sidebar then links to the
+   * sibling categories' own pages instead of filtering in place, so the URL and
+   * what is on screen can never disagree.
+   */
+  lockedCategoryId?: number;
+}
+
+/**
+ * A category id from the URL. Guards the parse so `?category=abc` (or `=0`)
+ * becomes "no filter" rather than a NaN that silently disables the filter while
+ * leaving every radio unchecked.
+ */
+function parseCategoryParam(raw: string | null): number | null {
+  if (!raw) return null;
+  const n = Number.parseInt(raw, 10);
+  return Number.isInteger(n) && n > 0 ? n : null;
 }
 
 export default function ProductListing({
   products,
   categories,
+  heading = "همه محصولات",
+  lockedCategoryId,
 }: ProductListingProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const categoryFromUrl = searchParams.get("category");
   const qFromUrl = searchParams.get("q");
   const ageFromUrl = searchParams.get("age");
@@ -94,7 +118,7 @@ export default function ProductListing({
   const { add } = useCart();
 
   const [selectedCategory, setSelectedCategory] = useState<number | null>(
-    categoryFromUrl ? parseInt(categoryFromUrl) : null
+    parseCategoryParam(categoryFromUrl)
   );
   const [selectedPriceRange, setSelectedPriceRange] = useState<number>(
     priceFromUrl ? Math.min(Math.max(parseInt(priceFromUrl) || 0, 0), priceRanges.length - 1) : 0
@@ -132,7 +156,7 @@ export default function ProductListing({
   const [prevCategoryFromUrl, setPrevCategoryFromUrl] = useState(categoryFromUrl);
   if (categoryFromUrl !== prevCategoryFromUrl) {
     setPrevCategoryFromUrl(categoryFromUrl);
-    setSelectedCategory(categoryFromUrl ? parseInt(categoryFromUrl) : null);
+    setSelectedCategory(parseCategoryParam(categoryFromUrl));
     setCurrentPage(1);
   }
 
@@ -300,6 +324,32 @@ export default function ProductListing({
     startIndex + productsPerPage
   );
 
+  /**
+   * Mirror a filter into the URL. Without this the sidebar and the address bar
+   * drift apart, and the render-phase sync above — which compares the URL to its
+   * own previous value — then swallows a later click on a mega-menu link that
+   * points at the category the URL still claims is selected. Writing the URL
+   * also makes a filtered view shareable and keeps the Back button honest.
+   * `replace`, not `push`: adjusting a filter is not a separate destination.
+   */
+  const setUrlParam = useCallback(
+    (key: string, value: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value === null) params.delete(key);
+      else params.set(key, value);
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [router, pathname, searchParams]
+  );
+
+  const chooseCategory = (id: number | null) => {
+    setSelectedCategory(id);
+    setCurrentPage(1);
+    setShowFilters(false); // the mobile sheet covers the results it just changed
+    setUrlParam("category", id === null ? null : String(id));
+  };
+
   const handleResetFilters = () => {
     setSelectedCategory(null);
     setSelectedPriceRange(0);
@@ -310,6 +360,9 @@ export default function ProductListing({
     setTrendingOnly(false);
     setSearchQuery("");
     setCurrentPage(1);
+    setShowFilters(false);
+    // Clear the params too, or a refresh (or Back) silently re-applies them.
+    router.replace(pathname, { scroll: false });
   };
 
   const handleAddToCart = (product: Product) => {
@@ -348,7 +401,7 @@ export default function ProductListing({
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-content mb-2">
-            همه محصولات
+            {heading}
           </h1>
           <p className="text-sm sm:text-base text-content-muted">
             {toPersianNumber(filteredProducts.length.toString())} محصول یافت شد
@@ -392,39 +445,68 @@ export default function ProductListing({
                 </button>
               )}
 
-              {/* Category Filter */}
+              {/* Category Filter — on a dedicated category page these are links
+                  to each category's OWN page, so the URL always names what is on
+                  screen; on the shop they are in-place filters. */}
               <div className="mb-6">
                 <h3 className="font-semibold text-content mb-3">دسته‌بندی</h3>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="category"
-                      checked={selectedCategory === null}
-                      onChange={() => setSelectedCategory(null)}
-                      className="w-4 h-4 accent-primary"
-                    />
-                    <span className="text-content-muted">همه</span>
-                  </label>
-                  {categories.map((category) => (
-                    <label
-                      key={category.id}
-                      className="flex items-center gap-2 cursor-pointer"
+                {lockedCategoryId !== undefined ? (
+                  <div className="space-y-1">
+                    <Link
+                      href="/products"
+                      onClick={() => setShowFilters(false)}
+                      className="block rounded-lg px-2 py-1.5 text-content-muted hover:text-primary hover:bg-surface-2 transition-colors"
                     >
+                      همه محصولات
+                    </Link>
+                    {categories.map((category) => {
+                      const current = category.id === lockedCategoryId;
+                      return (
+                        <Link
+                          key={category.id}
+                          href={`/category/${category.id}`}
+                          onClick={() => setShowFilters(false)}
+                          aria-current={current ? "page" : undefined}
+                          className={`block rounded-lg px-2 py-1.5 transition-colors ${
+                            current
+                              ? "bg-primary-soft font-bold text-primary"
+                              : "text-content-muted hover:text-primary hover:bg-surface-2"
+                          }`}
+                        >
+                          {category.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
                         name="category"
-                        checked={selectedCategory === category.id}
-                        onChange={() => {
-                          setSelectedCategory(category.id);
-                          setCurrentPage(1);
-                        }}
+                        checked={selectedCategory === null}
+                        onChange={() => chooseCategory(null)}
                         className="w-4 h-4 accent-primary"
                       />
-                      <span className="text-content-muted">{category.name}</span>
+                      <span className="text-content-muted">همه</span>
                     </label>
-                  ))}
-                </div>
+                    {categories.map((category) => (
+                      <label
+                        key={category.id}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="category"
+                          checked={selectedCategory === category.id}
+                          onChange={() => chooseCategory(category.id)}
+                          className="w-4 h-4 accent-primary"
+                        />
+                        <span className="text-content-muted">{category.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Price Range Filter */}
@@ -589,12 +671,12 @@ export default function ProductListing({
                         href={`/product/${product.id}`}
                         className="group bg-surface border border-border rounded-2xl shadow-sm p-3 sm:p-4 transition-colors block"
                       >
-                        <div className="relative h-36 sm:h-48 w-full overflow-hidden rounded-xl sm:rounded-2xl bg-surface-2 mb-3 sm:mb-4">
+                        <div className="relative aspect-square w-full overflow-hidden rounded-xl sm:rounded-2xl bg-surface-2 mb-3 sm:mb-4">
                           <img
                             src={productImage(product)}
                             alt={product.name}
                             loading="lazy"
-                            className={`h-full w-full object-cover ${
+                            className={`h-full w-full object-contain p-2 ${
                               outOfStock ? "opacity-60 grayscale" : ""
                             }`}
                           />
@@ -743,12 +825,30 @@ export default function ProductListing({
                 <h3 className="text-lg sm:text-xl font-semibold text-content mb-2">
                   محصولی یافت نشد
                 </h3>
-                <p className="text-content-muted mb-6">
-                  لطفاً فیلترهای خود را تغییر دهید
-                </p>
-                <Button variant="outline" onClick={handleResetFilters}>
-                  پاک کردن فیلترها
-                </Button>
+                {/* With no filter applied there is nothing to clear — the
+                    category is simply still empty. Offer the shop instead. */}
+                {hasActiveFilters ? (
+                  <>
+                    <p className="text-content-muted mb-6">
+                      لطفاً فیلترهای خود را تغییر دهید
+                    </p>
+                    <Button variant="outline" onClick={handleResetFilters}>
+                      پاک کردن فیلترها
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-content-muted mb-6">
+                      هنوز محصولی در این دسته‌بندی ثبت نشده است. به‌زودی سر بزنید.
+                    </p>
+                    <Link
+                      href="/products"
+                      className="inline-flex items-center justify-center rounded-full border border-primary px-5 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary hover:text-primary-content"
+                    >
+                      مشاهده همه محصولات
+                    </Link>
+                  </>
+                )}
               </div>
             )}
           </div>
