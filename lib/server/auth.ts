@@ -12,7 +12,26 @@ import type { AdminUser, Customer } from "../types";
 
 const SESSION_COOKIE = "mg_admin_session";
 const USER_SESSION_COOKIE = "mg_user_session";
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+/**
+ * How long a session stays valid.
+ *
+ * The panel is a tool its operator lives in, and signing in costs an SMS round
+ * trip every time, so an admin session lasts a month. A storefront customer
+ * keeps the original week — a shop session is lower value to hijack and higher
+ * value to expire.
+ *
+ * The same number is baked into the token at sign time AND used as the cookie's
+ * maxAge, so the browser and the server can never disagree about the deadline.
+ * Note this is an absolute expiry, not a rolling one: it counts from sign-in,
+ * not from last use, and changing it does not extend tokens already issued.
+ *
+ * Deploys do NOT end a session. The token is an HMAC over SESSION_SECRET, which
+ * lives in the server's .env and which ops/ci-deploy.sh preserves (it rewrites
+ * only the MG_IMAGE line), so a restart leaves every cookie valid.
+ */
+const ADMIN_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+const CUSTOMER_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 // ---------------------------------------------------------------- mappers
 type AdminRow = typeof adminUsers.$inferSelect;
@@ -65,8 +84,8 @@ function sign(data: string): string {
   return createHmac("sha256", SECRET).update(data).digest("base64url");
 }
 
-export function createSessionToken(userId: number): string {
-  const payload: SessionPayload = { userId, exp: Date.now() + SESSION_TTL_MS };
+export function createSessionToken(userId: number, ttlMs: number): string {
+  const payload: SessionPayload = { userId, exp: Date.now() + ttlMs };
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return `${body}.${sign(body)}`;
 }
@@ -92,11 +111,11 @@ export function verifySessionToken(token: string | undefined): SessionPayload | 
 
 export async function setSessionCookie(userId: number): Promise<void> {
   const store = await cookies();
-  store.set(SESSION_COOKIE, createSessionToken(userId), {
+  store.set(SESSION_COOKIE, createSessionToken(userId, ADMIN_SESSION_TTL_MS), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: SESSION_TTL_MS / 1000,
+    maxAge: ADMIN_SESSION_TTL_MS / 1000,
     path: "/",
   });
 }
@@ -158,11 +177,11 @@ export async function findAdminByPhone(phone: string): Promise<AdminUser | undef
 
 export async function setCustomerSessionCookie(customerId: number): Promise<void> {
   const store = await cookies();
-  store.set(USER_SESSION_COOKIE, createSessionToken(customerId), {
+  store.set(USER_SESSION_COOKIE, createSessionToken(customerId, CUSTOMER_SESSION_TTL_MS), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: SESSION_TTL_MS / 1000,
+    maxAge: CUSTOMER_SESSION_TTL_MS / 1000,
     path: "/",
   });
 }
