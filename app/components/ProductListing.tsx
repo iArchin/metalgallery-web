@@ -675,7 +675,7 @@ export default function ProductListing({
                         href={`/product/${product.id}`}
                         className="group bg-surface border border-border rounded-2xl shadow-sm p-3 sm:p-4 transition-colors block"
                       >
-                        <div className="relative aspect-square w-full overflow-hidden rounded-xl sm:rounded-2xl bg-surface-2 mb-3 sm:mb-4">
+                        <div className="relative aspect-square w-full overflow-hidden rounded-xl sm:rounded-2xl bg-product-canvas mb-3 sm:mb-4">
                           <img
                             src={productImage(product)}
                             alt={product.name}

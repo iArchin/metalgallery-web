@@ -228,7 +228,7 @@ export default function CartClient({
             >
               <Link
                 href={`/product/${item.productId}`}
-                className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden bg-surface-2"
+                className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden bg-product-canvas"
               >
                 <img
                   src={productImage(item)}

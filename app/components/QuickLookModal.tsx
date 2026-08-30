@@ -124,7 +124,7 @@ export default function QuickLookModal({ product, open, onClose }: QuickLookModa
 
         <div className="grid md:grid-cols-2">
           {/* Image Section */}
-          <div className="relative h-72 sm:h-80 md:h-full min-h-80 bg-surface-2 overflow-hidden rounded-t-3xl md:rounded-t-none md:rounded-r-3xl">
+          <div className="relative h-72 sm:h-80 md:h-full min-h-80 bg-product-canvas overflow-hidden rounded-t-3xl md:rounded-t-none md:rounded-r-3xl">
             <img
               src={productImage(product, 1000, 1000)}
               alt={product.name}

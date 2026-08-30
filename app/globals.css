@@ -35,6 +35,13 @@
   --border: #e6e7ea;
   --border-strong: #d4d6db;
 
+  /* The canvas behind a product photo. Product images are `object-contain`, so
+     this colour IS the letterbox around them — and product photography is shot
+     on white, which is why it stays white in BOTH themes rather than following
+     the surface scale. On a grey canvas every photo showed its own white
+     background as a visible rectangle. */
+  --product-canvas: #ffffff;
+
   /* Primary action — the one accent */
   --primary: #ff5a5f;
   --primary-hover: #f2464b;
@@ -91,6 +98,7 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
+  --color-product-canvas: var(--product-canvas);
 
   --color-content: var(--content);
   --color-content-muted: var(--content-muted);

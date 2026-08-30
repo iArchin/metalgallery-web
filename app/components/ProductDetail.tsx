@@ -118,7 +118,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
           {/* Image Gallery */}
           <div>
             <div className="mb-4">
-              <div className="relative h-64 sm:h-80 md:h-auto md:aspect-[4/3] md:min-h-96 w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
+              <div className="relative h-64 sm:h-80 md:h-auto md:aspect-[4/3] md:min-h-96 w-full overflow-hidden rounded-2xl bg-product-canvas mb-4">
                 <img
                   src={galleryImages[selectedImage]}
                   alt={`${product.name} - تصویر ${toPersianNumber(
@@ -139,7 +139,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`shrink-0 h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-xl border-2 bg-surface-2 transition-colors ${
+                    className={`shrink-0 h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-xl border-2 bg-product-canvas transition-colors ${
                       selectedImage === index
                         ? "border-primary ring-2 ring-primary"
                         : "border-border hover:border-border-strong"
@@ -455,7 +455,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
                 href={`/product/${relatedProduct.id}`}
                 className="group border border-border bg-surface rounded-2xl p-3 sm:p-4 shadow-sm transition-colors"
               >
-                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-surface-2 mb-3">
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-product-canvas mb-3">
                   <img
                     src={productImage(relatedProduct)}
                     alt={relatedProduct.name}

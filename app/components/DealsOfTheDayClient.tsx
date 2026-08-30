@@ -213,7 +213,7 @@ export default function DealsOfTheDayClient({
                   href={`/product/${product.id}`}
                   className="group shrink-0 snap-start w-56 sm:w-64 3xl:w-72 4xl:w-80 bg-surface border border-border rounded-2xl p-4 shadow-sm transition-colors block"
                 >
-                  <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
+                  <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-product-canvas mb-4">
                     <img
                       src={productImage(product)}
                       alt={product.name}

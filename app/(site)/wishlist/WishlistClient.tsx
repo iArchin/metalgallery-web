@@ -136,7 +136,7 @@ export default function WishlistClient({ products }: { products: Product[] }) {
               >
                 <Link
                   href={`/product/${item.id}`}
-                  className="block aspect-square rounded-xl overflow-hidden bg-surface-2 mb-3"
+                  className="block aspect-square rounded-xl overflow-hidden bg-product-canvas mb-3"
                 >
                   <img
                     src={productImage(item)}

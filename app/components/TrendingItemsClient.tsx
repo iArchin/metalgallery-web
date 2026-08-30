@@ -95,7 +95,7 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
                   content — no towering image, no void, even padding all round. */}
               <div
                 key={`img-${p.id}`}
-                className="animate-spotlight relative aspect-square sm:aspect-auto overflow-hidden rounded-2xl bg-surface-2"
+                className="animate-spotlight relative aspect-square sm:aspect-auto overflow-hidden rounded-2xl bg-product-canvas"
               >
                 <img
                   src={productImage(p, 600, 600)}
@@ -204,7 +204,7 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
                       : "border-border bg-surface hover:border-primary/40 hover:bg-surface-2/50"
                   }`}
                 >
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-surface-2">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-product-canvas">
                     <img
                       src={productImage(f, 160, 160)}
                       alt={f.name}
