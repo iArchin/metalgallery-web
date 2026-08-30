@@ -9,6 +9,15 @@ import type { HeroSlide } from "@/lib/types";
 const AUTOPLAY_MS = 6000;
 
 /**
+ * The headline scale, shared by the h1 and by the plain <p> the other slides
+ * use, so the two can never drift apart visually. It climbs through the
+ * project's wide breakpoints (3xl = 1920px, 4xl = 2560px) because a banner this
+ * tall looks empty at desktop type sizes.
+ */
+const TITLE_CLASS =
+  "mb-4 3xl:mb-6 font-extrabold leading-tight text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 3xl:text-8xl 4xl:text-[7rem] drop-shadow-sm";
+
+/**
  * Auto-rotating hero banner. Each slide carries its own image, badge, title,
  * subtitle and button. Progress is shown as segmented bars at the bottom: the
  * active bar fills over AUTOPLAY_MS and, when it finishes, advances the slide —
@@ -84,35 +93,57 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                   : undefined
               }
             />
+            {/* Two scrims. The horizontal one carries the text side; the
+                bottom one keeps the progress bars legible over a bright photo.
+                Below md the copy spans the full width, so the horizontal ramp
+                never reaches transparent there. */}
             <div
-              className="absolute inset-0 bg-linear-to-l from-black/75 via-black/45 to-transparent"
+              className="absolute inset-0 bg-linear-to-l from-black/85 via-black/55 to-black/20 md:from-black/80 md:via-black/40 md:to-transparent"
               aria-hidden
             />
-            <div className="relative z-10 flex h-full max-w-md flex-col justify-center p-6 sm:p-10 text-white">
-              {slide.badgeText && (
-                <span className="mb-3 inline-flex w-fit items-center rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-content">
-                  {toPersianNumber(slide.badgeText)}
-                </span>
-              )}
-              <h1 className="mb-3 text-2xl sm:text-3xl md:text-4xl font-extrabold leading-snug">
-                {slide.title}
-              </h1>
-              {slide.subtitle && (
-                <p className="mb-5 max-w-sm text-sm sm:text-base font-semibold text-white/85 leading-relaxed">
-                  {toPersianNumber(slide.subtitle)}
-                </p>
-              )}
-              {slide.ctaText && (
-                <div>
-                  <Link
-                    href={slide.ctaHref || "/products"}
-                    tabIndex={isActive ? undefined : -1}
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-surface px-8 py-3 text-lg font-bold text-content border border-border cursor-pointer transition-all duration-200 active:scale-95 hover:bg-surface-2 hover:border-border-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black/30"
-                  >
-                    {slide.ctaText}
-                  </Link>
+            <div
+              className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/60 to-transparent"
+              aria-hidden
+            />
+            {/* Copy sits on the site's own measure rather than the image edge,
+                so it stays aligned with every section below it — and does not
+                drift to the far corner of an ultrawide screen. */}
+            <div className="relative z-10 flex h-full items-center">
+              <div className="site-container">
+                <div className="max-w-xl pb-12 md:max-w-2xl lg:max-w-3xl 3xl:max-w-4xl text-white">
+                  {slide.badgeText && (
+                    <span className="mb-4 3xl:mb-6 inline-flex w-fit items-center rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-content sm:text-sm md:px-5 md:py-2 md:text-base 3xl:text-lg">
+                      {toPersianNumber(slide.badgeText)}
+                    </span>
+                  )}
+                  {/*
+                    Only the first slide's title is the page's h1 — every slide
+                    is in the DOM at once, so making them all h1 would ship a
+                    handful of competing headings on the home page.
+                  */}
+                  {i === 0 ? (
+                    <h1 className={TITLE_CLASS}>{slide.title}</h1>
+                  ) : (
+                    <p className={TITLE_CLASS}>{slide.title}</p>
+                  )}
+                  {slide.subtitle && (
+                    <p className="mb-7 3xl:mb-10 max-w-md md:max-w-lg lg:max-w-xl 3xl:max-w-2xl text-sm font-semibold leading-relaxed text-white/85 sm:text-base md:text-lg lg:text-xl 3xl:text-2xl 4xl:text-3xl">
+                      {toPersianNumber(slide.subtitle)}
+                    </p>
+                  )}
+                  {slide.ctaText && (
+                    <div>
+                      <Link
+                        href={slide.ctaHref || "/products"}
+                        tabIndex={isActive ? undefined : -1}
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface px-7 py-3 text-base font-bold text-content transition-all duration-200 cursor-pointer active:scale-95 hover:bg-surface-2 hover:border-border-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black/30 sm:px-9 sm:py-3.5 sm:text-lg md:px-10 md:py-4 md:text-xl 3xl:px-12 3xl:py-5 3xl:text-2xl"
+                      >
+                        {slide.ctaText}
+                      </Link>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         );
