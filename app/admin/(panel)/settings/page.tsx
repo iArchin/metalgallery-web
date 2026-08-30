@@ -31,19 +31,6 @@ import {
   useToast,
 } from "@/app/admin/_components/ui";
 
-/** Ready-made banners shipped with the site. An admin can also upload their own,
- *  so this is a shortcut list, not the set of allowed images. */
-const HERO_IMAGES = [
-  "/images/toy-hero.jpg",
-  "/images/toy-banner.jpg",
-  "/images/toy-promo.jpg",
-  "/images/toy-kids-1.jpg",
-  "/images/toy-kids-2.jpg",
-  "/images/toy-kids-3.jpg",
-  "/images/toy-kids-4.jpg",
-  "/images/toy-kids-5.jpg",
-] as const;
-
 interface HeroSlideForm {
   id: number;
   badgeText: string;
@@ -226,7 +213,7 @@ export default function AdminSettingsPage() {
         subtitle: "",
         ctaText: "مشاهده محصولات",
         ctaHref: "/products",
-        image: HERO_IMAGES[0],
+        image: "", // the admin uploads one; save is blocked until they do
         active: true,
       };
       // Open it: a slide added collapsed is an empty row the admin then has to
@@ -765,8 +752,9 @@ export default function AdminSettingsPage() {
                       تصویر اسلاید
                     </span>
                     <p className="text-xs text-content-subtle mb-2">
-                      تصویر دلخواه خود را بارگذاری کنید، یا یکی از بنرهای آماده را
-                      انتخاب کنید. فرمت JPG، PNG یا WebP و حداکثر ۵ مگابایت.
+                      هر اسلاید یک تصویر دارد. تصویر خود را بارگذاری کنید — فرمت
+                      JPG، PNG یا WebP و حداکثر ۵ مگابایت. برای بنر صفحه نخست
+                      تصویر افقی (مثلاً ۱۶:۹) بهترین نتیجه را می‌دهد.
                     </p>
                     <div className="space-y-3">
                       <button
@@ -785,40 +773,20 @@ export default function AdminSettingsPage() {
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0-12l-4 4m4-4l4 4" />
                             </svg>
-                            بارگذاری تصویر جدید
+                            {slide.image ? "تغییر تصویر" : "بارگذاری تصویر"}
                           </>
                         )}
                       </button>
 
-                      {/* One scrolling row of small swatches, not a grid of
-                          large ones — these are a shortcut, not the subject. */}
-                      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-                        {HERO_IMAGES.map((src) => (
-                          <button
-                            type="button"
-                            key={src}
-                            onClick={() => patchSlide(slide.id, { image: src })}
-                            aria-pressed={slide.image === src}
-                            aria-label={`انتخاب تصویر ${src}`}
-                            className={`relative h-10 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
-                              slide.image === src
-                                ? "border-primary ring-2 ring-primary/30"
-                                : "border-border hover:border-border-strong"
-                            }`}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={src} alt="" className="h-full w-full object-cover" />
-                          </button>
-                        ))}
-                      </div>
 
-                      {/* The exact stored value, always visible and editable —
-                          an uploaded image matches no swatch above. */}
+                      {/* The stored path. Kept as the only way to see or repair
+                          the value — an upload that later 404s would otherwise
+                          be invisible and unfixable except by re-uploading. */}
                       <Input
                         value={slide.image}
                         onChange={(e) => patchSlide(slide.id, { image: e.target.value })}
                         dir="ltr"
-                        placeholder="/images/toy-hero.jpg"
+                        placeholder="/api/uploads/products/…"
                         aria-label="مسیر تصویر اسلاید"
                       />
                     </div>
