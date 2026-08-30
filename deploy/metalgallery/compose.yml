@@ -79,9 +79,14 @@ services:
     networks:
       - edge
 
-    # mg_data still carries the legacy JSON. It is mounted so the first boot on
-    # Postgres can IMPORT it (import-json.ts) during cutover; after that it is
-    # dormant. Safe to drop from this list once the data lives in Postgres.
+    # mg_data is NOT dormant — do not unmount it, and do not `docker volume rm`
+    # it. It holds /app/data/uploads, i.e. every product photo and hero banner
+    # an admin has uploaded; Postgres stores only the /api/uploads/... paths
+    # that point at them, so losing this volume 404s every image on the site
+    # while the catalogue still looks intact. (It also carries the legacy JSON
+    # that import-json.ts read during the Postgres cutover; that part is done.)
+    #
+    # ops/backup.sh covers Postgres only. This volume needs its own backup.
     volumes:
       - mg_data:/app/data
 
