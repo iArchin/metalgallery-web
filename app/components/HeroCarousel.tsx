@@ -112,13 +112,23 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               }
             />
             {/*
-              No overlay of any kind sits on the photo any more — it renders at
-              full opacity. The sky-to-white gradient moved BEHIND the slides,
-              onto the carousel itself, so it fills whatever the image does not
-              cover (the letterbox on phones) instead of tinting the image.
-              Legibility comes from a shadow on the glyphs, below, rather than
-              from darkening the picture.
+              The sky-to-white gradient, over the photo so it is actually
+              visible on desktop where the image covers the whole frame.
+
+              Deliberately light. It ran at 80% once to fight a black scrim that
+              sat above it; with that scrim gone for good, this much already
+              reads as a tint rather than bleaching the picture. The same
+              gradient also sits BEHIND the slides on the carousel itself, which
+              is what fills the letterbox around a contained image on phones.
+
+              What is NOT coming back is the black scrim. Legibility lives on
+              the glyphs now — see the text shadows below — so the photo is
+              never darkened to carry the copy.
             */}
+            <div
+              className="absolute inset-0 bg-linear-to-b from-[#AEDCEC]/30 via-[#AEDCEC]/12 to-white/18"
+              aria-hidden
+            />
             {/* Copy sits on the site's own measure rather than the image edge,
                 so it stays aligned with every section below it — and does not
                 drift to the far corner of an ultrawide screen. */}
