@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   // primitive: any URL here would be fetched and echoed by the provider.
   if (!isUploadedProductImage(image)) {
     return Response.json(
-      { ok: false, error: "فقط تصویرهای بارگذاری‌شده همین محصول قابل ویرایش هستند" },
+      { ok: false, error: "ابتدا تصویر را در پنل بارگذاری کنید" },
       { status: 400 }
     );
   }
