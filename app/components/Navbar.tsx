@@ -411,9 +411,9 @@ export default function Navbar({
                     placeholder="اسباب‌بازی مورد نظر را جستجو کنید"
                     className="w-full h-10 pl-10 pr-4 py-2 rounded-l-full bg-surface text-content text-sm placeholder:text-content-subtle placeholder:text-sm focus:outline-none text-right"
                   />
-                  <button className="absolute left-3 top-1/2 transform -translate-y-1/2 text-content-subtle hover:text-primary transition-colors">
+                  <button className="group absolute left-3 top-1/2 transform -translate-y-1/2 text-content-subtle hover:text-primary transition-colors">
                     <svg
-                      className="w-5 h-5"
+                      className="w-5 h-5 nav-lift"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -477,11 +477,11 @@ export default function Navbar({
                 (() => {
                   const href = phoneHref(primaryPhone);
                   const cls =
-                    "hidden lg:flex items-center gap-2 text-content-muted ml-4 border-l border-border pl-4";
+                    "group hidden lg:flex items-center gap-2 text-content-muted ml-4 border-l border-border pl-4";
                   const body = (
                     <>
                       <span className="text-sm">{toPersianNumber(primaryPhone.value)}</span>
-                      <ContactIcon name={primaryPhone.kind} />
+                      <ContactIcon name={primaryPhone.kind} className="w-5 h-5 nav-ring" />
                     </>
                   );
                   // A number we cannot normalise to a dialable form is shown as
@@ -509,10 +509,10 @@ export default function Navbar({
                       openDropdown === "notifications" ? null : "notifications"
                     )
                   }
-                  className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors relative"
+                  className="group h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors relative"
                 >
                   <svg
-                    className="w-5 h-5"
+                    className="w-5 h-5 nav-ring"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -582,10 +582,10 @@ export default function Navbar({
                       openDropdown === "favorites" ? null : "favorites"
                     )
                   }
-                  className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors relative"
+                  className="group h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors relative"
                 >
                   <svg
-                    className="w-5 h-5"
+                    className="w-5 h-5 nav-beat"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -638,10 +638,10 @@ export default function Navbar({
                       openDropdown === "basket" ? null : "basket"
                     )
                   }
-                  className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors relative"
+                  className="group h-10 w-10 inline-flex items-center justify-center rounded-full border border-border bg-surface-2 text-content hover:text-primary hover:border-primary transition-colors relative"
                 >
                   <svg
-                    className="w-5 h-5"
+                    className="w-5 h-5 nav-roll"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -754,7 +754,7 @@ export default function Navbar({
                     )
                   }
                   aria-label="حساب کاربری"
-                  className={`h-10 w-10 inline-flex items-center justify-center rounded-full transition-colors ${
+                  className={`group h-10 w-10 inline-flex items-center justify-center rounded-full transition-colors ${
                     customer?.avatar
                       ? ""
                       : "border border-border bg-surface-2 text-content hover:text-primary hover:border-primary"
@@ -765,7 +765,7 @@ export default function Navbar({
                     <img src={customer.avatar} alt="" className="block h-10 w-10 rounded-full object-cover" />
                   ) : (
                     <svg
-                      className="w-5 h-5"
+                      className="w-5 h-5 nav-lift"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
