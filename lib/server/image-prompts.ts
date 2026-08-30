@@ -51,8 +51,11 @@ const OUTPUT_RULES = [
  * item instead of a scale reference, and any background at all makes the shot
  * unusable next to the white-background photos in the same listing grid.
  */
+export const HAND_LENGTH_CM = 15;
+
 const HAND_RULES = [
   "Exactly ONE adult hand — a single hand only. Never two hands, never a second hand entering the frame.",
+  `The hand is a standard adult hand measuring exactly ${HAND_LENGTH_CM} cm from the wrist crease to the tip of the middle finger. It is the ruler in this photograph: everything else is sized against it.`,
   "The hand is bare, natural and well-groomed, with realistic skin texture and neutral short nails; no jewellery, no nail polish, no tattoos, no watch, no sleeve cuff.",
   "Show the hand and at most the wrist — no face, no arm past the wrist, no torso, no other body part.",
   "PURE WHITE seamless background (#FFFFFF), uniform edge to edge behind both the hand and the product; no room, no furniture, no surface texture, no gradient, no vignette.",
@@ -100,6 +103,24 @@ export interface ProductContext {
   /** Free-form spec pairs from the panel; dimension-like ones are picked out. */
   specifications?: Record<string, string>;
   ageGroup?: string;
+  /** The product's largest real dimension in centimetres, when the admin knows it. */
+  sizeCm?: number;
+}
+
+/**
+ * A plain-language size anchor for a product/hand ratio.
+ *
+ * Stating "13 cm" and "15 cm hand" and expecting the model to divide them does
+ * not work — it reliably renders the product too small. Giving it the answer as
+ * a proportion AND as something visual to picture is what actually lands.
+ */
+function scaleAnchor(ratio: number): string {
+  if (ratio >= 1.15) return "noticeably longer than the whole hand, overhanging it at both ends";
+  if (ratio >= 0.9) return "almost exactly as long as the entire hand, fingertip to wrist";
+  if (ratio >= 0.6) return "as long as the palm plus most of the fingers";
+  if (ratio >= 0.35) return "roughly the length of the palm alone";
+  if (ratio >= 0.2) return "about the length of the middle finger";
+  return "smaller than a single finger";
 }
 
 /**
@@ -138,18 +159,44 @@ export function buildImagePrompt(
     parts.push(`The product is: ${product.name.trim()}.`);
   }
 
+  const inHand = preset === "held-in-hand" || preset === "on-open-palm";
+  const size = product.sizeCm;
+
+  if (size && size > 0 && inHand) {
+    // The whole point of the exercise. Both measurements, the ratio worked out
+    // for the model, a picture of what that ratio looks like, and an explicit
+    // statement of the failure mode — because the observed failure is always
+    // the same one: the product rendered as a miniature sitting in a huge hand.
+    const percent = Math.round((size / HAND_LENGTH_CM) * 100);
+    parts.push(
+      [
+        "SCALE — after preserving the product, this is the most important constraint in this brief.",
+        `The product measures ${size} cm along its longest dimension.`,
+        `The hand measures ${HAND_LENGTH_CM} cm from wrist crease to fingertip.`,
+        `The product must therefore appear about ${percent}% of the hand's length in the frame — ${scaleAnchor(size / HAND_LENGTH_CM)}.`,
+        "Do NOT shrink the product to sit comfortably in the hand, and do NOT render it as a miniature or a toy-sized copy of itself.",
+        `If the finished image shows the product noticeably smaller than ${percent}% of the hand's length, the image is wrong.`,
+        "Scale the hand to the product if necessary, never the product to the hand.",
+      ].join(" ")
+    );
+  } else if (size && size > 0) {
+    parts.push(
+      `The product measures ${size} cm along its longest dimension. Keep every implied scale cue in the scene consistent with an object of that real size.`
+    );
+  }
+
   const dims = dimensionHints(product.specifications);
   if (dims.length > 0) {
     parts.push(
-      `Real measurements of the product: ${dims.join("; ")}. ` +
-        "Render it at exactly this real-world scale relative to everything else in the frame — " +
-        "a viewer must be able to judge its true size from the photograph."
+      `Further measurements from the product's specifications: ${dims.join("; ")}.`
     );
-  } else if (preset === "held-in-hand" || preset === "on-open-palm") {
-    // No measurements on file: say so, rather than letting the model default to
-    // a flattering (and misleading) size.
+  }
+
+  if (!size && inHand) {
+    // Nothing to anchor to: say so, rather than letting the model default to a
+    // flattering — and misleading — size.
     parts.push(
-      "Judge the product's size from the reference photograph and keep it consistent and believable against the hand; do not exaggerate its scale."
+      "No exact measurement is available. Judge the product's size from the reference photograph and keep it believable against the hand; do not render it smaller than it plausibly is."
     );
   }
 

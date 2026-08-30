@@ -62,7 +62,13 @@ export async function POST(req: Request) {
       ? (body.specifications as Record<string, string>)
       : undefined;
 
-  const prompt = buildImagePrompt(preset, { name, specifications }, extra);
+  // The product's real size, in centimetres. Bounded: a stray value here would
+  // otherwise reach the prompt as a nonsense ratio against the 15 cm hand.
+  const rawSize = Number(body.sizeCm);
+  const sizeCm =
+    Number.isFinite(rawSize) && rawSize > 0 && rawSize <= 300 ? rawSize : undefined;
+
+  const prompt = buildImagePrompt(preset, { name, specifications, sizeCm }, extra);
 
   try {
     const job = await startImageEdit({ imageUrl: absoluteImageUrl(image, req), prompt });

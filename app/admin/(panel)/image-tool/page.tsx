@@ -6,6 +6,7 @@ import GeneratingOverlay from "@/app/admin/_components/GeneratingOverlay";
 import {
   ErrorBlock,
   Field,
+  Input,
   Modal,
   PageHeader,
   Spinner,
@@ -98,6 +99,7 @@ export default function ImageToolPage() {
   const [preset, setPreset] = useState<PresetKey>("held-in-hand");
   const [extra, setExtra] = useState("");
   const [note, setNote] = useState("");
+  const [sizeCm, setSizeCm] = useState("");
 
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -183,6 +185,7 @@ export default function ImageToolPage() {
         preset,
         extra,
         name: note,
+        sizeCm: sizeCm.trim() ? Number(sizeCm) : undefined,
       });
 
       for (;;) {
@@ -318,8 +321,34 @@ export default function ImageToolPage() {
           </div>
 
           <Field
+            label="اندازه واقعی شیء (سانتی‌متر)"
+            hint="بلندترین بُعد شیء. دست داخل تصویر همیشه ۱۵ سانتی‌متر (از مچ تا نوک انگشت) در نظر گرفته می‌شود، پس این عدد تعیین می‌کند شیء چقدر بزرگ دیده شود."
+          >
+            <Input
+              type="number"
+              min={1}
+              max={300}
+              step="0.5"
+              value={sizeCm}
+              onChange={(e) => setSizeCm(e.target.value)}
+              disabled={working}
+              dir="ltr"
+              placeholder="13"
+            />
+          </Field>
+
+          {/* The ratio the prompt will state, shown before generating — the
+              earlier failure was silent, so make the instruction visible. */}
+          {sizeCm.trim() && Number(sizeCm) > 0 && (
+            <p className="-mt-2 rounded-lg bg-primary-soft px-3 py-2 text-xs font-semibold text-primary">
+              شیء حدود {Math.round((Number(sizeCm) / 15) * 100)}٪ طول دست دیده
+              خواهد شد.
+            </p>
+          )}
+
+          <Field
             label="نام یا توضیح شیء (اختیاری)"
-            hint="مثلاً «اکشن فیگور ۱۸ سانتی‌متری» — دانستن اندازه واقعی به مدل کمک می‌کند مقیاس را درست بسازد."
+            hint="مثلاً «اکشن فیگور مرد عنکبوتی» — کمک می‌کند مدل بداند با چه چیزی طرف است."
           >
             <Textarea
               rows={2}
@@ -327,7 +356,7 @@ export default function ImageToolPage() {
               onChange={(e) => setNote(e.target.value)}
               disabled={working}
               maxLength={200}
-              placeholder="اکشن فیگور ۱۸ سانتی‌متری"
+              placeholder="اکشن فیگور مرد عنکبوتی"
             />
           </Field>
 
