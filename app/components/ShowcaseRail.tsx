@@ -61,19 +61,31 @@ const ShowcaseRail = forwardRef<
   const trackRef = useRef<HTMLDivElement>(null);
   const raf = useRef<number | null>(null);
 
-  /** Scroll offset that puts card `i` in the middle of the track. */
+  /**
+   * The scrollLeft that centres card `i`.
+   *
+   * `offsetLeft` is measured from the content's left edge in both writing
+   * directions, so `target` — the content x that should sit at the viewport's
+   * left edge — is direction-agnostic. Converting it to scrollLeft is not:
+   *
+   *   LTR: scrollLeft runs [0, max] and equals target directly.
+   *   RTL: scrollLeft runs [-max, 0], and the visible left edge is
+   *        `max + scrollLeft` — so scrollLeft = target - max.
+   *
+   * Negating target instead (the previous attempt) sends card 0, whose
+   * offsetLeft in RTL is the LARGEST of the row, to the opposite end of the
+   * track. That is why it appeared to animate to the wrong place.
+   */
   const offsetFor = useCallback((i: number) => {
     const el = trackRef.current;
     const card = el?.children[i] as HTMLElement | undefined;
     if (!el || !card) return null;
-    // offsetLeft is measured from the track's left edge in both directions, so
-    // this arithmetic is the same for RTL and LTR — unlike scrollLeft, whose
-    // sign flips.
-    const target = card.offsetLeft - (el.clientWidth - card.offsetWidth) / 2;
-    const max = el.scrollWidth - el.clientWidth;
-    const clamped = Math.max(0, Math.min(target, max));
-    // ...but the value we assign does carry the axis sign.
-    return getComputedStyle(el).direction === "rtl" ? -clamped : clamped;
+    const view = el.clientWidth;
+    const max = el.scrollWidth - view;
+    const target = card.offsetLeft - (view - card.offsetWidth) / 2;
+    return getComputedStyle(el).direction === "rtl"
+      ? Math.min(0, Math.max(-max, target - max))
+      : Math.max(0, Math.min(target, max));
   }, []);
 
   const goTo = useCallback(
@@ -109,13 +121,15 @@ const ShowcaseRail = forwardRef<
   const nearest = useCallback(() => {
     const el = trackRef.current;
     if (!el) return 0;
-    const pos = Math.abs(el.scrollLeft);
+    // Both sides are now real scrollLeft values, signs included, so compare
+    // them directly rather than on magnitude.
+    const pos = el.scrollLeft;
     let best = 0;
     let bestD = Infinity;
     for (let i = 0; i < el.children.length; i++) {
       const o = offsetFor(i);
       if (o === null) continue;
-      const d = Math.abs(Math.abs(o) - pos);
+      const d = Math.abs(o - pos);
       if (d < bestD) {
         bestD = d;
         best = i;
@@ -157,11 +171,7 @@ const ShowcaseRail = forwardRef<
             src={item.image}
             alt=""
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-[1.03]"
-          />
-          <span
-            className="absolute inset-0 bg-linear-to-t from-black/70 via-black/15 to-transparent"
-            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover"
           />
           {item.tag && (
             <span className="absolute top-3 left-3 rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-primary-content sm:top-4 sm:left-4 sm:text-xs">
@@ -173,21 +183,21 @@ const ShowcaseRail = forwardRef<
             /* Wide row: pill and its caption sit side by side along the bottom,
                the way Apple runs "Stream now · The truth lies in the past." */
             <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-x-3 gap-y-1.5 p-4 sm:p-6">
-              <span className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900 shadow-sm transition-transform group-hover/card:scale-105 sm:text-sm">
+              <span className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900 transition-opacity group-hover/card:opacity-90 sm:text-sm">
                 {item.cta}
               </span>
-              <span className="text-xs font-semibold text-white/90 drop-shadow sm:text-sm">
+              <span className="text-xs font-semibold text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.6)] sm:text-sm">
                 <span className="font-extrabold">{item.title}</span>
-                {item.subtitle && <span className="text-white/70"> · {item.subtitle}</span>}
+                {item.subtitle && <span className="text-white/80"> · {item.subtitle}</span>}
               </span>
             </div>
           ) : (
             /* Narrow row: title bottom-start, pill bottom-end. */
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 sm:p-4">
-              <span className="min-w-0 truncate text-xs font-extrabold text-white drop-shadow sm:text-sm">
+              <span className="min-w-0 truncate text-xs font-extrabold text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.6)] sm:text-sm">
                 {item.title}
               </span>
-              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-neutral-900 shadow-sm transition-transform group-hover/card:scale-105">
+              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-neutral-900 transition-opacity group-hover/card:opacity-90">
                 {item.cta}
               </span>
             </div>
