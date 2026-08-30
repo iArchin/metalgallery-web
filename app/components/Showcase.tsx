@@ -1,4 +1,5 @@
-import ShowcaseRail, { type RailItem } from "@/app/components/ShowcaseRail";
+import ShowcaseRails from "@/app/components/ShowcaseRails";
+import type { RailItem } from "@/app/components/ShowcaseRail";
 import { categoriesRepo, listProducts } from "@/lib/server/repos";
 import { productImage } from "@/app/utils/images";
 import { toPersianNumber } from "@/app/utils/numbers";
@@ -53,21 +54,9 @@ export default async function Showcase() {
 
   return (
     <section className="bg-background py-12 md:py-16 3xl:py-20">
-      <div className="site-container mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl 3xl:text-4xl font-extrabold text-content">
-          دنیای متال گالری
-        </h2>
-        <p className="mt-2 text-sm sm:text-base text-content-muted">
-          پیشنهادهای ویژه و دسته‌بندی‌های محبوب، یک‌جا
-        </p>
-      </div>
-
       {/* Full-bleed on purpose: the cards run to the edge of the viewport and
           the last one peeks, which is what signals the row scrolls. */}
-      <div className="space-y-4 sm:space-y-5">
-        <ShowcaseRail items={featuredItems} size="lg" label="پیشنهادهای ویژه" />
-        <ShowcaseRail items={categoryItems} size="sm" label="دسته‌بندی‌ها" />
-      </div>
+      <ShowcaseRails featured={featuredItems} categories={categoryItems} />
     </section>
   );
 }
