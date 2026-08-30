@@ -196,9 +196,13 @@ export default function AdminProductsPage() {
   }
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  // Clamp rather than store: deleting the last product on the final page would
-  // otherwise leave `page` pointing past the end and render an empty table.
-  const currentPage = Math.min(page, pageCount);
+  // Clamp AND write back. Deriving alone fixes the render but leaves `page`
+  // holding an out-of-range value, and once the list shrinks to one page the
+  // pagination strip disappears — so nothing can reset it, and the table
+  // silently teleports back the moment the list grows again. pageCount is
+  // fixed within a render, so this converges in one extra pass.
+  const currentPage = Math.min(Math.max(1, page), pageCount);
+  if (currentPage !== page) setPage(currentPage);
   const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const goToPage = (n: number) => {
@@ -297,6 +301,7 @@ export default function AdminProductsPage() {
       if (editingId === null) {
         await apiSend<Product>("/api/products", "POST", payload);
         show("محصول جدید ثبت شد");
+        setPage(1); // the new row sorts to the top — go where it actually is
       } else {
         await apiSend<Product>(`/api/products/${editingId}`, "PUT", payload);
         show("محصول به‌روزرسانی شد");
@@ -389,7 +394,7 @@ export default function AdminProductsPage() {
                       src={productImage(p, 96, 96)}
                       alt={p.name}
                       loading="lazy"
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain"
                     />
                   </div>
                 </td>
@@ -538,7 +543,7 @@ export default function AdminProductsPage() {
                   <img
                     src={src}
                     alt={`تصویر ${toPersianNumber(index + 1)} محصول`}
-                    className="h-full w-full object-contain p-1"
+                    className="h-full w-full object-contain"
                   />
                   <button
                     type="button"
@@ -618,7 +623,9 @@ export default function AdminProductsPage() {
               <span className="me-auto">
                 <ViewOnSiteLink
                   href={storeHref(`/product/${editingId}`)}
-                  active={form.active}
+                  // The SAVED state, not the modal's toggle: an unsaved flip to
+                  // active would offer a link the storefront still 404s.
+                  active={products.find((p) => p.id === editingId)?.active ?? false}
                 />
               </span>
             )}

@@ -1,8 +1,10 @@
 import {
+  phoneE164,
   siteAddresses,
   sitePhones,
   type SiteSettings,
 } from "@/lib/types";
+import { jsonLdScript } from "@/app/utils/jsonld";
 
 /**
  * Organization structured data for SEO, built from the live settings.
@@ -31,32 +33,41 @@ export default function JsonLdOrganization({
     email: settings.email || undefined,
     // schema.org takes arrays here, so every listed number is published, and
     // contactType carries the landline/mobile distinction machine-readably.
-    telephone: phones.map((p) => p.value),
-    contactPoint: phones.map((p) => ({
-      "@type": "ContactPoint",
-      telephone: p.value,
-      contactType: p.kind === "whatsapp" ? "customer support" : "customer service",
-      areaServed: "IR",
-      availableLanguage: ["Persian", "English"],
-    })),
-    address: addresses.map((a) => ({
-      "@type": "PostalAddress",
-      streetAddress: a.value,
-      addressCountry: "IR",
-    })),
+    // Published in E.164 — the local "021-…" form is ambiguous to a crawler.
+    // `undefined` rather than an empty array when there is nothing: Rich
+    // Results flags an empty-valued property, but not an absent one.
+    telephone: phones.length
+      ? phones.map((p) => phoneE164(p.value) ?? p.value)
+      : undefined,
+    contactPoint: phones.length
+      ? phones.map((p) => ({
+          "@type": "ContactPoint",
+          telephone: phoneE164(p.value) ?? p.value,
+          contactType: p.kind === "whatsapp" ? "customer support" : "customer service",
+          areaServed: "IR",
+          availableLanguage: ["Persian", "English"],
+        }))
+      : undefined,
+    address: addresses.length
+      ? addresses.map((a) => ({
+          "@type": "PostalAddress",
+          streetAddress: a.value,
+          addressCountry: "IR",
+        }))
+      : undefined,
     openingHours: settings.workingHours || undefined,
     sameAs: [
-      settings.socials.instagram,
-      settings.socials.twitter,
-      settings.socials.facebook,
-      settings.socials.linkedin,
+      settings.socials?.instagram,
+      settings.socials?.twitter,
+      settings.socials?.facebook,
+      settings.socials?.linkedin,
     ].filter(Boolean),
   };
 
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
     />
   );
 }

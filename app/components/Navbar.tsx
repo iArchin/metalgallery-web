@@ -9,8 +9,8 @@ import { toyImage, productImage } from "../utils/images";
 import { toPersianNumber, formatPersianNumber } from "../utils/numbers";
 import { useCart } from "@/app/components/CartContext";
 import {
+  guessPhoneKind,
   phoneHref,
-  type PhoneKind,
   type Product,
   type SitePhone,
 } from "@/lib/types";
@@ -185,6 +185,7 @@ export default function Navbar({
   // them — see the click-outside handler below.
   const megaMenuRef = useRef<HTMLDivElement>(null); // categories trigger
   const megaPanelRef = useRef<HTMLDivElement>(null); // categories panel
+  const servicesTriggerRef = useRef<HTMLDivElement>(null); // services trigger
   const servicesMenuRef = useRef<HTMLDivElement>(null); // services panel
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const basketDropdownRef = useRef<HTMLDivElement>(null);
@@ -202,9 +203,12 @@ export default function Navbar({
       // the browser fire the click on a *different* element, and the link never
       // navigates. The panel therefore has to count as "inside" — leaving
       // megaPanelRef out of this list is what stopped category links working.
-      const insideAMegaMenu = [megaMenuRef, megaPanelRef, servicesMenuRef].some(
-        (ref) => ref.current?.contains(target)
-      );
+      const insideAMegaMenu = [
+        megaMenuRef,
+        megaPanelRef,
+        servicesTriggerRef,
+        servicesMenuRef,
+      ].some((ref) => ref.current?.contains(target));
       if (!insideAMegaMenu) {
         setActiveMegaMenu(null);
       }
@@ -247,9 +251,7 @@ export default function Navbar({
     if (first) return first;
     const legacy = settings?.phone?.trim();
     if (!legacy) return null;
-    const digits = legacy.replace(/\D/g, "");
-    const kind: PhoneKind = /^(09|989)/.test(digits) ? "mobile" : "landline";
-    return { id: 0, label: "", value: legacy, kind };
+    return { id: 0, label: "", value: legacy, kind: guessPhoneKind(legacy) };
   })();
 
   // Real, admin-managed categories (passed from the server layout), plus the
@@ -471,15 +473,27 @@ export default function Navbar({
 
             {/* Right Icons */}
             <div className="flex items-center gap-2.5 sm:gap-3 justify-end">
-              {primaryPhone && (
-                <a
-                  href={phoneHref(primaryPhone)}
-                  className="hidden lg:flex items-center gap-2 text-content-muted ml-4 border-l border-border pl-4 transition-colors hover:text-primary"
-                >
-                  <span className="text-sm">{toPersianNumber(primaryPhone.value)}</span>
-                  <ContactIcon name={primaryPhone.kind} />
-                </a>
-              )}
+              {primaryPhone &&
+                (() => {
+                  const href = phoneHref(primaryPhone);
+                  const cls =
+                    "hidden lg:flex items-center gap-2 text-content-muted ml-4 border-l border-border pl-4";
+                  const body = (
+                    <>
+                      <span className="text-sm">{toPersianNumber(primaryPhone.value)}</span>
+                      <ContactIcon name={primaryPhone.kind} />
+                    </>
+                  );
+                  // A number we cannot normalise to a dialable form is shown as
+                  // plain text rather than as a tap-to-call link that fails.
+                  return href ? (
+                    <a href={href} className={`${cls} transition-colors hover:text-primary`}>
+                      {body}
+                    </a>
+                  ) : (
+                    <div className={cls}>{body}</div>
+                  );
+                })()}
 
               {/* Theme Toggle */}
               <ThemeToggle />
@@ -1120,6 +1134,7 @@ export default function Navbar({
                 >
                   فروشگاه
                 </Link>
+                <div ref={servicesTriggerRef} className="relative">
                 <button
                   onMouseEnter={() => setActiveMegaMenu("services")}
                   onClick={() =>
@@ -1146,6 +1161,7 @@ export default function Navbar({
                     />
                   </svg>
                 </button>
+                </div>
                 <Link
                   href="/blog"
                   className="text-content-muted hover:text-primary transition-colors"

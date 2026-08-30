@@ -209,7 +209,7 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
                       src={productImage(f, 160, 160)}
                       alt={f.name}
                       loading="lazy"
-                      className="h-full w-full object-contain p-1"
+                      className="h-full w-full object-contain"
                     />
                     {fOff > 0 && (
                       <span className="absolute bottom-0 inset-x-0 bg-primary/90 text-center text-[10px] font-extrabold text-primary-content">

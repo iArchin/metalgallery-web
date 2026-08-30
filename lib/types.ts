@@ -230,9 +230,23 @@ export interface SiteSettings {
   shippingCost: number;
 }
 
+/**
+ * Persian and Arabic-Indic digits to ASCII. Numbers are typed into a Persian
+ * UI, so a phone stored as "۰۹۱۲۳۴۵۶۷۸۹" is entirely normal — and JS `\d` is
+ * ASCII-only, so without this every parse below would silently strip the whole
+ * number and produce a dead link. (lib/server/otp.ts has the same helper; this
+ * copy exists because types.ts is imported by client components and must not
+ * pull in anything from lib/server.)
+ */
+export function toAsciiDigits(input: string): string {
+  return input
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+}
+
 /** Iranian mobile numbers start 09 / +989; anything else is treated as a landline. */
 export function guessPhoneKind(value: string): PhoneKind {
-  const digits = value.replace(/\D/g, "");
+  const digits = toAsciiDigits(value).replace(/\D/g, "");
   return /^(09|989)/.test(digits) ? "mobile" : "landline";
 }
 
@@ -261,19 +275,37 @@ export function siteAddresses(
 }
 
 /**
- * A dialable href. Iranian numbers are normalised to +98 so the link also works
- * from abroad and when saved as a contact; WhatsApp gets a wa.me link instead,
- * which is what tapping a WhatsApp number is expected to do.
+ * A number in E.164 (+98…), or null when it cannot plausibly be one. Iranian
+ * numbers are written half a dozen ways — 021-555-0112, 0912 345 6789,
+ * +98 912…, 0098…, 98… — and all of them must reach the same dialable form so
+ * the link works from abroad and survives being saved as a contact.
  */
-export function phoneHref(p: SitePhone): string {
-  const raw = p.value.replace(/[^\d+]/g, "");
-  const intl = raw.startsWith("+")
-    ? raw
-    : raw.startsWith("00")
-      ? `+${raw.slice(2)}`
-      : raw.startsWith("0")
-        ? `+98${raw.slice(1)}`
-        : `+98${raw}`;
+export function phoneE164(value: string): string | null {
+  const raw = toAsciiDigits(value).replace(/[^\d+]/g, "");
+  let intl: string;
+  if (raw.startsWith("+")) intl = raw;
+  else if (raw.startsWith("00")) intl = `+${raw.slice(2)}`;
+  else if (raw.startsWith("0")) intl = `+98${raw.slice(1)}`;
+  // Already international but missing its plus: "98…" with a full national
+  // number behind it. Length-guarded so a local number starting 98 is not
+  // mistaken for a country code.
+  else if (/^98\d{9,10}$/.test(raw)) intl = `+${raw}`;
+  else intl = `+98${raw}`;
+  // A trunk zero after the country code is never dialed internationally.
+  intl = intl.replace(/^\+980/, "+98");
+  // Too few digits to be a real number — an area-code-less local extension, or
+  // an empty value. Better no link than a link that fails to dial.
+  return intl.replace(/\D/g, "").length >= 11 ? intl : null;
+}
+
+/**
+ * A dialable href, or undefined when the stored value is not usable as one —
+ * callers render plain text in that case rather than a broken tap-to-call.
+ * WhatsApp gets a wa.me link, which is what tapping such a number should do.
+ */
+export function phoneHref(p: SitePhone): string | undefined {
+  const intl = phoneE164(p.value);
+  if (!intl) return undefined;
   return p.kind === "whatsapp"
     ? `https://wa.me/${intl.replace(/\D/g, "")}`
     : `tel:${intl}`;

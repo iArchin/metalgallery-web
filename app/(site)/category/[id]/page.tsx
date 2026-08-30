@@ -20,9 +20,11 @@ interface CategoryPageProps {
  * Postgres rejects with a 500 instead of the 404 a bad URL deserves.
  */
 function parseCategoryId(raw: string): number | null {
-  if (!/^\d+$/.test(raw)) return null;
+  // No leading zeros: "/category/007" would otherwise be a second 200 URL for
+  // category 7, and so would every longer padding of it, without bound.
+  if (!/^[1-9]\d*$/.test(raw)) return null;
   const n = Number(raw);
-  return Number.isSafeInteger(n) && n > 0 ? n : null;
+  return Number.isSafeInteger(n) ? n : null;
 }
 
 export async function generateMetadata({

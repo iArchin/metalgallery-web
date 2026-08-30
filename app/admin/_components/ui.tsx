@@ -245,11 +245,13 @@ export function ViewOnSiteLink({
     </svg>
   );
 
-  if (!active) {
+  // An empty href means siteHref could not work out the storefront's address
+  // (NEXT_PUBLIC_SITE_URL missing on an admin.* build) — there is nowhere to go.
+  if (!active || !href) {
     return (
       <span
         className={`${base} text-content-subtle cursor-not-allowed`}
-        title={inactiveTitle}
+        title={href ? inactiveTitle : "آدرس سایت پیکربندی نشده است"}
         aria-disabled
       >
         {icon}

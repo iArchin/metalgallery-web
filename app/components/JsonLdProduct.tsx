@@ -1,4 +1,5 @@
 import type { Product } from "@/lib/types";
+import { jsonLdScript } from "@/app/utils/jsonld";
 
 /**
  * JSON-LD Product structured data for SEO.
@@ -46,7 +47,7 @@ export default function JsonLdProduct({ product }: { product: Product }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(clean) }}
+      dangerouslySetInnerHTML={{ __html: jsonLdScript(clean) }}
     />
   );
 }

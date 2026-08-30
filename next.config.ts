@@ -40,6 +40,16 @@ const nextConfig: NextConfig = {
     return {
       beforeFiles: [
         { source: "/", has: onAdminHost, destination: "/admin" },
+        // These two ARE app routes, not files in public/, so the dot rule below
+        // would hand the admin host the storefront's copies — a robots.txt
+        // saying `Allow: /` and `Disallow: /admin/`, which on this host means
+        // "crawl the whole panel", and a sitemap of storefront URLs. Route them
+        // into the panel, where neither exists, so they 404 as they did before.
+        {
+          source: "/:file(robots\\.txt|sitemap\\.xml)",
+          has: onAdminHost,
+          destination: "/admin/:file",
+        },
         {
           source: "/:path((?!api|_next|admin)(?!.*\\.).*)",
           has: onAdminHost,

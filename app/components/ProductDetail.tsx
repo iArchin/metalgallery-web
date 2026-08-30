@@ -118,7 +118,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
           {/* Image Gallery */}
           <div>
             <div className="mb-4">
-              <div className="relative h-64 sm:h-80 md:h-auto md:aspect-[4/3] w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
+              <div className="relative h-64 sm:h-80 md:h-auto md:aspect-[4/3] md:min-h-96 w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
                 <img
                   src={galleryImages[selectedImage]}
                   alt={`${product.name} - تصویر ${toPersianNumber(

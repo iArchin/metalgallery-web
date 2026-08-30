@@ -44,13 +44,15 @@ export function adminHref(base: AdminBase, path: string): string {
  * root-relative path is both correct and portable (localhost, staging, prod).
  * On the admin subdomain it is a different origin, so the link has to be
  * absolute, and NEXT_PUBLIC_SITE_URL is the only thing that knows the main
- * site's address. When that is unset — local dev against admin.localhost —
- * fall back to the relative path: it may not resolve, but it is never a
- * link to the wrong site.
+ * site's address. When that is unset — a local or staging admin.* build that
+ * did not receive the build arg — return "" rather than the relative path: the
+ * host rewrite would turn that path back into a panel route and open a 404 in
+ * a new tab. Callers render an inert control for an empty href, which is
+ * honest about there being nowhere to go.
  */
 export function siteHref(base: AdminBase, path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
   if (base === "/admin") return p;
   const origin = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
-  return origin ? `${origin}${p}` : p;
+  return origin ? `${origin}${p}` : "";
 }

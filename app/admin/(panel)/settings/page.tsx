@@ -55,15 +55,6 @@ interface HeroSlideForm {
   active: boolean;
 }
 
-/**
- * A miniature of how the slide actually renders on the home page — the same
- * image fit, gradient and conditional badge/subtitle/button as HeroCarousel.
- *
- * This is what makes the CURRENT image visible: the swatch grid below can only
- * highlight one of the ready-made banners, so an uploaded (or hand-typed) image
- * used to leave the editor showing nothing selected and no way to tell what the
- * slide would look like.
- */
 /** Reorder arrows shared by the phone and address repeaters. */
 function RowMoveButtons({
   onUp,
@@ -94,6 +85,15 @@ function RowMoveButtons({
   );
 }
 
+/**
+ * A miniature of how the slide actually renders on the home page — the same
+ * image fit, gradient and conditional badge/subtitle/button as HeroCarousel.
+ *
+ * This is what makes the CURRENT image visible: the swatch grid below can only
+ * highlight one of the ready-made banners, so an uploaded (or hand-typed) image
+ * used to leave the editor showing nothing selected and no way to tell what the
+ * slide would look like.
+ */
 function SlidePreview({ slide }: { slide: HeroSlideForm }) {
   return (
     <div className="relative aspect-[2/1] w-full overflow-hidden rounded-xl border border-border bg-surface-2">
@@ -149,9 +149,10 @@ function SlidePreview({ slide }: { slide: HeroSlideForm }) {
 interface SettingsForm {
   siteName: string;
   tagline: string;
-  phone: string;
+  // No `phone`/`address` scalars here: the lists below are the single source of
+  // truth, and the save body derives the scalars from them. Keeping a copy
+  // would silently go stale the moment a row is reordered.
   email: string;
-  address: string;
   workingHours: string;
   hero: {
     badgeText: string;
@@ -179,9 +180,7 @@ function toForm(s: SiteSettings): SettingsForm {
   return {
     siteName: s.siteName,
     tagline: s.tagline,
-    phone: s.phone,
     email: s.email,
-    address: s.address,
     workingHours: s.workingHours,
     hero: { ...s.hero },
     heroSlides: (s.heroSlides ?? []).map((sl) => ({ ...sl })),
@@ -342,7 +341,10 @@ export default function AdminSettingsPage() {
   // opened the picker so the result lands on the right slide.
   const slideFileRef = useRef<HTMLInputElement>(null);
   const [uploadForSlide, setUploadForSlide] = useState<number | null>(null);
-  const [uploadingSlide, setUploadingSlide] = useState<number | null>(null);
+  // A set, not a scalar: the file dialog is modal but the POST after it is not,
+  // so two slides can be uploading at once and a scalar would let each clear
+  // the other's spinner and re-enable a button mid-flight.
+  const [uploadingSlides, setUploadingSlides] = useState<number[]>([]);
 
   function pickSlideImage(id: number) {
     setUploadForSlide(id);
@@ -359,14 +361,14 @@ export default function AdminSettingsPage() {
 
     const fd = new FormData();
     fd.append("files", file); // the field name /api/admin/uploads expects
-    setUploadingSlide(id);
+    setUploadingSlides((s) => [...s, id]);
     try {
       const urls = await apiUpload<string[]>("/api/admin/uploads", fd);
       if (urls[0]) patchSlide(id, { image: urls[0] });
     } catch (err) {
       show(err instanceof Error ? err.message : "خطا در بارگذاری تصویر", "error");
     } finally {
-      setUploadingSlide(null);
+      setUploadingSlides((s) => s.filter((x) => x !== id));
     }
   }
 
@@ -750,18 +752,26 @@ export default function AdminSettingsPage() {
                       currently look like?" whatever the image path is. */}
                   <SlidePreview slide={slide} />
 
-                  <Field
-                    label="تصویر اسلاید"
-                    hint="تصویر دلخواه خود را بارگذاری کنید، یا یکی از بنرهای آماده را انتخاب کنید. فرمت JPG، PNG یا WebP و حداکثر ۵ مگابایت."
-                  >
+                  {/* Deliberately NOT <Field>: that renders a bare <label>, and
+                      a click anywhere on its text would activate the first
+                      labelable descendant — here the upload button — popping the
+                      file dialog on a slide the admin never meant to touch. */}
+                  <div>
+                    <span className="block text-sm font-semibold text-content mb-1.5">
+                      تصویر اسلاید
+                    </span>
+                    <p className="text-xs text-content-subtle mb-2">
+                      تصویر دلخواه خود را بارگذاری کنید، یا یکی از بنرهای آماده را
+                      انتخاب کنید. فرمت JPG، PNG یا WebP و حداکثر ۵ مگابایت.
+                    </p>
                     <div className="space-y-3">
                       <button
                         type="button"
                         onClick={() => pickSlideImage(slide.id)}
-                        disabled={uploadingSlide === slide.id}
+                        disabled={uploadingSlides.includes(slide.id)}
                         className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-bold text-content transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                       >
-                        {uploadingSlide === slide.id ? (
+                        {uploadingSlides.includes(slide.id) ? (
                           <>
                             <Spinner />
                             در حال بارگذاری…
@@ -806,7 +816,7 @@ export default function AdminSettingsPage() {
                         aria-label="مسیر تصویر اسلاید"
                       />
                     </div>
-                  </Field>
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="متن نشان (Badge)">

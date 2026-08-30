@@ -1,34 +1,14 @@
-import Link from "next/link";
+import NotFoundContent from "@/app/components/NotFoundContent";
 
 /**
- * Persian RTL 404 for the storefront. Without it a bad /category/999,
- * /product/999 or /blog/999 falls back to Next's default English LTR page in
- * the middle of an RTL site.
+ * 404 for notFound() thrown inside the storefront — a missing or deactivated
+ * category, product or article. Renders with the navbar and footer, so the
+ * visitor can carry on browsing.
  */
-export default function NotFound() {
+export default function SiteNotFound() {
   return (
-    <main className="site-container flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
-      <span className="mb-4 text-6xl sm:text-7xl font-extrabold text-primary/30">۴۰۴</span>
-      <h1 className="mb-3 text-2xl sm:text-3xl font-extrabold text-content">
-        صفحه‌ای که دنبالش بودید پیدا نشد
-      </h1>
-      <p className="mb-8 max-w-md text-sm sm:text-base text-content-muted leading-relaxed">
-        ممکن است آدرس را اشتباه وارد کرده باشید، یا این صفحه حذف شده باشد.
-      </p>
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <Link
-          href="/products"
-          className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-content transition-colors hover:bg-primary-hover"
-        >
-          مشاهده محصولات
-        </Link>
-        <Link
-          href="/"
-          className="inline-flex items-center justify-center rounded-full border border-border px-6 py-2.5 text-sm font-bold text-content transition-colors hover:bg-surface-2"
-        >
-          بازگشت به خانه
-        </Link>
-      </div>
+    <main className="site-container">
+      <NotFoundContent />
     </main>
   );
 }

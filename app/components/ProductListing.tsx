@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/app/components/Button";
 import { useCart } from "@/app/components/CartContext";
@@ -106,7 +106,6 @@ export default function ProductListing({
   lockedCategoryId,
 }: ProductListingProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const categoryFromUrl = searchParams.get("category");
   const qFromUrl = searchParams.get("q");
@@ -330,7 +329,12 @@ export default function ProductListing({
    * own previous value — then swallows a later click on a mega-menu link that
    * points at the category the URL still claims is selected. Writing the URL
    * also makes a filtered view shareable and keeps the Back button honest.
-   * `replace`, not `push`: adjusting a filter is not a separate destination.
+   *
+   * history.replaceState rather than router.replace: /products is force-dynamic,
+   * so router.replace would refetch the RSC payload — re-running listProducts()
+   * and getSettings() — on every radio click, for a filter this component
+   * already applies client-side. Next syncs useSearchParams() from the native
+   * history methods, so the guards above still see the change.
    */
   const setUrlParam = useCallback(
     (key: string, value: string | null) => {
@@ -338,9 +342,9 @@ export default function ProductListing({
       if (value === null) params.delete(key);
       else params.set(key, value);
       const qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
     },
-    [router, pathname, searchParams]
+    [pathname, searchParams]
   );
 
   const chooseCategory = (id: number | null) => {
@@ -362,7 +366,7 @@ export default function ProductListing({
     setCurrentPage(1);
     setShowFilters(false);
     // Clear the params too, or a refresh (or Back) silently re-applies them.
-    router.replace(pathname, { scroll: false });
+    window.history.replaceState(null, "", pathname);
   };
 
   const handleAddToCart = (product: Product) => {
@@ -676,7 +680,7 @@ export default function ProductListing({
                             src={productImage(product)}
                             alt={product.name}
                             loading="lazy"
-                            className={`h-full w-full object-contain p-2 ${
+                            className={`h-full w-full object-contain p-1 sm:p-2 ${
                               outOfStock ? "opacity-60 grayscale" : ""
                             }`}
                           />
@@ -825,8 +829,10 @@ export default function ProductListing({
                 <h3 className="text-lg sm:text-xl font-semibold text-content mb-2">
                   محصولی یافت نشد
                 </h3>
-                {/* With no filter applied there is nothing to clear — the
-                    category is simply still empty. Offer the shop instead. */}
+                {/* Three cases, and the copy has to match: filters hid
+                    everything, an empty category, or an empty shop. Offering
+                    "پاک کردن فیلترها" with no filters set, or a link to
+                    /products from /products, are both dead ends. */}
                 {hasActiveFilters ? (
                   <>
                     <p className="text-content-muted mb-6">
@@ -836,7 +842,7 @@ export default function ProductListing({
                       پاک کردن فیلترها
                     </Button>
                   </>
-                ) : (
+                ) : lockedCategoryId !== undefined ? (
                   <>
                     <p className="text-content-muted mb-6">
                       هنوز محصولی در این دسته‌بندی ثبت نشده است. به‌زودی سر بزنید.
@@ -848,6 +854,10 @@ export default function ProductListing({
                       مشاهده همه محصولات
                     </Link>
                   </>
+                ) : (
+                  <p className="text-content-muted">
+                    هنوز محصولی در فروشگاه ثبت نشده است. به‌زودی سر بزنید.
+                  </p>
                 )}
               </div>
             )}
