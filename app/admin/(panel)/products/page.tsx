@@ -18,17 +18,23 @@ import {
   LoadingBlock,
   Modal,
   PageHeader,
+  Pagination,
   Select,
   Table,
   Textarea,
   Toggle,
   useToast,
+  ViewOnSiteLink,
 } from "@/app/admin/_components/ui";
+import { useAdminBase } from "@/app/admin/_components/useAdminBase";
 
 /* --------------------------------------------------------------- form state */
 
 /** Panel-side cap; the API enforces the same bound. */
 const MAX_IMAGES = 6;
+
+/** Rows per page in the products table. */
+const PAGE_SIZE = 20;
 
 interface ProductForm {
   name: string;
@@ -105,6 +111,9 @@ function toForm(p: Product): ProductForm {
 
 export default function AdminProductsPage() {
   const { show, node: toastNode } = useToast();
+  // Storefront links leave the panel, so they must not go through href(): on the
+  // admin subdomain a relative /product/5 is rewritten back into the panel.
+  const { storeHref } = useAdminBase();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -113,6 +122,7 @@ export default function AdminProductsPage() {
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [page, setPage] = useState(1);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -155,12 +165,46 @@ export default function AdminProductsPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim();
-    return products.filter((p) => {
-      if (q && !p.name.includes(q)) return false;
-      if (categoryFilter && p.categoryId !== Number(categoryFilter)) return false;
-      return true;
-    });
+    return (
+      products
+        .filter((p) => {
+          if (q && !p.name.includes(q)) return false;
+          if (categoryFilter && p.categoryId !== Number(categoryFilter)) return false;
+          return true;
+        })
+        // Newest first. The API returns rows in ascending id order (it feeds the
+        // storefront, where that order is deliberate), so the panel — whose job
+        // is to show what was just added — reverses it here rather than changing
+        // the shared query. createdAt is authoritative; id breaks ties and
+        // covers rows seeded with an identical timestamp.
+        .sort(
+          (a, b) =>
+            (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0) ||
+            b.id - a.id
+        )
+    );
   }, [products, search, categoryFilter]);
+
+  // Any change to the search box or the category filter starts over at page 1.
+  // Adjusting state during render (guarded so it cannot loop) is React's
+  // alternative to a setState-in-effect.
+  const filterKey = `${search}|${categoryFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(1);
+  }
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamp rather than store: deleting the last product on the final page would
+  // otherwise leave `page` pointing past the end and render an empty table.
+  const currentPage = Math.min(page, pageCount);
+  const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const goToPage = (n: number) => {
+    setPage(n);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   /* ---------------------------------------------------------- modal actions */
 
@@ -335,7 +379,7 @@ export default function AdminProductsPage() {
         <EmptyState title="محصولی پیدا نشد" subtitle="عبارت جستجو یا فیلتر دسته را تغییر دهید" />
       ) : (
         <Table headers={["تصویر", "نام", "دسته", "قیمت", "تخفیف", "موجودی", "وضعیت", "بخش‌ها", "عملیات"]}>
-          {filtered.map((p) => {
+          {visible.map((p) => {
             const off = discountPercent(p);
             return (
               <tr key={p.id} className="hover:bg-surface-2/50 transition-colors">
@@ -378,6 +422,10 @@ export default function AdminProductsPage() {
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span className="inline-flex items-center gap-1.5">
+                    <ViewOnSiteLink
+                      href={storeHref(`/product/${p.id}`)}
+                      active={p.active}
+                    />
                     <button
                       onClick={() => openEdit(p)}
                       className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-content-muted hover:text-primary hover:bg-primary-soft transition-colors"
@@ -392,6 +440,13 @@ export default function AdminProductsPage() {
           })}
         </Table>
       )}
+
+      <Pagination
+        page={currentPage}
+        pageCount={pageCount}
+        total={filtered.length}
+        onChange={goToPage}
+      />
 
       {/* ------------------------------------------------------ create/edit */}
       <Modal
@@ -483,7 +538,7 @@ export default function AdminProductsPage() {
                   <img
                     src={src}
                     alt={`تصویر ${toPersianNumber(index + 1)} محصول`}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain p-1"
                   />
                   <button
                     type="button"
@@ -557,7 +612,16 @@ export default function AdminProductsPage() {
             <Toggle checked={form.active} onChange={(v) => set("active", v)} label="فعال" />
           </div>
 
-          <div className="sm:col-span-2 flex items-center justify-end gap-2 pt-1">
+          <div className="sm:col-span-2 flex flex-wrap items-center justify-end gap-2 pt-1">
+            {/* Only on edit: a brand-new product has no id until it is saved. */}
+            {editingId !== null && (
+              <span className="me-auto">
+                <ViewOnSiteLink
+                  href={storeHref(`/product/${editingId}`)}
+                  active={form.active}
+                />
+              </span>
+            )}
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)} disabled={saving}>
               انصراف
             </Button>

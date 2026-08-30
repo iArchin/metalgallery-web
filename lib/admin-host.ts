@@ -35,3 +35,22 @@ export function adminHref(base: AdminBase, path: string): string {
   const p = path === "/" ? "" : path;
   return base ? `${base}${p}` : p || "/";
 }
+
+/**
+ * Build a link from inside the panel to a page on the *public storefront* —
+ * e.g. siteHref(base, "/product/12").
+ *
+ * With the panel mounted at /admin the storefront is the same origin, so a
+ * root-relative path is both correct and portable (localhost, staging, prod).
+ * On the admin subdomain it is a different origin, so the link has to be
+ * absolute, and NEXT_PUBLIC_SITE_URL is the only thing that knows the main
+ * site's address. When that is unset — local dev against admin.localhost —
+ * fall back to the relative path: it may not resolve, but it is never a
+ * link to the wrong site.
+ */
+export function siteHref(base: AdminBase, path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  if (base === "/admin") return p;
+  const origin = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
+  return origin ? `${origin}${p}` : p;
+}

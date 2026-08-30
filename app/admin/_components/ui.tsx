@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes } from "react";
 import { ORDER_STATUS_LABELS, type OrderStatus } from "@/lib/types";
+import { toPersianNumber } from "@/app/utils/numbers";
 
 /* ----------------------------------------------------------- api helpers */
 
@@ -206,6 +207,143 @@ export function Table({ headers, children }: { headers: string[]; children: Reac
         </thead>
         <tbody className="divide-y divide-border">{children}</tbody>
       </table>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- view-on-site link */
+
+/**
+ * "مشاهده در سایت" — opens the row's public page in a new tab.
+ *
+ * A plain anchor because neither `Button` nor anything else in this kit can
+ * render one. Build `href` with `useAdminBase().storeHref(...)`: on the admin
+ * subdomain a relative storefront path is rewritten back into the panel.
+ *
+ * Deactivated rows 404 on the storefront, so the control is shown but inert
+ * with a tooltip saying why — hiding it would read as a missing feature.
+ */
+export function ViewOnSiteLink({
+  href,
+  active,
+  inactiveTitle = "این مورد غیرفعال است و در سایت نمایش داده نمی‌شود",
+}: {
+  href: string;
+  active: boolean;
+  inactiveTitle?: string;
+}) {
+  const base =
+    "inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-colors";
+  const icon = (
+    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M14 5h5m0 0v5m0-5l-7 7M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4"
+      />
+    </svg>
+  );
+
+  if (!active) {
+    return (
+      <span
+        className={`${base} text-content-subtle cursor-not-allowed`}
+        title={inactiveTitle}
+        aria-disabled
+      >
+        {icon}
+        مشاهده در سایت
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="باز کردن در سایت (تب جدید)"
+      className={`${base} text-content-muted hover:text-primary hover:bg-primary-soft`}
+    >
+      {icon}
+      مشاهده در سایت
+    </a>
+  );
+}
+
+/* ------------------------------------------------------------- pagination */
+
+/**
+ * Page strip for a long admin table. Renders nothing for a single page, so a
+ * caller can always mount it. Page numbers are Persian; `page` is 1-based.
+ */
+export function Pagination({
+  page,
+  pageCount,
+  onChange,
+  total,
+}: {
+  page: number;
+  pageCount: number;
+  onChange: (page: number) => void;
+  /** Total row count, shown as "x of y" context. Optional. */
+  total?: number;
+}) {
+  if (pageCount <= 1) return null;
+
+  // A sliding window of at most five numbers around the current page, so the
+  // strip stays the same width whether there are 3 pages or 300.
+  const windowSize = 5;
+  let start = Math.max(1, page - Math.floor(windowSize / 2));
+  const end = Math.min(pageCount, start + windowSize - 1);
+  start = Math.max(1, end - windowSize + 1);
+  const pages = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+
+  const arrow = (label: string, to: number, disabled: boolean, d: string) => (
+    <button
+      type="button"
+      onClick={() => onChange(to)}
+      disabled={disabled}
+      aria-label={label}
+      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border text-content-muted transition-colors hover:text-primary hover:border-primary/50 disabled:opacity-40 disabled:pointer-events-none"
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} />
+      </svg>
+    </button>
+  );
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      {total !== undefined && (
+        <p className="text-xs text-content-muted">
+          صفحه {toPersianNumber(page)} از {toPersianNumber(pageCount)} — مجموع{" "}
+          {toPersianNumber(total)} مورد
+        </p>
+      )}
+      <div className="flex items-center gap-1.5 ms-auto">
+        {/* RTL: "previous" points right */}
+        {arrow("صفحه قبل", page - 1, page <= 1, "M9 5l7 7-7 7")}
+        {start > 1 && <span className="px-1 text-content-subtle">…</span>}
+        {pages.map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            aria-current={n === page ? "page" : undefined}
+            className={`h-9 min-w-9 rounded-xl px-2.5 text-sm font-bold transition-colors ${
+              n === page
+                ? "bg-primary text-primary-content"
+                : "border border-border text-content-muted hover:text-primary hover:border-primary/50"
+            }`}
+          >
+            {toPersianNumber(n)}
+          </button>
+        ))}
+        {end < pageCount && <span className="px-1 text-content-subtle">…</span>}
+        {arrow("صفحه بعد", page + 1, page >= pageCount, "M15 19l-7-7 7-7")}
+      </div>
     </div>
   );
 }

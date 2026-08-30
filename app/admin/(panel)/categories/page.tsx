@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { Category } from "@/lib/types";
 import { toyImage } from "@/app/utils/images";
 import { toPersianNumber } from "@/app/utils/numbers";
+import { useAdminBase } from "@/app/admin/_components/useAdminBase";
 import {
   apiGet,
   apiSend,
@@ -18,6 +19,7 @@ import {
   ErrorBlock,
   EmptyState,
   Spinner,
+  ViewOnSiteLink,
   useToast,
 } from "@/app/admin/_components/ui";
 
@@ -47,6 +49,9 @@ const EMPTY_FORM: CategoryForm = {
 };
 
 export default function AdminCategoriesPage() {
+  // Storefront links must not go through href(): on the admin subdomain a
+  // relative /category/5 is rewritten straight back into the panel.
+  const { storeHref } = useAdminBase();
   const [items, setItems] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -196,6 +201,11 @@ export default function AdminCategoriesPage() {
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
+                  <ViewOnSiteLink
+                    href={storeHref(`/category/${c.id}`)}
+                    active={c.active}
+                    inactiveTitle="دسته‌بندی غیرفعال است و صفحه‌اش در سایت باز نمی‌شود"
+                  />
                   <button
                     onClick={() => openEdit(c)}
                     className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-content-muted hover:text-primary hover:bg-primary-soft transition-colors"
