@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Hero from "@/app/components/Hero";
+import Showcase from "@/app/components/Showcase";
 import PromotionalBanners from "@/app/components/PromotionalBanners";
 import DealsOfTheDay from "@/app/components/DealsOfTheDay";
 import Categories from "@/app/components/Categories";
@@ -34,6 +35,7 @@ export default async function Home() {
   return (
     <main>
       <Hero />
+      <Showcase />
       <PromotionalBanners />
       <DealsOfTheDay />
       <Categories categories={categories} />
