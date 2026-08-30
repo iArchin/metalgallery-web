@@ -93,6 +93,14 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                   : undefined
               }
             />
+            {/* A soft sky-to-white wash over the photo. It sits directly on
+                the image and UNDER the scrims below — over them it would lift
+                the dark that the white copy depends on. Kept at low alpha so it
+                tints rather than covers. */}
+            <div
+              className="absolute inset-0 bg-linear-to-b from-[#AEDCEC]/45 via-[#AEDCEC]/20 to-white/45"
+              aria-hidden
+            />
             {/* Two scrims. The horizontal one carries the text side; the
                 bottom one keeps the progress bars legible over a bright photo.
                 Below md the copy spans the full width, so the horizontal ramp
