@@ -15,11 +15,18 @@ const AUTOPLAY_MS = 6000;
  * tall looks empty at desktop type sizes.
  */
 const TITLE_CLASS =
-  "mb-4 3xl:mb-6 font-extrabold leading-tight text-2xl sm:text-3xl md:text-4xl lg:text-5xl 3xl:text-6xl 4xl:text-7xl " +
-  // Nothing darkens the photo behind the copy any more, so legibility has to
-  // live on the glyphs. A tight dark halo plus a wider soft one keeps white
-  // text readable over a bright or busy image without tinting the picture.
-  "[text-shadow:0_1px_2px_rgb(0_0_0/0.55),0_4px_18px_rgb(0_0_0/0.45)]";
+  "mb-4 3xl:mb-6 font-extrabold uppercase leading-tight text-2xl sm:text-3xl md:text-4xl lg:text-5xl 3xl:text-6xl 4xl:text-7xl " +
+  // Dark grey, set on the heading itself so it beats the `text-white` the copy
+  // block inherits. A fixed hex rather than a theme token: this sits on a
+  // photograph, which does not change with the site's light/dark mode.
+  "text-[#33373d] " +
+  // Much lighter than before, and a pale halo rather than a dark one — a dark
+  // shadow under dark glyphs adds nothing but mud. This just lifts the text off
+  // a busy photo without reading as a shadow.
+  "[text-shadow:0_1px_2px_rgb(255_255_255/0.55)]";
+
+/** `uppercase` is inert for Persian, which has no letter case; it is there for
+ *  slide titles written in Latin script. */
 
 /**
  * Auto-rotating hero banner. Each slide carries its own image, badge, title,
@@ -30,7 +37,12 @@ const TITLE_CLASS =
  */
 export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  // Hover and tab-visibility are tracked separately. They used to share one
+  // `paused` flag, and each overwrote the other: returning to the tab while the
+  // pointer sat on the banner cleared the hover pause, and a tab switch during
+  // hover could leave it paused with nothing to clear it.
+  const [hovered, setHovered] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [reduced, setReduced] = useState(false);
 
   const count = slides.length;
@@ -46,9 +58,17 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
 
   // Pause while the tab is hidden so the bar can't drift out of sync.
   useEffect(() => {
-    const onVis = () => setPaused(document.hidden);
+    const onVis = () => setHidden(document.hidden);
+    onVis();
     document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
+    // Leaving the window entirely often produces no mouseleave, which used to
+    // strand the banner in the hovered state until the pointer came back.
+    const onBlur = () => setHovered(false);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("blur", onBlur);
+    };
   }, []);
 
   // Snap back into range if the active slide is removed (admin edits, etc.).
@@ -56,17 +76,44 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
     if (index > count - 1) setIndex(0);
   }, [count, index]);
 
+  const autoplay = !reduced && !hovered && !hidden && count > 1;
+
+  /**
+   * Watchdog.
+   *
+   * Advancing hangs off the progress bar's `animationend`, which is elegant
+   * while it works — but that event is not guaranteed. A backgrounded tab can
+   * throttle the animation to a stop and never deliver it, and a paused
+   * animation that resumes past its end delivers nothing either. Either way the
+   * banner sits on one slide with a full bar, which is the reported symptom.
+   *
+   * This is a floor, not the mechanism: it fires a beat after the animation
+   * should already have finished, so in the normal case `animationend` has
+   * changed `index` and cleared this timer long before it runs.
+   */
+  useEffect(() => {
+    if (!autoplay) return;
+    const id = setTimeout(
+      () => setIndex((i) => (i + 1) % Math.max(count, 1)),
+      AUTOPLAY_MS + 1500
+    );
+    return () => clearTimeout(id);
+    // Re-armed on every slide change and whenever autoplay starts or stops.
+  }, [index, autoplay, count]);
+
   if (count === 0) return null;
 
   const go = (i: number) => setIndex(((i % count) + count) % count);
   const advance = () => go(index + 1);
-  const autoplay = !reduced && !paused && count > 1;
 
   return (
     <div
       className="group relative h-full w-full overflow-hidden bg-surface-2 transform-[translateZ(0)]"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      // pointerleave also covers a touch or pen that leaves without a mouse
+      // event, which is another way the banner used to stay stuck as hovered.
+      onPointerLeave={() => setHovered(false)}
       role="region"
       aria-roledescription="کاروسل"
       aria-label="بنر اصلی فروشگاه"
@@ -201,34 +248,46 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                 onClick={() => go(i)}
                 aria-label={`رفتن به اسلاید ${toPersianNumber(i + 1)}`}
                 aria-current={i === index}
-                className={`relative h-1.5 w-9 sm:w-14 shrink-0 overflow-hidden rounded-full transition-colors cursor-pointer shadow-[0_1px_6px_rgb(0_0_0/0.45)] ${
-                  i === index ? "bg-white/45" : "bg-white/30 hover:bg-white/50"
-                }`}
+                // The button is a tall, transparent hit area; the visible rail
+                // is the inner span. Shrinking the button itself to 2px would
+                // have made these near-impossible to tap.
+                className="group/bar flex h-4 w-9 sm:w-14 shrink-0 items-center bg-transparent cursor-pointer"
               >
-                {/* Slides already seen this cycle read as full. */}
+                {/* The rail. The fills are absolute against THIS, not against
+                    the button — the button is now a transparent hit area with
+                    no positioning of its own. */}
                 <span
-                  className="absolute inset-0 origin-left rounded-full bg-white"
-                  style={{ transform: i < index ? "scaleX(1)" : "scaleX(0)" }}
-                  aria-hidden
-                />
-                {i === index && !reduced && (
-                  <span
-                    key={index}
-                    onAnimationEnd={advance}
-                    className="animate-hero-bar absolute inset-0 origin-left rounded-full bg-white"
-                    style={{
-                      animationDuration: `${AUTOPLAY_MS}ms`,
-                      animationPlayState: autoplay ? "running" : "paused",
-                    }}
-                    aria-hidden
-                  />
-                )}
-                {i === index && reduced && (
+                  className={`relative block h-0.5 w-full overflow-hidden rounded-full transition-colors ${
+                    i === index
+                      ? "bg-white/45"
+                      : "bg-white/30 group-hover/bar:bg-white/55"
+                  } shadow-[0_1px_4px_rgb(0_0_0/0.35)]`}
+                >
+                  {/* Slides already seen this cycle read as full. */}
                   <span
                     className="absolute inset-0 origin-left rounded-full bg-white"
+                    style={{ transform: i < index ? "scaleX(1)" : "scaleX(0)" }}
                     aria-hidden
                   />
-                )}
+                  {i === index && !reduced && (
+                    <span
+                      key={index}
+                      onAnimationEnd={advance}
+                      className="animate-hero-bar absolute inset-0 origin-left rounded-full bg-white"
+                      style={{
+                        animationDuration: `${AUTOPLAY_MS}ms`,
+                        animationPlayState: autoplay ? "running" : "paused",
+                      }}
+                      aria-hidden
+                    />
+                  )}
+                  {i === index && reduced && (
+                    <span
+                      className="absolute inset-0 origin-left rounded-full bg-white"
+                      aria-hidden
+                    />
+                  )}
+                </span>
               </button>
             ))}
           </div>
