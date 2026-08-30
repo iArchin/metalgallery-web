@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Button from "@/app/components/Button";
+import ProductGallery from "@/app/components/ProductGallery";
 import { productImage, toyImage } from "@/app/utils/images";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
 import { useCart } from "@/app/components/CartContext";
@@ -52,7 +53,6 @@ const mockComments: Comment[] = [
 
 export default function ProductDetail({ product, related }: ProductDetailProps) {
   const { add } = useCart();
-  const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"specs" | "comments">("specs");
   const [addedMessage, setAddedMessage] = useState(false);
@@ -117,47 +117,17 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
         <div className="grid md:grid-cols-2 gap-6 md:gap-8">
           {/* Image Gallery */}
           <div>
-            <div className="mb-4">
-              <div className="relative h-64 sm:h-80 md:h-auto md:aspect-[4/3] md:min-h-96 w-full overflow-hidden rounded-2xl bg-product-canvas mb-4">
-                <img
-                  src={galleryImages[selectedImage]}
-                  alt={`${product.name} - تصویر ${toPersianNumber(
-                    (selectedImage + 1).toString()
-                  )}`}
-                  loading="lazy"
-                  className="h-full w-full object-contain p-4"
-                />
-                {discount > 0 && (
-                  <span className="absolute top-4 left-4 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-content shadow-md">
+            <ProductGallery
+              images={galleryImages}
+              alt={product.name}
+              badge={
+                discount > 0 ? (
+                  <span className="absolute top-4 left-4 z-10 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-content shadow-md">
                     {toPersianNumber(discount.toString())}٪ تخفیف
                   </span>
-                )}
-              </div>
-              {galleryImages.length > 1 && (
-              <div className="flex gap-2 sm:gap-3 overflow-x-auto no-scrollbar pb-1">
-                {galleryImages.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`shrink-0 h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-xl border-2 bg-product-canvas transition-colors ${
-                      selectedImage === index
-                        ? "border-primary ring-2 ring-primary"
-                        : "border-border hover:border-border-strong"
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`${product.name} - نمای ${toPersianNumber(
-                        (index + 1).toString()
-                      )}`}
-                      loading="lazy"
-                      className="h-full w-full object-contain p-1"
-                    />
-                  </button>
-                ))}
-              </div>
-              )}
-            </div>
+                ) : null
+              }
+            />
           </div>
 
           {/* Product Info */}
