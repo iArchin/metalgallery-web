@@ -15,7 +15,7 @@ const AUTOPLAY_MS = 6000;
  * tall looks empty at desktop type sizes.
  */
 const TITLE_CLASS =
-  "mb-4 3xl:mb-6 font-extrabold leading-tight text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 3xl:text-8xl 4xl:text-[7rem] drop-shadow-sm";
+  "mb-4 3xl:mb-6 font-extrabold leading-tight text-2xl sm:text-3xl md:text-4xl lg:text-5xl 3xl:text-6xl 4xl:text-7xl drop-shadow-sm";
 
 /**
  * Auto-rotating hero banner. Each slide carries its own image, badge, title,
@@ -136,7 +136,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                       <Link
                         href={slide.ctaHref || "/products"}
                         tabIndex={isActive ? undefined : -1}
-                        className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface px-7 py-3 text-base font-bold text-content transition-all duration-200 cursor-pointer active:scale-95 hover:bg-surface-2 hover:border-border-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black/30 sm:px-9 sm:py-3.5 sm:text-lg md:px-10 md:py-4 md:text-xl 3xl:px-12 3xl:py-5 3xl:text-2xl"
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-primary bg-primary px-7 py-3 text-base font-bold text-primary-content shadow-lg shadow-primary/25 transition-all duration-200 cursor-pointer active:scale-95 hover:bg-primary-hover hover:border-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/30 sm:px-9 sm:py-3.5 sm:text-lg md:px-10 md:py-4 md:text-xl 3xl:px-12 3xl:py-5 3xl:text-2xl"
                       >
                         {slide.ctaText}
                       </Link>
