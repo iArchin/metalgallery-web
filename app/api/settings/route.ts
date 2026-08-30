@@ -1,6 +1,6 @@
 import { getSettings, updateSettings } from "@/lib/server/repos";
 import { requireAdminApi } from "@/lib/server/auth";
-import type { SiteSettings } from "@/lib/types";
+import { PHONE_KINDS, type PhoneKind, type SiteSettings } from "@/lib/types";
 
 export async function GET() {
   try {
@@ -88,6 +88,18 @@ export async function PUT(req: Request) {
     }
     const str = (v: unknown) =>
       typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim();
+    /**
+     * A slide button may point at an internal path or an http(s) address.
+     * Anything else — notably `javascript:` and `data:` — is replaced rather
+     * than stored: the value is rendered straight into an anchor's href, and
+     * the panel is not the right place to trust.
+     */
+    const href = (v: unknown) => {
+      const h = str(v);
+      if (h.startsWith("/") && !h.startsWith("//")) return h;
+      if (/^https?:\/\//i.test(h)) return h;
+      return "/products";
+    };
     // Sanitize every slide and reassign sequential ids so keys stay unique.
     patch.heroSlides = patch.heroSlides.map((raw, i): SiteSettings["heroSlides"][number] => {
       const s = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
@@ -97,11 +109,63 @@ export async function PUT(req: Request) {
         title: str(s.title),
         subtitle: str(s.subtitle),
         ctaText: str(s.ctaText),
-        ctaHref: str(s.ctaHref) || "/products",
+        ctaHref: href(s.ctaHref),
         image: str(s.image),
         active: s.active === undefined ? true : Boolean(s.active),
       };
     });
+  }
+
+  // Contact lists. Same shape of sanitiser as heroSlides: ids are reassigned
+  // sequentially so React keys stay unique, empty rows are dropped, and `kind`
+  // is clamped to the union — an unknown kind would reach the icon lookup as
+  // undefined and render an empty box.
+  const text = (v: unknown) =>
+    typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim();
+
+  if (patch.phones !== undefined) {
+    if (!Array.isArray(patch.phones)) {
+      return Response.json(
+        { ok: false, error: "اطلاعات شماره‌های تماس نامعتبر است" },
+        { status: 400 }
+      );
+    }
+    patch.phones = patch.phones
+      .map((raw) => (raw && typeof raw === "object" ? (raw as unknown as Record<string, unknown>) : {}))
+      .map((p) => ({
+        id: 0,
+        label: text(p.label),
+        value: text(p.value),
+        kind: (PHONE_KINDS as readonly string[]).includes(text(p.kind))
+          ? (text(p.kind) as PhoneKind)
+          : ("landline" as PhoneKind),
+      }))
+      .filter((p) => p.value)
+      .map((p, i) => ({ ...p, id: i + 1 }));
+
+    // Keep the legacy scalar pointing at the first entry, the way a product's
+    // `image` mirrors `images[0]`. Every older reader of settings.phone — the
+    // navbar, the chat widget, JSON-LD — keeps working untouched. Mirroring an
+    // EMPTY list to an empty string matters as much: sitePhones() falls back to
+    // the scalar, so leaving it behind would resurrect a number the admin just
+    // deleted.
+    patch.phone = patch.phones[0]?.value ?? "";
+  }
+
+  if (patch.addresses !== undefined) {
+    if (!Array.isArray(patch.addresses)) {
+      return Response.json(
+        { ok: false, error: "اطلاعات آدرس‌ها نامعتبر است" },
+        { status: 400 }
+      );
+    }
+    patch.addresses = patch.addresses
+      .map((raw) => (raw && typeof raw === "object" ? (raw as unknown as Record<string, unknown>) : {}))
+      .map((a) => ({ id: 0, label: text(a.label), value: text(a.value) }))
+      .filter((a) => a.value)
+      .map((a, i) => ({ ...a, id: i + 1 }));
+
+    patch.address = patch.addresses[0]?.value ?? "";
   }
 
   try {

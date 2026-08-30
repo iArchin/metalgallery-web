@@ -160,13 +160,47 @@ export interface HeroSlide {
   active: boolean; // hidden from the carousel when false
 }
 
+/** How a contact number should be presented — picks its icon and its
+ *  schema.org contactType. */
+export const PHONE_KINDS = ["landline", "mobile", "whatsapp"] as const;
+export type PhoneKind = (typeof PHONE_KINDS)[number];
+
+export const PHONE_KIND_LABELS: Record<PhoneKind, string> = {
+  landline: "تلفن ثابت",
+  mobile: "تلفن همراه",
+  whatsapp: "واتس‌اپ",
+};
+
+/** One contact number. A shop can list several (office, mobile, WhatsApp). */
+export interface SitePhone {
+  id: number;
+  label: string; // e.g. "دفتر مرکزی" — optional context, may be empty
+  value: string; // e.g. "021-555-82677"
+  kind: PhoneKind;
+}
+
+/** One branch / postal address. */
+export interface SiteAddress {
+  id: number;
+  label: string; // e.g. "فروشگاه مرکزی"
+  value: string;
+}
+
 export interface SiteSettings {
   siteName: string;
   tagline: string;
+  /** Primary number. Mirrors `phones[0].value`, the way `Product.image`
+   *  mirrors `images[0]`, so every existing reader keeps working. */
   phone: string;
   email: string;
+  /** Primary address. Mirrors `addresses[0].value`. */
   address: string;
   workingHours: string;
+  /** Extra contact numbers. ABSENT on settings saved before this field
+   *  existed — always read through `sitePhones()`, never directly. */
+  phones?: SitePhone[];
+  /** Extra addresses. Absent on older settings — read via `siteAddresses()`. */
+  addresses?: SiteAddress[];
   /** Hero (home) banner content. The big banner rotates through `heroSlides`;
    *  the `side*` fields drive the smaller card beside it. The `badgeText`/
    *  `title`/`ctaText` fields remain as a fallback slide when `heroSlides`
@@ -194,6 +228,55 @@ export interface SiteSettings {
   /** Free-shipping threshold used by the cart (0 = always free) */
   freeShippingThreshold: number;
   shippingCost: number;
+}
+
+/** Iranian mobile numbers start 09 / +989; anything else is treated as a landline. */
+export function guessPhoneKind(value: string): PhoneKind {
+  const digits = value.replace(/\D/g, "");
+  return /^(09|989)/.test(digits) ? "mobile" : "landline";
+}
+
+/**
+ * The numbers to display, as a list every caller can just map over. Settings
+ * saved before `phones` existed carry only the `phone` scalar, so derive a
+ * single entry from it rather than rendering nothing.
+ */
+export function sitePhones(s: Pick<SiteSettings, "phone" | "phones">): SitePhone[] {
+  const list = (s.phones ?? []).filter((p) => p?.value?.trim());
+  if (list.length > 0) return list;
+  const legacy = s.phone?.trim();
+  return legacy
+    ? [{ id: 1, label: "", value: legacy, kind: guessPhoneKind(legacy) }]
+    : [];
+}
+
+/** Same fallback rule as `sitePhones`, for addresses. */
+export function siteAddresses(
+  s: Pick<SiteSettings, "address" | "addresses">
+): SiteAddress[] {
+  const list = (s.addresses ?? []).filter((a) => a?.value?.trim());
+  if (list.length > 0) return list;
+  const legacy = s.address?.trim();
+  return legacy ? [{ id: 1, label: "", value: legacy }] : [];
+}
+
+/**
+ * A dialable href. Iranian numbers are normalised to +98 so the link also works
+ * from abroad and when saved as a contact; WhatsApp gets a wa.me link instead,
+ * which is what tapping a WhatsApp number is expected to do.
+ */
+export function phoneHref(p: SitePhone): string {
+  const raw = p.value.replace(/[^\d+]/g, "");
+  const intl = raw.startsWith("+")
+    ? raw
+    : raw.startsWith("00")
+      ? `+${raw.slice(2)}`
+      : raw.startsWith("0")
+        ? `+98${raw.slice(1)}`
+        : `+98${raw}`;
+  return p.kind === "whatsapp"
+    ? `https://wa.me/${intl.replace(/\D/g, "")}`
+    : `tel:${intl}`;
 }
 
 // ------------------------------------------------------------- support chat

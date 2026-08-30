@@ -1,30 +1,56 @@
+import {
+  siteAddresses,
+  sitePhones,
+  type SiteSettings,
+} from "@/lib/types";
+
 /**
- * JSON-LD Organization structured data for SEO.
- * Renders as a <script type="application/ld+json"> in the document head area.
+ * Organization structured data for SEO, built from the live settings.
+ *
+ * It used to be a block of literals inlined in the ROOT layout — which is why
+ * a phone number changed in the panel never reached the page source, and read
+ * as a caching problem. Fed from the database it now tracks every save, and it
+ * lives under (site) so the admin panel does not carry storefront markup.
  */
-export default function JsonLdOrganization() {
+export default function JsonLdOrganization({
+  settings,
+}: {
+  settings: SiteSettings;
+}) {
+  const phones = sitePhones(settings);
+  const addresses = siteAddresses(settings);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "متال گالری",
+    name: settings.siteName || "متال گالری",
     alternateName: "Metal Gallery",
     url: "https://metalgallery.ir",
     logo: "https://metalgallery.ir/images/logo.png",
-    description:
-      "فروشگاه تخصصی اسباب‌بازی و اکشن فیگور - خرید آنلاین با ضمانت اصالت کالا و ارسال سریع",
-    foundingDate: "1395",
-    contactPoint: {
+    description: settings.tagline || undefined,
+    email: settings.email || undefined,
+    // schema.org takes arrays here, so every listed number is published, and
+    // contactType carries the landline/mobile distinction machine-readably.
+    telephone: phones.map((p) => p.value),
+    contactPoint: phones.map((p) => ({
       "@type": "ContactPoint",
-      contactType: "customer service",
-      telephone: "021-12345678",
-      email: "info@metalgallery.ir",
+      telephone: p.value,
+      contactType: p.kind === "whatsapp" ? "customer support" : "customer service",
+      areaServed: "IR",
       availableLanguage: ["Persian", "English"],
-    },
+    })),
+    address: addresses.map((a) => ({
+      "@type": "PostalAddress",
+      streetAddress: a.value,
+      addressCountry: "IR",
+    })),
+    openingHours: settings.workingHours || undefined,
     sameAs: [
-      "https://facebook.com/metalgallery",
-      "https://twitter.com/metalgallery",
-      "https://instagram.com/metalgallery",
-    ],
+      settings.socials.instagram,
+      settings.socials.twitter,
+      settings.socials.facebook,
+      settings.socials.linkedin,
+    ].filter(Boolean),
   };
 
   return (

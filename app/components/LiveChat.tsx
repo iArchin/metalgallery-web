@@ -30,8 +30,8 @@ function loadCid(): string {
 }
 
 export default function LiveChat({
-  phone = "021-555-0112",
-  email = "info@metalgallery.ir",
+  phone = "",
+  email = "",
 }: {
   phone?: string;
   email?: string;
@@ -206,11 +206,15 @@ export default function LiveChat({
             </button>
           </form>
 
-          <div className="px-3 pb-3 -mt-1 shrink-0">
-            <p className="text-[11px] text-content-subtle text-center">
-              📞 {toPersianNumber(phone)} · ✉️ {email}
-            </p>
-          </div>
+          {(phone || email) && (
+            <div className="px-3 pb-3 -mt-1 shrink-0">
+              <p className="text-[11px] text-content-subtle text-center">
+                {phone && <>📞 {toPersianNumber(phone)}</>}
+                {phone && email && " · "}
+                {email && <>✉️ {email}</>}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </>

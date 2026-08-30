@@ -82,32 +82,9 @@ export default function RootLayout({
     >
       <body className={`${vazirmatn.className} antialiased font-sans bg-background text-content`}>
         <ThemeScript />
-        {/* JSON-LD Structured Data for Organization */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "متال گالری",
-              alternateName: "Metal Gallery",
-              url: "https://metalgallery.ir",
-              logo: "https://metalgallery.ir/images/logo.png",
-              description: "فروشگاه آنلاین اسباب‌بازی، اکشن فیگور و ماکت",
-              email: "info@metalgallery.ir",
-              telephone: "021-12345678",
-              address: {
-                "@type": "PostalAddress",
-                addressCountry: "IR",
-                addressLocality: "تهران",
-              },
-              sameAs: [
-                "https://instagram.com/metalgallery",
-                "https://twitter.com/metalgallery",
-              ],
-            }),
-          }}
-        />
+        {/* Organization JSON-LD lives in app/(site)/layout.tsx, where the
+            settings are already loaded — it must reflect the real phone,
+            address and socials, and the admin panel has no use for it. */}
         {/* JSON-LD for Website */}
         <script
           type="application/ld+json"
