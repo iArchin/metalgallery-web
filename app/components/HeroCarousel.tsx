@@ -94,15 +94,21 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               lets the wash fill the rest. From md the frame is landscape again
               and cover is the right fit.
 
-              The Ken-Burns zoom is md-only for the same reason: scaling a
-              contained image inside an overflow-hidden box crops exactly the
-              edges `contain` just rescued.
+              `object-top` in BOTH modes, not just on mobile. Under `cover` a
+              tall subject in a wide frame loses height, and centring the crop
+              takes it off the top — which decapitated the figures. Anchoring to
+              the top spends the whole crop on the base of the shot instead, so
+              a character's head survives.
+
+              The Ken-Burns zoom is md-only: scaling a contained image inside an
+              overflow-hidden box crops exactly the edges `contain` just
+              rescued.
             */}
             <img
               src={slide.image}
               alt={slide.title}
               loading={i === 0 ? "eager" : "lazy"}
-              className={`absolute inset-0 h-full w-full object-contain object-top md:object-cover md:object-center ${
+              className={`absolute inset-0 h-full w-full object-contain object-top md:object-cover ${
                 isActive && !reduced ? "md:animate-hero-zoom" : ""
               }`}
               style={
