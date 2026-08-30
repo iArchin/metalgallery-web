@@ -6,6 +6,7 @@ import {
 } from "@/lib/server/repos";
 import { requireAdminApi } from "@/lib/server/auth";
 import { parseProductImages, isUploadedProductImage } from "@/lib/server/uploads";
+import { parseProductAttributes } from "@/lib/server/product-attributes";
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
@@ -132,6 +133,12 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
   }
 
   // ---- booleans
+  const attrs = parseProductAttributes(body, { partial: true });
+  if ("error" in attrs) {
+    return Response.json({ ok: false, error: attrs.error }, { status: 400 });
+  }
+  Object.assign(patch, attrs);
+
   if (body.isDeal !== undefined) patch.isDeal = body.isDeal === true;
   if (body.isFlashSale !== undefined) patch.isFlashSale = body.isFlashSale === true;
   if (body.isTrending !== undefined) patch.isTrending = body.isTrending === true;

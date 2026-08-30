@@ -168,6 +168,23 @@ export async function PUT(req: Request) {
     patch.address = patch.addresses[0]?.value ?? "";
   }
 
+  // Saved model scales, e.g. ["1:6", "1:12", "1:18"]. De-duplicated and capped:
+  // this is a picker's option list, not a data store.
+  if (patch.scales !== undefined) {
+    if (!Array.isArray(patch.scales)) {
+      return Response.json({ ok: false, error: "فهرست مقیاس‌ها نامعتبر است" }, { status: 400 });
+    }
+    const seen = new Set<string>();
+    patch.scales = (patch.scales as unknown[])
+      .map((v) => (typeof v === "string" ? v.trim().slice(0, 40) : ""))
+      .filter((v) => {
+        if (!v || seen.has(v)) return false;
+        seen.add(v);
+        return true;
+      })
+      .slice(0, 60);
+  }
+
   try {
     const data = await updateSettings(patch as Partial<SiteSettings>);
     return Response.json({ ok: true, data });

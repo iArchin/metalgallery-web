@@ -12,6 +12,8 @@ import { discountPercent, type Product } from "@/lib/types";
 interface ProductDetailProps {
   product: Product;
   related: Product[];
+  /** Resolved on the server — the client has no brand list to look it up in. */
+  brandName?: string;
 }
 
 interface Comment {
@@ -51,7 +53,11 @@ const mockComments: Comment[] = [
   },
 ];
 
-export default function ProductDetail({ product, related }: ProductDetailProps) {
+export default function ProductDetail({
+  product,
+  related,
+  brandName,
+}: ProductDetailProps) {
   const { add } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"specs" | "comments">("specs");
@@ -63,6 +69,28 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
   // Admin-uploaded photos are the real gallery. Products from before uploads
   // carry at most one local photo; with neither, fall back to keyword photos
   // (four variants so the switcher isn't dead UI).
+  /**
+   * The spec table: the structured attributes first, then whatever free-form
+   * pairs the admin typed. Merged here rather than in the panel so a product
+   * saved before these fields existed still shows everything it has, and so an
+   * admin who typed "جنس" by hand does not end up with two rows for it.
+   */
+  const specRows: [string, string][] = [
+    ...([
+      ["برند", brandName],
+      ["مقیاس", product.scale],
+      ["اندازه", product.sizeCm ? `${toPersianNumber(String(product.sizeCm))} سانتی‌متر` : ""],
+      ["جنس", product.material],
+      ["رنگ", product.color],
+      ["رده سنی", product.ageGroup],
+    ] as [string, string | undefined][]).filter((r): r is [string, string] => Boolean(r[1])),
+    ...Object.entries(product.specifications).filter(([k]) => k.trim()),
+  ].filter(
+    // First occurrence wins, so a structured field is never shadowed by a
+    // hand-typed pair with the same label.
+    ([k], i, all) => all.findIndex(([k2]) => k2.trim() === k.trim()) === i
+  );
+
   const galleryImages = product.images.length
     ? product.images
     : product.image
@@ -291,13 +319,13 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
               <h3 className="text-lg sm:text-xl font-bold text-content mb-6">
                 مشخصات فنی محصول
               </h3>
-              {Object.keys(product.specifications).length === 0 ? (
+              {specRows.length === 0 ? (
                 <p className="text-sm sm:text-base text-content-muted">
                   مشخصاتی برای این محصول ثبت نشده است.
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {Object.entries(product.specifications).map(([key, value]) => (
+                  {specRows.map(([key, value]) => (
                     <div
                       key={key}
                       className="flex flex-col sm:flex-row gap-1 border-b border-border pb-4 last:border-0"

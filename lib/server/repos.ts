@@ -51,6 +51,11 @@ function toProduct(r: ProductRow): Product {
     images: r.images ?? [],
     imageKeyword: r.imageKeyword,
     imageLock: r.imageLock,
+    brandId: r.brandId ?? undefined,
+    scale: r.scale,
+    sizeCm: r.sizeCm ?? undefined,
+    material: r.material,
+    color: r.color,
     isDeal: r.isDeal,
     isFlashSale: r.isFlashSale,
     isTrending: r.isTrending,
@@ -118,6 +123,10 @@ function productValues(input: Partial<ProductInput>) {
   const v: Record<string, unknown> = { ...input };
   if ("originalPrice" in input) v.originalPrice = input.originalPrice ?? null;
   if ("image" in input) v.image = input.image ?? null;
+  // Nullable columns: an absent brand or size is NULL, not the string
+  // "undefined" — and "unset it" has to be expressible, not just "leave it".
+  if ("brandId" in input) v.brandId = input.brandId ?? null;
+  if ("sizeCm" in input) v.sizeCm = input.sizeCm ?? null;
   return v;
 }
 

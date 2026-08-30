@@ -24,6 +24,17 @@ export interface Product {
   images: string[];
   imageKeyword: string; // fallback: real-photo search keywords for toyImage()
   imageLock: number; // pinned photo id
+  /** Catalogue attributes. All optional — a collectible has a scale, a plush
+   *  toy does not, and every product in the shop predates these fields. */
+  brandId?: number;
+  /** Model scale, e.g. "1:18". Free text: the list of options is admin-managed
+   *  (SiteSettings.scales) but a one-off value must still be possible. */
+  scale?: string;
+  /** Longest real dimension in centimetres. Sits alongside `scale`, not
+   *  instead of it: a 1:18 figure and a 10 cm figure are different facts. */
+  sizeCm?: number;
+  material?: string;
+  color?: string;
   isDeal: boolean; // shown in "پیشنهادات روز"
   isFlashSale: boolean; // shown in "فروش ویژه"
   isTrending: boolean; // shown in "پرطرفدارها"
@@ -215,6 +226,9 @@ export interface SiteSettings {
   };
   /** Rotating slides for the home hero carousel (the big banner). */
   heroSlides: HeroSlide[];
+  /** Model scales the admin has saved, e.g. ["1:6", "1:12", "1:18"]. Offered as
+   *  a picker on the product form. Absent on settings written before this. */
+  scales?: string[];
   /** The wide sale campaign band on the home page */
   saleCampaign: {
     enabled: boolean;

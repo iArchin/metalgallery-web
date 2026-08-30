@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { discountPercent, type Category, type Product } from "@/lib/types";
+import {
+  discountPercent,
+  type Brand,
+  type Category,
+  type Product,
+  type SiteSettings,
+} from "@/lib/types";
 import { productImage } from "@/app/utils/images";
 import { formatPersianNumber, toPersianNumber } from "@/app/utils/numbers";
 import Button from "@/app/components/Button";
@@ -42,6 +48,11 @@ interface ProductForm {
   price: string;
   originalPrice: string;
   categoryId: string;
+  brandId: string;
+  scale: string;
+  sizeCm: string;
+  material: string;
+  color: string;
   ageGroup: string;
   stock: string;
   images: string[]; // uploaded photo URLs; the first is the main photo
@@ -58,6 +69,11 @@ const EMPTY_FORM: ProductForm = {
   price: "",
   originalPrice: "",
   categoryId: "",
+  brandId: "",
+  scale: "",
+  sizeCm: "",
+  material: "",
+  color: "",
   ageGroup: "",
   stock: "",
   images: [],
@@ -95,6 +111,11 @@ function toForm(p: Product): ProductForm {
     price: String(p.price),
     originalPrice: p.originalPrice ? String(p.originalPrice) : "",
     categoryId: String(p.categoryId),
+    brandId: p.brandId ? String(p.brandId) : "",
+    scale: p.scale ?? "",
+    sizeCm: p.sizeCm ? String(p.sizeCm) : "",
+    material: p.material ?? "",
+    color: p.color ?? "",
     ageGroup: p.ageGroup,
     stock: String(p.stock),
     // Products saved before uploads existed carry a single `image` path.
@@ -117,6 +138,11 @@ export default function AdminProductsPage() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  /** Admin-managed scale options, stored in site settings. */
+  const [scales, setScales] = useState<string[]>([]);
+  const [newScale, setNewScale] = useState("");
+  const [savingScale, setSavingScale] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -138,13 +164,17 @@ export default function AdminProductsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [prods, cats] = await Promise.all([
+        const [prods, cats, brnds, settings] = await Promise.all([
           apiGet<Product[]>("/api/products?all=1"),
           apiGet<Category[]>("/api/categories"),
+          apiGet<Brand[]>("/api/brands"),
+          apiGet<SiteSettings>("/api/settings"),
         ]);
         if (cancelled) return;
         setProducts(prods);
         setCategories(cats);
+        setBrands(brnds);
+        setScales(settings.scales ?? []);
         setError(null);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "خطا در دریافت اطلاعات");
@@ -284,6 +314,12 @@ export default function AdminProductsPage() {
       price: Number(form.price),
       originalPrice: form.originalPrice.trim() ? Number(form.originalPrice) : null,
       categoryId: Number(form.categoryId),
+      // Empty means "not set" — the API turns that into NULL rather than 0.
+      brandId: form.brandId ? Number(form.brandId) : null,
+      scale: form.scale.trim(),
+      sizeCm: form.sizeCm.trim() ? Number(form.sizeCm) : null,
+      material: form.material.trim(),
+      color: form.color.trim(),
       ageGroup: form.ageGroup.trim(),
       stock: Number(form.stock) || 0,
       // rating / reviewCount are no longer edited in the panel: the API keeps a
@@ -312,6 +348,35 @@ export default function AdminProductsPage() {
       show(e instanceof Error ? e.message : "خطا در ذخیره محصول", "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  /**
+   * Save a new scale onto the shared list.
+   *
+   * Sent as a settings patch containing only `scales`, so it cannot clobber
+   * anything else in the blob, and applied locally straight away so the select
+   * can be used without waiting for a round trip.
+   */
+  const addScale = async () => {
+    const value = newScale.trim();
+    if (!value || scales.includes(value)) {
+      set("scale", value);
+      setNewScale("");
+      return;
+    }
+    const next = [...scales, value];
+    setSavingScale(true);
+    try {
+      await apiSend<SiteSettings>("/api/settings", "PUT", { scales: next });
+      setScales(next);
+      set("scale", value);
+      setNewScale("");
+      show("مقیاس ذخیره شد");
+    } catch (e) {
+      show(e instanceof Error ? e.message : "خطا در ذخیره مقیاس", "error");
+    } finally {
+      setSavingScale(false);
     }
   };
 
@@ -520,6 +585,97 @@ export default function AdminProductsPage() {
                 </option>
               ))}
             </Select>
+          </Field>
+
+          <Field label="برند">
+            <Select value={form.brandId} onChange={(e) => set("brandId", e.target.value)}>
+              <option value="">بدون برند</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          {/* Scale and size are separate facts, not two spellings of one: a
+              1:18 figure and a 10 cm figure are different things a collector
+              filters on, and a product may have either, both or neither. */}
+          <div className="sm:col-span-2">
+            <Field
+              label="مقیاس"
+              hint="مقیاس ماکت یا فیگور. اگر مقیاس موردنظر در فهرست نیست، آن را اضافه کنید تا برای محصولات بعدی هم ذخیره شود."
+            >
+              <div className="flex flex-wrap gap-2">
+                <div className="min-w-40 flex-1">
+                  <Select value={form.scale} onChange={(e) => set("scale", e.target.value)}>
+                    <option value="">بدون مقیاس</option>
+                    {scales.map((sc) => (
+                      <option key={sc} value={sc}>
+                        {sc}
+                      </option>
+                    ))}
+                    {/* A value saved before it was on the list stays selectable
+                        instead of silently resetting to "no scale". */}
+                    {form.scale && !scales.includes(form.scale) && (
+                      <option value={form.scale}>{form.scale}</option>
+                    )}
+                  </Select>
+                </div>
+                <div className="min-w-36 flex-1">
+                  <Input
+                    value={newScale}
+                    onChange={(e) => setNewScale(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void addScale();
+                      }
+                    }}
+                    dir="ltr"
+                    placeholder="مثلاً 1:18"
+                    aria-label="مقیاس جدید"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void addScale()}
+                  disabled={!newScale.trim() || savingScale}
+                  className="shrink-0 rounded-xl border border-border px-4 text-sm font-bold text-content transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                >
+                  {savingScale ? "در حال ذخیره…" : "افزودن مقیاس"}
+                </button>
+              </div>
+            </Field>
+          </div>
+
+          <Field label="اندازه (سانتی‌متر)" hint="بلندترین بُعد محصول">
+            <Input
+              type="number"
+              min={1}
+              max={500}
+              step="0.5"
+              value={form.sizeCm}
+              onChange={(e) => set("sizeCm", e.target.value)}
+              dir="ltr"
+              placeholder="18"
+            />
+          </Field>
+
+          <Field label="جنس">
+            <Input
+              value={form.material}
+              onChange={(e) => set("material", e.target.value)}
+              placeholder="مثلاً PVC، فلز، پارچه"
+            />
+          </Field>
+
+          <Field label="رنگ">
+            <Input
+              value={form.color}
+              onChange={(e) => set("color", e.target.value)}
+              placeholder="مثلاً مشکی، قرمز"
+            />
           </Field>
 
           <Field label="رده سنی">

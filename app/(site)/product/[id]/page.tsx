@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductDetail from "@/app/components/ProductDetail";
 import JsonLdProduct from "@/app/components/JsonLdProduct";
-import { getProduct, listProducts } from "@/lib/server/repos";
+import { brandsRepo, getProduct, listProducts } from "@/lib/server/repos";
 
 export const dynamic = "force-dynamic";
 
@@ -46,10 +46,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
     .filter((p) => p.categoryId === product.categoryId && p.id !== product.id)
     .slice(0, 4);
 
+  // Resolved here: the detail view is a client component with no brand list.
+  const brandName = product.brandId
+    ? (await brandsRepo.list()).find((b) => b.id === product.brandId)?.name
+    : undefined;
+
   return (
     <main>
       <JsonLdProduct product={product} />
-      <ProductDetail product={product} related={related} />
+      <ProductDetail product={product} related={related} brandName={brandName} />
     </main>
   );
 }

@@ -50,6 +50,13 @@ export const products = pgTable(
     images: jsonb("images").$type<string[]>().notNull().default([]),
     imageKeyword: text("image_keyword").notNull().default(""),
     imageLock: integer("image_lock").notNull().default(0),
+    // Catalogue attributes. All optional: the shop predates them, and a
+    // collectible figure has a scale while a plush toy does not.
+    brandId: integer("brand_id"), // -> brands.id; unset when unknown
+    scale: text("scale").notNull().default(""), // e.g. "1:18"
+    sizeCm: real("size_cm"), // longest real dimension, in centimetres
+    material: text("material").notNull().default(""),
+    color: text("color").notNull().default(""),
     isDeal: boolean("is_deal").notNull().default(false),
     isFlashSale: boolean("is_flash_sale").notNull().default(false),
     isTrending: boolean("is_trending").notNull().default(false),

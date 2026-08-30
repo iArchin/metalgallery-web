@@ -1,6 +1,7 @@
 import { listProducts, createProduct, type ProductInput } from "@/lib/server/repos";
 import { requireAdminApi } from "@/lib/server/auth";
 import { parseProductImages } from "@/lib/server/uploads";
+import { parseProductAttributes } from "@/lib/server/product-attributes";
 
 export async function GET(req: Request) {
   try {
@@ -92,7 +93,13 @@ export async function POST(req: Request) {
     reviewCount = Math.floor(n);
   }
 
+  const attrs = parseProductAttributes(body, { partial: false });
+  if ("error" in attrs) {
+    return Response.json({ ok: false, error: attrs.error }, { status: 400 });
+  }
+
   const input: ProductInput = {
+    ...attrs,
     name,
     description: typeof body.description === "string" ? body.description : "",
     price: Math.floor(price),
