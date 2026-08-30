@@ -15,7 +15,11 @@ const AUTOPLAY_MS = 6000;
  * tall looks empty at desktop type sizes.
  */
 const TITLE_CLASS =
-  "mb-4 3xl:mb-6 font-extrabold leading-tight text-2xl sm:text-3xl md:text-4xl lg:text-5xl 3xl:text-6xl 4xl:text-7xl drop-shadow-sm";
+  "mb-4 3xl:mb-6 font-extrabold leading-tight text-2xl sm:text-3xl md:text-4xl lg:text-5xl 3xl:text-6xl 4xl:text-7xl " +
+  // Nothing darkens the photo behind the copy any more, so legibility has to
+  // live on the glyphs. A tight dark halo plus a wider soft one keeps white
+  // text readable over a bright or busy image without tinting the picture.
+  "[text-shadow:0_1px_2px_rgb(0_0_0/0.55),0_4px_18px_rgb(0_0_0/0.45)]";
 
 /**
  * Auto-rotating hero banner. Each slide carries its own image, badge, title,
@@ -60,7 +64,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
 
   return (
     <div
-      className="group relative h-full w-full overflow-hidden bg-surface-2 transform-[translateZ(0)]"
+      className="group relative h-full w-full overflow-hidden bg-linear-to-b from-[#AEDCEC] via-[#AEDCEC]/45 to-white transform-[translateZ(0)]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       role="region"
@@ -80,12 +84,26 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
             aria-label={`${toPersianNumber(i + 1)} از ${toPersianNumber(count)}`}
             aria-hidden={!isActive}
           >
+            {/*
+              `contain` on phones, `cover` from md.
+
+              A phone frame is about 0.55 wide-over-tall; the banners in use run
+              1.78 and 1.50. Covering a portrait frame with a 16:9 photo throws
+              away roughly 69% of its width, so the slide showed a narrow
+              vertical slice of itself. Containing it shows the whole banner and
+              lets the wash fill the rest. From md the frame is landscape again
+              and cover is the right fit.
+
+              The Ken-Burns zoom is md-only for the same reason: scaling a
+              contained image inside an overflow-hidden box crops exactly the
+              edges `contain` just rescued.
+            */}
             <img
               src={slide.image}
               alt={slide.title}
               loading={i === 0 ? "eager" : "lazy"}
-              className={`absolute inset-0 h-full w-full object-cover ${
-                isActive && !reduced ? "animate-hero-zoom" : ""
+              className={`absolute inset-0 h-full w-full object-contain object-top md:object-cover md:object-center ${
+                isActive && !reduced ? "md:animate-hero-zoom" : ""
               }`}
               style={
                 isActive && !reduced
@@ -93,28 +111,14 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                   : undefined
               }
             />
-            {/* Sky-to-white wash on the photo. Kept light: it was briefly run
-                at 80% to punch through a full-frame black scrim, and once that
-                scrim was deleted the same alpha simply bleached the photo. With
-                nothing above it, this much blue already reads clearly. */}
-            <div
-              className="absolute inset-0 bg-linear-to-b from-[#AEDCEC]/40 via-[#AEDCEC]/16 to-white/22"
-              aria-hidden
-            />
             {/*
-              Legibility scrim — bottom half only.
-
-              There used to be a second, full-frame `inset-0` black ramp for
-              copy that was vertically centred. The copy is anchored to the
-              bottom now, so that ramp darkened every pixel of the wash above
-              to protect text that is no longer there — which is exactly why
-              the blue barely read. Darkening only where the words actually sit
-              leaves the top of the frame as pure wash.
+              No overlay of any kind sits on the photo any more — it renders at
+              full opacity. The sky-to-white gradient moved BEHIND the slides,
+              onto the carousel itself, so it fills whatever the image does not
+              cover (the letterbox on phones) instead of tinting the image.
+              Legibility comes from a shadow on the glyphs, below, rather than
+              from darkening the picture.
             */}
-            <div
-              className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/70 via-black/30 to-transparent"
-              aria-hidden
-            />
             {/* Copy sits on the site's own measure rather than the image edge,
                 so it stays aligned with every section below it — and does not
                 drift to the far corner of an ultrawide screen. */}
@@ -126,7 +130,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                     margin as every section below the hero. */}
                 <div className="max-w-xl pb-20 sm:pb-24 3xl:pb-28 md:max-w-2xl lg:max-w-3xl 3xl:max-w-4xl text-white">
                   {slide.badgeText && (
-                    <span className="mb-4 3xl:mb-6 inline-flex w-fit items-center rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-content sm:text-sm md:px-5 md:py-2 md:text-base 3xl:text-lg">
+                    <span className="mb-4 3xl:mb-6 inline-flex w-fit items-center rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-content shadow-lg shadow-black/25 sm:text-sm md:px-5 md:py-2 md:text-base 3xl:text-lg">
                       {toPersianNumber(slide.badgeText)}
                     </span>
                   )}
@@ -141,7 +145,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                     <p className={TITLE_CLASS}>{slide.title}</p>
                   )}
                   {slide.subtitle && (
-                    <p className="mb-7 3xl:mb-10 max-w-md md:max-w-lg lg:max-w-xl 3xl:max-w-2xl text-sm font-semibold leading-relaxed text-white/85 sm:text-base md:text-lg lg:text-xl 3xl:text-2xl 4xl:text-3xl">
+                    <p className="mb-7 3xl:mb-10 max-w-md md:max-w-lg lg:max-w-xl 3xl:max-w-2xl text-sm font-semibold leading-relaxed text-white sm:text-base md:text-lg lg:text-xl 3xl:text-2xl 4xl:text-3xl [text-shadow:0_1px_2px_rgb(0_0_0/0.6),0_3px_14px_rgb(0_0_0/0.5)]">
                       {toPersianNumber(slide.subtitle)}
                     </p>
                   )}
@@ -199,7 +203,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                 onClick={() => go(i)}
                 aria-label={`رفتن به اسلاید ${toPersianNumber(i + 1)}`}
                 aria-current={i === index}
-                className={`relative h-1.5 w-9 sm:w-14 shrink-0 overflow-hidden rounded-full transition-colors cursor-pointer ${
+                className={`relative h-1.5 w-9 sm:w-14 shrink-0 overflow-hidden rounded-full transition-colors cursor-pointer shadow-[0_1px_6px_rgb(0_0_0/0.45)] ${
                   i === index ? "bg-white/45" : "bg-white/30 hover:bg-white/50"
                 }`}
               >
