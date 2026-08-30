@@ -136,13 +136,13 @@ export default function WishlistClient({ products }: { products: Product[] }) {
               >
                 <Link
                   href={`/product/${item.id}`}
-                  className="block h-36 sm:h-48 rounded-xl overflow-hidden bg-surface-2 mb-3"
+                  className="block aspect-square rounded-xl overflow-hidden bg-surface-2 mb-3"
                 >
                   <img
                     src={productImage(item)}
                     alt={item.name}
                     loading="lazy"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-2"
                   />
                 </Link>
 

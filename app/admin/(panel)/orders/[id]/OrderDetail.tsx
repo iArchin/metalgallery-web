@@ -165,7 +165,7 @@ export default function OrderDetail({ orderId }: { orderId: number }) {
                       src={productImage(it)}
                       alt={it.name}
                       loading="lazy"
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain p-1"
                     />
                   </div>
                   <span className="font-bold text-content">{it.name}</span>

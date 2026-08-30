@@ -100,7 +100,7 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
                 <img
                   src={productImage(p, 600, 600)}
                   alt={p.name}
-                  className={`absolute inset-0 h-full w-full object-cover ${outOfStock ? "opacity-60 grayscale" : ""}`}
+                  className={`absolute inset-0 h-full w-full object-contain p-4 ${outOfStock ? "opacity-60 grayscale" : ""}`}
                 />
                 {off > 0 && (
                   <span className="absolute top-3 right-3 rounded-full bg-primary px-2.5 py-1 text-xs font-extrabold text-primary-content shadow-md">
@@ -209,7 +209,7 @@ export default function TrendingItemsClient({ products }: { products: Product[] 
                       src={productImage(f, 160, 160)}
                       alt={f.name}
                       loading="lazy"
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain p-1"
                     />
                     {fOff > 0 && (
                       <span className="absolute bottom-0 inset-x-0 bg-primary/90 text-center text-[10px] font-extrabold text-primary-content">

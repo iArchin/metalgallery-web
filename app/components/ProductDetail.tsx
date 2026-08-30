@@ -118,14 +118,14 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
           {/* Image Gallery */}
           <div>
             <div className="mb-4">
-              <div className="relative h-64 sm:h-80 md:h-96 w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
+              <div className="relative h-64 sm:h-80 md:h-auto md:aspect-[4/3] w-full overflow-hidden rounded-2xl bg-surface-2 mb-4">
                 <img
                   src={galleryImages[selectedImage]}
                   alt={`${product.name} - تصویر ${toPersianNumber(
                     (selectedImage + 1).toString()
                   )}`}
                   loading="lazy"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain p-4"
                 />
                 {discount > 0 && (
                   <span className="absolute top-4 left-4 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-content shadow-md">
@@ -151,7 +151,7 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
                         (index + 1).toString()
                       )}`}
                       loading="lazy"
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain p-1"
                     />
                   </button>
                 ))}
@@ -455,12 +455,12 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
                 href={`/product/${relatedProduct.id}`}
                 className="group border border-border bg-surface rounded-2xl p-3 sm:p-4 shadow-sm transition-colors"
               >
-                <div className="relative h-28 sm:h-32 w-full overflow-hidden rounded-xl bg-surface-2 mb-3">
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-surface-2 mb-3">
                   <img
                     src={productImage(relatedProduct)}
                     alt={relatedProduct.name}
                     loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="h-full w-full object-contain p-2 transition-opacity duration-300 group-hover:opacity-90"
                   />
                 </div>
                 <h3 className="font-semibold text-content mb-2 text-sm line-clamp-2">

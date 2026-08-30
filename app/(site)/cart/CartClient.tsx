@@ -234,7 +234,7 @@ export default function CartClient({
                   src={productImage(item)}
                   alt={item.name}
                   loading="lazy"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain p-1"
                 />
               </Link>
 
