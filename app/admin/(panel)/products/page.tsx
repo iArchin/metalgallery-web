@@ -27,6 +27,7 @@ import {
   ViewOnSiteLink,
 } from "@/app/admin/_components/ui";
 import { useAdminBase } from "@/app/admin/_components/useAdminBase";
+import ImageEditModal from "@/app/admin/_components/ImageEditModal";
 
 /* --------------------------------------------------------------- form state */
 
@@ -236,6 +237,8 @@ export default function AdminProductsPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  /** The photo currently open in the AI editor, or null. */
+  const [editingImage, setEditingImage] = useState<string | null>(null);
 
   const handleFiles = async (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
@@ -553,6 +556,22 @@ export default function AdminProductsPage() {
                   >
                     ×
                   </button>
+                  {/* Only an already-stored upload can be edited — the model is
+                      sent a URL it has to fetch, so a legacy /images/ path would
+                      not resolve for it. */}
+                  {src.startsWith("/api/uploads/") && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingImage(src)}
+                      aria-label="ویرایش تصویر با هوش مصنوعی"
+                      title="ویرایش با هوش مصنوعی"
+                      className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-primary"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                      </svg>
+                    </button>
+                  )}
                   {index === 0 ? (
                     <span className="absolute inset-x-0 bottom-0 bg-primary/90 py-0.5 text-center text-[10px] font-bold text-primary-content">
                       تصویر اصلی
@@ -638,6 +657,28 @@ export default function AdminProductsPage() {
           </div>
         </form>
       </Modal>
+
+      {editingImage && (
+        <ImageEditModal
+          open
+          image={editingImage}
+          productName={form.name}
+          specifications={parseSpecs(form.specifications)}
+          onClose={() => setEditingImage(null)}
+          onAccept={(url) =>
+            setForm((f) => {
+              // Replace the photo it was generated from, so the count cannot
+              // creep past MAX_IMAGES and the new shot keeps its position —
+              // including "main" if the original was first.
+              const at = f.images.indexOf(editingImage);
+              if (at === -1) return { ...f, images: [...f.images, url].slice(0, MAX_IMAGES) };
+              const images = [...f.images];
+              images[at] = url;
+              return { ...f, images };
+            })
+          }
+        />
+      )}
 
       {toastNode}
     </div>

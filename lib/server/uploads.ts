@@ -62,12 +62,18 @@ function sniffImageExt(buf: Buffer): "jpg" | "png" | "webp" | null {
   return null;
 }
 
-/** Store one uploaded photo; returns its public /api/uploads/... URL. */
-export async function saveProductImage(file: File): Promise<string> {
-  if (file.size > MAX_UPLOAD_BYTES) {
+/**
+ * Store image bytes; returns the public /api/uploads/... URL.
+ *
+ * Split out from saveProductImage so an image the server fetched itself — an
+ * AI-edited photo coming back from the provider — lands in exactly the same
+ * place, with the same type sniffing and the same collision-free naming, as
+ * one the admin uploaded from a file picker.
+ */
+export async function saveProductImageBuffer(buf: Buffer): Promise<string> {
+  if (buf.byteLength > MAX_UPLOAD_BYTES) {
     throw new UploadError("حجم هر تصویر حداکثر ۵ مگابایت است");
   }
-  const buf = Buffer.from(await file.arrayBuffer());
   const ext = sniffImageExt(buf);
   if (!ext) {
     throw new UploadError("فرمت تصویر باید JPG، PNG یا WebP باشد");
@@ -79,4 +85,12 @@ export async function saveProductImage(file: File): Promise<string> {
   const name = `${Date.now().toString(36)}-${randomBytes(6).toString("hex")}.${ext}`;
   await fs.writeFile(path.join(dir, name), buf);
   return `/api/uploads/products/${name}`;
+}
+
+/** Store one uploaded photo; returns its public /api/uploads/... URL. */
+export async function saveProductImage(file: File): Promise<string> {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new UploadError("حجم هر تصویر حداکثر ۵ مگابایت است");
+  }
+  return saveProductImageBuffer(Buffer.from(await file.arrayBuffer()));
 }
