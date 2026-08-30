@@ -25,7 +25,7 @@ export default async function Showcase() {
     ...products.filter((p) => p.isDeal),
     ...products.filter((p) => p.isTrending && !p.isDeal),
     ...products.filter((p) => !p.isDeal && !p.isTrending).sort((a, b) => b.id - a.id),
-  ].slice(0, 10);
+  ].slice(0, 8); // one dot per card, so the indicator row stays compact
 
   const categories = allCategories.filter((c) => c.active);
 
@@ -39,6 +39,7 @@ export default async function Showcase() {
       title: p.name,
       subtitle: p.ageGroup || undefined,
       image: productImage(p),
+      cta: "مشاهده محصول",
       tag: off > 0 ? `${toPersianNumber(off)}٪ تخفیف` : undefined,
     };
   });
@@ -50,13 +51,16 @@ export default async function Showcase() {
       href: `/category/${c.id}`,
       title: c.name,
       image: c.image as string,
+      cta: "دیدن",
     }));
 
   return (
-    <section className="bg-background py-12 md:py-16 3xl:py-20">
-      {/* Full-bleed on purpose: the cards run to the edge of the viewport and
-          the last one peeks, which is what signals the row scrolls. */}
-      <ShowcaseRails featured={featuredItems} categories={categoryItems} />
+    <section className="overflow-hidden bg-background py-12 md:py-16 3xl:py-20">
+      <ShowcaseRails
+        featured={featuredItems}
+        categories={categoryItems}
+        heading="سرگرمی بی‌پایان"
+      />
     </section>
   );
 }

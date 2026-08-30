@@ -1,30 +1,22 @@
 "use client";
 
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-} from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import Link from "next/link";
 
 /**
- * One horizontal snap rail. Its arrows live in the parent, which drives both
- * rails from a single pair of controls — see ShowcaseRails.
+ * One horizontal track of the showcase. It owns no controls and no timer — the
+ * parent drives both tracks from a single index, so the two rows always move as
+ * one component rather than as two carousels that happen to sit together.
  */
 
 /**
  * Apple's UI easing, cubic-bezier(0.32, 0.72, 0, 1).
  *
  * Strongly front-loaded: measured, it covers ~78% of the distance in the first
- * quarter of the duration and spends the rest decelerating. That is what gives
- * the motion its characteristic "responds instantly, settles softly" feel —
- * the opposite of a symmetric ease, and the reason the duration can be as long
- * as 600ms without the control feeling laggy.
+ * quarter of the duration and spends the rest decelerating. That is what makes
+ * a 600ms move feel immediate rather than laggy.
  */
 const EASE = (t: number): number => {
-  // cubic-bezier(0.32, 0.72, 0, 1), solved for y at x = t.
   const c = 3 * 0.32;
   const b = 3 * (0 - 0.32) - c;
   const a = 1 - c - b;
@@ -47,144 +39,159 @@ export interface RailItem {
   key: string;
   href: string;
   title: string;
+  /** The line beside the button, e.g. a category or an age range. */
   subtitle?: string;
   image: string;
+  /** Pill label, e.g. "خرید". */
+  cta: string;
   tag?: string;
 }
 
 export interface RailHandle {
-  /** -1 = toward the start, +1 = toward the end, in reading order. */
-  step: (direction: -1 | 1) => void;
-  edges: () => { atStart: boolean; atEnd: boolean };
+  /** Centre item `i` in the viewport. */
+  goTo: (i: number) => void;
+  /** Nearest item to the current scroll position, for syncing the dots. */
+  nearest: () => number;
 }
 
 const ShowcaseRail = forwardRef<
   RailHandle,
-  { items: RailItem[]; size: "lg" | "sm"; label: string; onEdges?: () => void }
->(function ShowcaseRail({ items, size, label, onEdges }, ref) {
+  { items: RailItem[]; size: "lg" | "sm"; label: string; onSettle?: () => void }
+>(function ShowcaseRail({ items, size, label, onSettle }, ref) {
   const trackRef = useRef<HTMLDivElement>(null);
   const raf = useRef<number | null>(null);
 
-  const edges = useCallback(() => {
+  /** Scroll offset that puts card `i` in the middle of the track. */
+  const offsetFor = useCallback((i: number) => {
     const el = trackRef.current;
-    if (!el) return { atStart: true, atEnd: true };
-    // scrollLeft is NEGATIVE in RTL and positive in LTR, so compare magnitudes.
-    const pos = Math.abs(el.scrollLeft);
+    const card = el?.children[i] as HTMLElement | undefined;
+    if (!el || !card) return null;
+    // offsetLeft is measured from the track's left edge in both directions, so
+    // this arithmetic is the same for RTL and LTR — unlike scrollLeft, whose
+    // sign flips.
+    const target = card.offsetLeft - (el.clientWidth - card.offsetWidth) / 2;
     const max = el.scrollWidth - el.clientWidth;
-    return { atStart: pos <= 4, atEnd: max <= 4 || pos >= max - 4 };
+    const clamped = Math.max(0, Math.min(target, max));
+    // ...but the value we assign does carry the axis sign.
+    return getComputedStyle(el).direction === "rtl" ? -clamped : clamped;
   }, []);
 
-  /** One card plus its gap, measured rather than assumed. */
-  const cardStep = () => {
+  const goTo = useCallback(
+    (i: number) => {
+      const el = trackRef.current;
+      if (!el) return;
+      const to = offsetFor(i);
+      if (to === null) return;
+
+      if (raf.current) cancelAnimationFrame(raf.current);
+      // snap-mandatory re-snaps after every scrollLeft write and fights the
+      // animation; it comes off for the glide and back on when it lands.
+      const snap = el.style.scrollSnapType;
+      el.style.scrollSnapType = "none";
+
+      const from = el.scrollLeft;
+      const delta = to - from;
+      const start = performance.now();
+      const frame = (now: number) => {
+        const t = Math.min(1, (now - start) / DURATION);
+        el.scrollLeft = from + delta * EASE(t);
+        if (t < 1) raf.current = requestAnimationFrame(frame);
+        else {
+          el.style.scrollSnapType = snap;
+          onSettle?.();
+        }
+      };
+      raf.current = requestAnimationFrame(frame);
+    },
+    [offsetFor, onSettle]
+  );
+
+  const nearest = useCallback(() => {
     const el = trackRef.current;
-    const card = el?.firstElementChild as HTMLElement | undefined;
-    if (!el || !card) return 320;
-    const gap = parseFloat(getComputedStyle(el).columnGap || "16") || 16;
-    return card.offsetWidth + gap;
-  };
+    if (!el) return 0;
+    const pos = Math.abs(el.scrollLeft);
+    let best = 0;
+    let bestD = Infinity;
+    for (let i = 0; i < el.children.length; i++) {
+      const o = offsetFor(i);
+      if (o === null) continue;
+      const d = Math.abs(Math.abs(o) - pos);
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    return best;
+  }, [offsetFor]);
 
-  const step = useCallback((direction: -1 | 1) => {
-    const el = trackRef.current;
-    if (!el) return;
-    // In RTL the axis runs the other way, so "toward the end" is a decreasing
-    // scrollLeft. Without this the arrows were inverted, and at rest (0) the
-    // forward one wrote a positive value that the browser clamped straight back
-    // — which looked exactly like the animation not playing at all.
-    const axis = getComputedStyle(el).direction === "rtl" ? -1 : 1;
-    const delta = direction * axis * cardStep();
-
-    if (raf.current) cancelAnimationFrame(raf.current);
-
-    // Snap has to come off for the duration. With `snap-mandatory` the browser
-    // re-snaps after every scrollLeft write, which fights a per-frame animation
-    // and leaves it juddering or motionless.
-    const snap = el.style.scrollSnapType;
-    el.style.scrollSnapType = "none";
-
-    const from = el.scrollLeft;
-    const start = performance.now();
-    const finish = () => {
-      el.style.scrollSnapType = snap;
-      onEdges?.();
-    };
-    const frame = (now: number) => {
-      const t = Math.min(1, (now - start) / DURATION);
-      el.scrollLeft = from + delta * EASE(t);
-      if (t < 1) raf.current = requestAnimationFrame(frame);
-      else finish();
-    };
-    raf.current = requestAnimationFrame(frame);
-  }, [onEdges]);
-
-  useImperativeHandle(ref, () => ({ step, edges }), [step, edges]);
-
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => onEdges?.());
-    ro.observe(el);
-    onEdges?.();
-    return () => ro.disconnect();
-  }, [onEdges, items.length]);
+  useImperativeHandle(ref, () => ({ goTo, nearest }), [goTo, nearest]);
 
   useEffect(() => () => {
     if (raf.current) cancelAnimationFrame(raf.current);
   }, []);
 
   const big = size === "lg";
-  const cardW = big
-    ? "w-[78vw] sm:w-[46vw] lg:w-[30rem] 3xl:w-[36rem]"
-    : "w-[52vw] sm:w-[30vw] lg:w-[19rem] 3xl:w-[23rem]";
-  const cardH = big
-    ? "h-[26rem] sm:h-[30rem] 3xl:h-[34rem]"
-    : "h-[15rem] sm:h-[17rem] 3xl:h-[20rem]";
+  // Roughly Apple's proportions: the wide row about half the viewport, the row
+  // beneath it a little over a third of that, both near 16:9.
+  const card = big
+    ? "w-[86vw] sm:w-[62vw] lg:w-[49vw] 3xl:w-[46vw]"
+    : "w-[46vw] sm:w-[28vw] lg:w-[18.5vw] 3xl:w-[17vw]";
 
   if (items.length === 0) return null;
 
   return (
     <div
       ref={trackRef}
-      onScroll={() => onEdges?.()}
       role="region"
       aria-label={label}
-      className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-2 sm:gap-5 sm:px-6 3xl:px-8"
+      className="no-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto overscroll-x-contain"
     >
       {items.map((item) => (
         <Link
           key={item.key}
           href={item.href}
-          className={`group/card relative shrink-0 snap-start overflow-hidden rounded-3xl bg-surface-2 ${cardW} ${cardH}`}
+          className={`group/card relative aspect-16/9 shrink-0 snap-center overflow-hidden rounded-xl bg-surface-2 ${card}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.image}
             alt=""
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-[1.04]"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-[1.03]"
           />
           <span
-            className="absolute inset-0 bg-linear-to-t from-black/75 via-black/25 to-transparent"
+            className="absolute inset-0 bg-linear-to-t from-black/70 via-black/15 to-transparent"
             aria-hidden
           />
           {item.tag && (
-            <span className="absolute top-4 left-4 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-content">
+            <span className="absolute top-3 left-3 rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-primary-content sm:top-4 sm:left-4 sm:text-xs">
               {item.tag}
             </span>
           )}
-          <div className={`absolute inset-x-0 bottom-0 p-5 text-white ${big ? "sm:p-7" : "sm:p-5"}`}>
-            {item.subtitle && (
-              <p className={`mb-1 font-semibold text-white/80 ${big ? "text-sm" : "text-xs"}`}>
-                {item.subtitle}
-              </p>
-            )}
-            <h3
-              className={`font-extrabold leading-snug ${
-                big ? "text-xl sm:text-2xl 3xl:text-3xl" : "text-base sm:text-lg"
-              }`}
-            >
-              {item.title}
-            </h3>
-          </div>
+
+          {big ? (
+            /* Wide row: pill and its caption sit side by side along the bottom,
+               the way Apple runs "Stream now · The truth lies in the past." */
+            <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-x-3 gap-y-1.5 p-4 sm:p-6">
+              <span className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900 shadow-sm transition-transform group-hover/card:scale-105 sm:text-sm">
+                {item.cta}
+              </span>
+              <span className="text-xs font-semibold text-white/90 drop-shadow sm:text-sm">
+                <span className="font-extrabold">{item.title}</span>
+                {item.subtitle && <span className="text-white/70"> · {item.subtitle}</span>}
+              </span>
+            </div>
+          ) : (
+            /* Narrow row: title bottom-start, pill bottom-end. */
+            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 sm:p-4">
+              <span className="min-w-0 truncate text-xs font-extrabold text-white drop-shadow sm:text-sm">
+                {item.title}
+              </span>
+              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-neutral-900 shadow-sm transition-transform group-hover/card:scale-105">
+                {item.cta}
+              </span>
+            </div>
+          )}
         </Link>
       ))}
     </div>

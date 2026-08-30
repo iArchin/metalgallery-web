@@ -1,90 +1,141 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ShowcaseRail, { type RailHandle, type RailItem } from "@/app/components/ShowcaseRail";
+import { toPersianNumber } from "@/app/utils/numbers";
 
 /**
- * The two rails plus ONE pair of arrows that drives both.
+ * Two tracks driven as ONE carousel: a shared index, one timer, one set of
+ * dots, one pause button — which is what makes a pair of rows read as a single
+ * component rather than as two sliders that happen to be stacked.
  *
- * A control per row meant two sets of buttons stacked down the same edge, which
- * read as clutter rather than as one component. A single pair moves both rows
- * together and is enabled while either still has somewhere to go — so the
- * shorter row simply stops at its end instead of disabling the control for the
- * longer one.
+ * The rows hold different numbers of cards, so each is asked for the position
+ * proportional to the shared progress rather than for the same card number.
+ * Otherwise the shorter row would run out and sit still while the longer one
+ * kept going.
  */
+
+/** How long each position holds before advancing. */
+const DWELL_MS = 5000;
+
 export default function ShowcaseRails({
   featured,
   categories,
+  heading,
 }: {
   featured: RailItem[];
   categories: RailItem[];
+  heading: string;
 }) {
   const top = useRef<RailHandle>(null);
   const bottom = useRef<RailHandle>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
+  const [index, setIndex] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [hovered, setHovered] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [reduced, setReduced] = useState(false);
 
-  const refresh = useCallback(() => {
-    const a = top.current?.edges();
-    const b = bottom.current?.edges();
-    setCanPrev(!!(a && !a.atStart) || !!(b && !b.atStart));
-    setCanNext(!!(a && !a.atEnd) || !!(b && !b.atEnd));
+  // Dots track the wide row — it is the one being read.
+  const count = Math.max(featured.length, 1);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+
+    const onVis = () => setHidden(document.hidden);
+    onVis();
+    document.addEventListener("visibilitychange", onVis);
+    // Leaving the window often produces no mouseleave, which would otherwise
+    // strand the carousel paused.
+    const onBlur = () => setHovered(false);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      mq.removeEventListener("change", update);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("blur", onBlur);
+    };
   }, []);
 
-  const step = (direction: -1 | 1) => {
-    top.current?.step(direction);
-    bottom.current?.step(direction);
-  };
-
-  const arrow = (direction: -1 | 1, enabled: boolean, label: string, d: string) => (
-    <button
-      type="button"
-      onClick={() => step(direction)}
-      disabled={!enabled}
-      aria-label={label}
-      className="grid h-11 w-11 place-items-center rounded-full border border-border bg-surface text-content transition-all hover:border-primary hover:text-primary disabled:opacity-35 disabled:pointer-events-none"
-    >
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} />
-      </svg>
-    </button>
+  /** Move both rows to the position matching `i` on the wide row. */
+  const show = useCallback(
+    (i: number) => {
+      top.current?.goTo(i);
+      if (categories.length > 0 && count > 1) {
+        // Proportional, not identical: the rows are different lengths.
+        const share = i / (count - 1);
+        bottom.current?.goTo(Math.round(share * (categories.length - 1)));
+      }
+    },
+    [categories.length, count]
   );
 
+  useEffect(() => {
+    show(index);
+  }, [index, show]);
+
+  const running = playing && !hovered && !hidden && !reduced && count > 1;
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setTimeout(() => setIndex((i) => (i + 1) % count), DWELL_MS);
+    return () => clearTimeout(id);
+  }, [running, index, count]);
+
   return (
-    <>
-      <div className="site-container mb-6 flex items-end justify-between gap-4 sm:mb-8">
-        <div>
-          <h2 className="text-2xl sm:text-3xl 3xl:text-4xl font-extrabold text-content">
-            دنیای متال گالری
-          </h2>
-          <p className="mt-2 text-sm sm:text-base text-content-muted">
-            پیشنهادهای ویژه و دسته‌بندی‌های محبوب، یک‌جا
-          </p>
-        </div>
-        {/* Desktop only: on a touch screen the rows are swiped, and a pair of
-            arrows would just take room from the cards. */}
-        <div className="hidden shrink-0 items-center gap-2 md:flex">
-          {arrow(-1, canPrev, "قبلی", "M9 5l7 7-7 7")}
-          {arrow(1, canNext, "بعدی", "M15 19l-7-7 7-7")}
-        </div>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onPointerLeave={() => setHovered(false)}
+    >
+      <h2 className="site-container mb-6 text-center text-3xl font-extrabold text-content sm:mb-8 sm:text-4xl 3xl:text-5xl">
+        {heading}
+      </h2>
+
+      {/* Full-bleed and tightly gapped, so neighbouring cards peek in from both
+          edges — that peek is what says the row continues. */}
+      <div className="space-y-2.5">
+        <ShowcaseRail ref={top} items={featured} size="lg" label="پیشنهادهای ویژه" />
+        <ShowcaseRail ref={bottom} items={categories} size="sm" label="دسته‌بندی‌ها" />
       </div>
 
-      <div className="space-y-4 sm:space-y-5">
-        <ShowcaseRail
-          ref={top}
-          items={featured}
-          size="lg"
-          label="پیشنهادهای ویژه"
-          onEdges={refresh}
-        />
-        <ShowcaseRail
-          ref={bottom}
-          items={categories}
-          size="sm"
-          label="دسته‌بندی‌ها"
-          onEdges={refresh}
-        />
+      <div className="relative mt-5 flex items-center justify-center px-4">
+        <div className="flex items-center gap-2">
+          {featured.map((item, i) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setIndex(i)}
+              aria-label={`رفتن به ${toPersianNumber(i + 1)}`}
+              aria-current={i === index}
+              className={`h-2 rounded-full transition-all ${
+                i === index ? "w-2 bg-content" : "w-2 bg-content-subtle/50 hover:bg-content-subtle"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Pause sits at the trailing edge, out of the dots' way. */}
+        {count > 1 && !reduced && (
+          <button
+            type="button"
+            onClick={() => setPlaying((p) => !p)}
+            aria-label={playing ? "توقف چرخش" : "ادامه چرخش"}
+            className="absolute left-4 grid h-8 w-8 place-items-center rounded-full text-content-muted transition-colors hover:bg-surface-2 hover:text-content"
+          >
+            {playing ? (
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5h3v14H8zm5 0h3v14h-3z" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5l11 7-11 7z" />
+              </svg>
+            )}
+          </button>
+        )}
       </div>
-    </>
+    </div>
   );
 }
